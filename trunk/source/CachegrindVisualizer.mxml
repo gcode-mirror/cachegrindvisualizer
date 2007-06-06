@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ApolloApplication xmlns:mx="http://www.adobe.com/2006/mxml" showStatusBar="false" creationComplete="handleCreationComplete()">
+
+	<mx:ApplicationControlBar>
+		<mx:Button label="@Resource('open')" click="browse()"/>
+	</mx:ApplicationControlBar>
+	<mx:TabNavigator id="tabNavigator" width="100%" height="100%">
+
+	</mx:TabNavigator>
+	
+	<mx:Script><![CDATA[		
+		
+	import flash.filesystem.File;
+	
+	import mx.resources.ResourceBundle;
+	
+	import develar.filesystem.FileWrapper;
+	
+	import develar.cachegrindVisualizer.ui.Tab;
+	import develar.cachegrindVisualizer.Parser;	
+	
+	private var file:File = new File();
+	private var fileFilters:Array = [new FileFilter(ResourceBundle.getResourceBundle('CachegrindVisualizer').getString('cachegrindFiles'), 'cachegrind.out.*'), new FileFilter(ResourceBundle.getResourceBundle('CachegrindVisualizer').getString('allFiles'), '*')];
+	
+	private function browse():void
+	{
+		file.browse(fileFilters);
+	}
+	
+	private function handleCreationComplete():void
+	{
+		file.addEventListener(Event.SELECT, handleSelectFile);
+	}
+	
+	private function handleSelectFile(event:Event):void
+	{	
+		trace('получено');
+		var fileWrapper:FileWrapper = new FileWrapper(event.target);
+		
+		var timeBegin:Number = new Date().time;
+				
+		var parser:Parser = new Parser(fileWrapper.contents);
+	
+		var timeEnd:Number = new Date().time;			
+		trace(timeEnd - timeBegin);	
+		
+		/*var tab:Tab = new Tab();	
+		tabNavigator.addChild(tab);*/
+	}
+	
+	]]></mx:Script>	
+	
+</mx:ApolloApplication>
