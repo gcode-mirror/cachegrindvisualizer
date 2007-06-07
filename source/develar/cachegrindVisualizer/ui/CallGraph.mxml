@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%">
+	
+	<mx:Script><![CDATA[
+		
+	import flash.filesystem.File;
+		
+	import develar.cachegrindVisualizer.callGraph.Builder;
+	
+	private var builder:Builder = new Builder();
+	
+	public function build():void
+	{
+		builder.build(Tab(parentDocument).tree.dataProvider.getItemAt(0), new File('C:\\tmp\\callgraph.dot'));
+	}
+	
+	]]></mx:Script>
+	
+</mx:VBox>
