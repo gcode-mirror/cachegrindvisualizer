@@ -1,6 +1,7 @@
 package develar.cachegrindVisualizer
-{
-	import mx.utils.ObjectUtil;
+{	
+	import flash.system.System;
+	import develar.formatters.Formatter;
 	
 	public class Parser
 	{
@@ -9,29 +10,36 @@ package develar.cachegrindVisualizer
 		 */
 		protected const TEST_STRING_LENGTH:uint = 20;
 		
-		protected const HEADER_CMD_LINE_NUMBER:uint = 1;
-		protected const BODY_BEGIN_LINE_NUMBER:uint = 6;
+		protected const TIME_UNIT_IN_MS:uint = 10000;
 		
 		protected const MAIN_FUNCTION_NAME:String = 'main';
 		
 		protected var data:Array;
-		protected var result:Object = {metadata: {}, data: []};
+		
+		protected var onePercentage:Number;
+		
+		protected var _result:Item = new Item();
+		public function get result():Item
+		{
+			return _result;
+		}
 		
 		protected var cursor:uint = 0;
-		protected var stack:Object = new Object();
-		protected var currentItemId:String;
 			
 		public function Parser(data:String):void
 		{
-			trace('передано в анализатор');
+			trace('Передано в анализатор. Память: ', Formatter.dataSize(System.totalMemory));
 			splitData(data);
-			data = '';
-					
-			result.data = {name: MAIN_FUNCTION_NAME, children: []};
+			data = null;
+			
+			result.name = MAIN_FUNCTION_NAME;
+			result.inclusivePercentage = 100;
+			result.children = new Array();
 			
 			// 2 пустых строки + 1 для установки именно на позицию
 			cursor = this.data.length - 3;		
-			parseBody(result.data);
+			parseBody(result);
+			this.data = null;
 		}
 		
 		protected function splitData(data:String):void
@@ -50,7 +58,7 @@ package develar.cachegrindVisualizer
 			this.data = data.split(line_ending);
 		}
 		
-		private function parseBody(parent:Object):void
+		private function parseBody(parent:Item):void
 		{
 			var children:Array = new Array();
 			while (true)
@@ -60,14 +68,25 @@ package develar.cachegrindVisualizer
 				if (data[cursor - 1].charAt(0) == 'f')
 				{
 					parent.time = line_and_time[1];
-					parent.fileName = data[cursor - 2].slice(3);
-					return;
+					var fileName:String = data[cursor - 2].slice(3);
+					if (fileName != 'php:internal')
+					{
+						parent.fileName = fileName;
+					}
+					// устанавливаем здесь, так как при установке child у нас может еще не быть данных о main
+					parent.inclusivePercentage = parent.inclusiveTime / onePercentage;
+					cursor -= 4;
+					break;
 				}
 				else
-				{
+				{					
 					var sample:String = data[cursor - 4].charAt(0);
 					
-					children.unshift({line: line_and_time[1], inclusiveTime: line_and_time[1], name: data[cursor - 2].slice(3)});
+					var child:Item = new Item();
+					child.name = data[cursor - 2].slice(4);
+					child.line = line_and_time[0];
+					child.inclusiveTime = line_and_time[1] / TIME_UNIT_IN_MS;
+					children.unshift(child);
 		
 					// следующий ребенок (cfn)
 					if (sample == 'c')
@@ -79,6 +98,7 @@ package develar.cachegrindVisualizer
 					{
 						line_and_time = data[cursor - 3].split(' ');
 						parent.time = line_and_time[1];
+						parent.inclusivePercentage = parent.inclusiveTime / onePercentage;
 						if (sample == 'f')
 						{
 							parent.fileName = data[cursor - 5].slice(3);
@@ -89,7 +109,10 @@ package develar.cachegrindVisualizer
 						else if (sample == '')
 						{
 							parent.fileName = data[cursor - 8].slice(3);
-							result.metadata['summary'] = data[cursor - 5].slice(9);
+							parent.inclusiveTime = data[cursor - 5].slice(9) / TIME_UNIT_IN_MS;	
+							parent.inclusivePercentage = 100;						
+							onePercentage = parent.inclusiveTime / 100;
+							
 							cursor -= 10;
 						}
 						else
@@ -98,12 +121,12 @@ package develar.cachegrindVisualizer
 						}
 		
 						parent.children = children;
-						for each (var child:Object in children)
+						for (var childIndex:int = children.length - 1; childIndex > -1; childIndex--)
 						{
-							parseBody(child);
+							parseBody(children[childIndex]);
 						}
 		
-						return;
+						break;
 					}
 				}
 			}

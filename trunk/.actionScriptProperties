@@ -4,6 +4,7 @@
     <compilerSourcePath>
       <compilerSourcePathEntry kind="1" path="C:\flex\CachegrindVisualizer\locale\{locale}" linkType="1"/>
       <compilerSourcePathEntry kind="1" path="C:\flex\apollo-framework\source" linkType="1"/>
+      <compilerSourcePathEntry kind="1" path="C:\flex\framework\source" linkType="1"/>
     </compilerSourcePath>
     <libraryPath>
       <libraryPathEntry kind="3" path="${APOLLO_SDK}/frameworks/libs/apollo/apolloglobal.swc" linkType="2"/>
@@ -14,6 +15,7 @@
       <libraryPathEntry kind="3" path="${FRAMEWORKS}/libs/rpc.swc" linkType="1"/>
       <libraryPathEntry kind="3" path="${FRAMEWORKS}/libs/charts.swc" linkType="1" sourcepath="${FRAMEWORKS}/source"/>
       <libraryPathEntry kind="1" path="${FRAMEWORKS}/locale/{locale}" linkType="1"/>
+      <libraryPathEntry kind="1" path="C:\flex\framework\locale\{locale}" linkType="1"/>
     </libraryPath>
     <sourceAttachmentPath>
       <sourceAttachmentPathEntry kind="3" path="${FRAMEWORKS}/libs/flex.swc" linkType="1" sourcepath="${FRAMEWORKS}/source"/>

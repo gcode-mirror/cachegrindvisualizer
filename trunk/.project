@@ -23,14 +23,19 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>[source path] source</name>
-			<type>2</type>
-			<location>C:/flex/apollo-framework/source</location>
-		</link>
-		<link>
 			<name>[source path] ru</name>
 			<type>2</type>
 			<location>C:/flex/CachegrindVisualizer/locale/ru</location>
+		</link>
+		<link>
+			<name>[source path] framework-source</name>
+			<type>2</type>
+			<location>C:/flex/framework/source</location>
+		</link>
+		<link>
+			<name>[source path] apollo-framework-source</name>
+			<type>2</type>
+			<location>C:/flex/apollo-framework/source</location>
 		</link>
 	</linkedResources>
 </projectDescription>
