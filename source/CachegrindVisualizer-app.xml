@@ -88,7 +88,7 @@
       when you launch or export this application. There is no need to set it here.
       -->
 
-      <rootContent systemChrome="standard" transparent="false" visible="true">[SWF reference is generated]</rootContent>
+      <rootContent systemChrome="standard" transparent="false" visible="true">CachegrindVisualizer.swf</rootContent>
 
 
 
