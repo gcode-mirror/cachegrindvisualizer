@@ -50,7 +50,8 @@ package develar.cachegrindVisualizer.callGraph
 			
 			if (nodeName != null)
 			{
-				label = nodeName + '\\n'
+				// Graphviz воспринимает \ как управляющий символ, поэтому его необходимо экранировать
+				label = nodeName.replace(/\\/g, '\\\\') + '\\n'
 			}
 			
 			switch (_type)

@@ -1,15 +1,22 @@
 package develar.cachegrindVisualizer.callGraph
-{
-	import flash.filesystem.File;
-	
+{	
 	import develar.filesystem.FileWrapper;
 	
 	import develar.cachegrindVisualizer.Item;
 	
 	public class Builder
 	{
+		public static const RANK_DIRECTION_TB:uint = 0;
+		public static const RANK_DIRECTION_LR:uint = 1;
+		public static const RANK_DIRECTION_BT:uint = 2;
+		public static const RANK_DIRECTION_RL:uint = 3;
+		
+		protected var rankDirections:Array = ['TB', 'LR', 'BT', 'RL'];
+		
 		protected var graph:String;
 		protected var nodes:Object;
+		
+		protected var onePercentage:Number;
 		
 		protected var _labelCreator:LabelCreator = new LabelCreator();
 		public function get labelCreator():LabelCreator
@@ -17,10 +24,10 @@ package develar.cachegrindVisualizer.callGraph
 			return _labelCreator;
 		}
 		
-		protected var _minPercentage:uint = 1;
-		public function set minPercentage(value:uint):void
+		protected var _minNodeCost:uint = 1;
+		public function set minNodeCost(value:uint):void
 		{
-			_minPercentage = value;
+			_minNodeCost = value;
 		}
 		
 		protected var _rankDirection:String = 'TB';
@@ -29,20 +36,22 @@ package develar.cachegrindVisualizer.callGraph
 			_rankDirection = value;
 		}		
 		
-		public function build(data:Item, file:File):void
+		public function build(data:Item, fileWrapper:FileWrapper):void
 		{
-			nodes = {main: new Node()};
+			onePercentage = data.inclusiveTime / 100;
+			data.inclusivePercentage = 100;
+			
+			nodes = {};
+			nodes[data.name] = new Node();
 			setNode(data);
 			
-			graph = 'digraph { rankdir="' + _rankDirection + '" \n';
-			
+			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '" \n';			
 			createEdge(data);
-			configurateNodes();
-			
+			configurateNodes();			
 			graph += '}';
 			
-			var fileWrapper:FileWrapper = new FileWrapper(file);
 			fileWrapper.contents = graph;
+			nodes = null;
 			graph = null;
 		}
 		
@@ -50,7 +59,8 @@ package develar.cachegrindVisualizer.callGraph
 		{			
 			for each (var item:Item in parent.children)
 			{
-				if (item.inclusivePercentage > _minPercentage)
+				item.inclusivePercentage = item.inclusiveTime / onePercentage;
+				if (item.inclusivePercentage > _minNodeCost)
 				{
 					graph += '"' + parent.name + '" -> "' + item.name + '" [label="' + labelCreator.arrow(item) + '"];\n';
 					

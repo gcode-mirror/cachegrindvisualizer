@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%">
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" creationComplete="handleCreationComplete()" width="100%" height="100%">
 	
 	<mx:Panel label="@Resource('configuration')" width="100%">
-		<mx:CheckBox label="@Resource('blackAndWhite')"/>
 		<mx:Form>
 			<mx:FormItem label="Минимальная стоимость узла">
-				<mx:HSlider labels="['0 %','100 %']" maximum="100" snapInterval="1" tickInterval="10"/>
+				<develar:NumericStepper id="minNodeCost" maximum="100" maxChars="3" change="handleChange(event)"/>
 			</mx:FormItem>
 			<mx:FormItem label="Тип метки">
-				<mx:ComboBox change="builder.labelCreator.type = event.target.selectedItem.data">
+				<mx:ComboBox id="labelType" change="handleChange(event)">
 					<mx:Array>
 						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE_AND_TIME}" label="Процент и время"/>
 						<mx:Object data="{LabelCreator.TYPE_TIME_AND_PERCENTAGE}" label="Время и процент"/>
@@ -18,12 +17,12 @@
 				</mx:ComboBox>
 			</mx:FormItem>
 			<mx:FormItem label="Расположение">
-				<mx:ComboBox change="builder.rankDirection = event.target.selectedItem.data">
+				<mx:ComboBox id="rankDirection" change="handleChange(event)">
 					<mx:Array>
-						<mx:Object data="TB" label="Сверху вниз"/>
-						<mx:Object data="BT" label="Снизу вверх"/>
-						<mx:Object data="LR" label="Слева направо"/>
-						<mx:Object data="RL" label="Справо налево"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_TB}" label="Сверху вниз"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_BT}" label="Снизу вверх"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_LR}" label="Слева направо"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_RL}" label="Справо налево"/>
 					</mx:Array>
 				</mx:ComboBox>
 			</mx:FormItem>
@@ -32,15 +31,18 @@
 		<mx:ControlBar width="100%">
 			<mx:Button label="Загрузить настройки" click="loadConfiguration()"/>
 			<mx:Button label="Сохранить настройки" click="saveConfiguration()"/>
-			<mx:Spacer width="100%"/>
-			<mx:Button label="Построить" click="build()"/>
 		</mx:ControlBar>
 	</mx:Panel>
 	
 	<mx:Script><![CDATA[
+	
+	import mx.formatters.DateFormatter;
+	import mx.resources.ResourceBundle;
 		
-	import flash.filesystem.File;
-		
+	import develar.filesystem.FileWrapper;
+	import develar.utils.Selector;
+	
+	import develar.cachegrindVisualizer.Item;		
 	import develar.cachegrindVisualizer.callGraph.Builder;
 	import develar.cachegrindVisualizer.callGraph.LabelCreator;
 	import develar.cachegrindVisualizer.managers.ConfigurationManager;
@@ -48,19 +50,67 @@
 	private var builder:Builder = new Builder();
 	private var configurationManager:ConfigurationManager = new ConfigurationManager();
 	
+	private var fileWrapper:FileWrapper;
+	
+	private function handleCreationComplete():void
+	{
+		applyConfiguration();
+	}
+	
 	public function build():void
 	{
-		builder.build(Tab(parentDocument).tree.dataProvider.getItemAt(0), new File('C:\\tmp\\callgraph.dot'));
+		if (fileWrapper == null)
+		{
+			fileWrapper = new FileWrapper(Tab(parentDocument).fileWrapper.file.nativePath + '.dot');
+		}
+		builder.build(Item(Tab(parentDocument).tree.selectedItem), fileWrapper);
+		
+		var dateFormatter:DateFormatter = new DateFormatter();
+		dateFormatter.formatString = 'J:NN:SS';			
+		parentApplication.status = dateFormatter.format(new Date()) + ' ' + ResourceBundle.getResourceBundle('CachegrindVisualizer').getString('graphBuilt');
+	}
+	
+	private function handleChange(event:Event):void
+	{
+		if (event.target is ComboBox)
+		{
+			if (event.target == rankDirection)
+			{
+				builder.rankDirection = event.target.selectedItem.data;
+			}
+			else
+			{
+				builder.labelCreator.type = event.target.selectedItem.data;
+			}
+		}	
+		else
+		{
+			builder.minNodeCost = minNodeCost.value;
+		}
+		
+		build();
 	}
 	
 	private function saveConfiguration():void
 	{
-		configurationManager.save(builder);
+		configurationManager.object.minNodeCost = minNodeCost.value;
+		configurationManager.object.labelType = labelType.selectedItem.data;
+		configurationManager.object.rankDirection = rankDirection.selectedItem.data;		
+		
+		configurationManager.save();
 	}
 	
 	private function loadConfiguration():void
 	{
 		configurationManager.load();
+		applyConfiguration();
+	}
+	
+	private function applyConfiguration():void
+	{
+		minNodeCost.value = configurationManager.object.minNodeCost;
+		Selector.select(labelType, configurationManager.object.labelType);
+		Selector.select(rankDirection, configurationManager.object.rankDirection);
 	}
 	
 	]]></mx:Script>

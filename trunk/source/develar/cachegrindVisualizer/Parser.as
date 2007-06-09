@@ -8,15 +8,11 @@ package develar.cachegrindVisualizer
 		/**
 		 * Длина строки для определения символа разделителя строк (первая строка это версия - version: 0.9.6, поэтому 20 вполне хватит)
 		 */
-		protected const TEST_STRING_LENGTH:uint = 20;
-		
-		protected const TIME_UNIT_IN_MS:uint = 10000;
-		
+		protected const TEST_STRING_LENGTH:uint = 20;		
+		protected const TIME_UNIT_IN_MS:uint = 10000;		
 		protected const MAIN_FUNCTION_NAME:String = 'main';
 		
 		protected var data:Array;
-		
-		protected var onePercentage:Number;
 		
 		protected var _result:Item = new Item();
 		public function get result():Item
@@ -33,7 +29,6 @@ package develar.cachegrindVisualizer
 			data = null;
 			
 			result.name = MAIN_FUNCTION_NAME;
-			result.inclusivePercentage = 100;
 			result.children = new Array();
 			
 			// 2 пустых строки + 1 для установки именно на позицию
@@ -73,8 +68,7 @@ package develar.cachegrindVisualizer
 					{
 						parent.fileName = fileName;
 					}
-					// устанавливаем здесь, так как при установке child у нас может еще не быть данных о main
-					parent.inclusivePercentage = parent.inclusiveTime / onePercentage;
+					
 					cursor -= 4;
 					break;
 				}
@@ -98,7 +92,6 @@ package develar.cachegrindVisualizer
 					{
 						line_and_time = data[cursor - 3].split(' ');
 						parent.time = line_and_time[1];
-						parent.inclusivePercentage = parent.inclusiveTime / onePercentage;
 						if (sample == 'f')
 						{
 							parent.fileName = data[cursor - 5].slice(3);
@@ -109,9 +102,7 @@ package develar.cachegrindVisualizer
 						else if (sample == '')
 						{
 							parent.fileName = data[cursor - 8].slice(3);
-							parent.inclusiveTime = data[cursor - 5].slice(9) / TIME_UNIT_IN_MS;	
-							parent.inclusivePercentage = 100;						
-							onePercentage = parent.inclusiveTime / 100;
+							parent.inclusiveTime = data[cursor - 5].slice(9) / TIME_UNIT_IN_MS;
 							
 							cursor -= 10;
 						}

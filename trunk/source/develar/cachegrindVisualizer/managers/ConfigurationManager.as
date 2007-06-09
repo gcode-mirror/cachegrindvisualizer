@@ -3,16 +3,34 @@ package develar.cachegrindVisualizer.managers
 	import flash.events.Event;
 	import flash.net.URLRequest;
 	
+	import mx.core.Application;
+	
 	import develar.filesystem.FileWrapper;
 	
 	public class ConfigurationManager
 	{
 		protected var fileWrapper:FileWrapper;
-		protected var object:Object;
 		
-		public function save(object:Object):void
+		protected var _object:Object;
+		public function get object():Object
 		{
-			this.object = object;
+			return _object;
+		}
+		
+		public function ConfigurationManager():void
+		{
+			if (!('callGraphConfigurationName' in CachegrindVisualizer(Application.application).persistenceSession.data))
+			{
+				CachegrindVisualizer(Application.application).persistenceSession.data.callGraphConfigurationName = 'default';
+			}
+			
+			fileWrapper = new FileWrapper('app-storage:/' + CachegrindVisualizer(Application.application).persistenceSession.data.callGraphConfigurationName);
+			
+			_object = fileWrapper.read();
+		}
+		
+		public function save():void
+		{
 			fileWrapper = new FileWrapper('app-storage:/');
 			fileWrapper.file.addEventListener(Event.SELECT, handleSave);
 			fileWrapper.file.download(new URLRequest('http://hack'), ' ');
@@ -21,7 +39,7 @@ package develar.cachegrindVisualizer.managers
 		protected function handleSave(event:Event):void
 		{
 			fileWrapper.file.cancel();
-			fileWrapper.contents = object;
+			fileWrapper.contents = _object;
 		}
 		
 		public function load():void
@@ -31,9 +49,9 @@ package develar.cachegrindVisualizer.managers
 			fileWrapper.file.browse();
 		}
 		
-		protected function handleLoad(event:Event):Object
+		protected function handleLoad(event:Event):void
 		{
-			return fileWrapper.read();
+			_object = fileWrapper.read();
 		}
 	}
 }

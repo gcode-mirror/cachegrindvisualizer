@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <actionScriptProperties version="1" mainApplicationPath="CachegrindVisualizer.mxml">
-  <compiler additionalCompilerArguments="-locale ru" copyDependentFiles="true" generateAccessible="false" strict="true" warn="true" htmlGenerate="false" htmlPlayerVersionCheck="true" htmlPlayerVersion="9.0.0" htmlExpressInstall="true" htmlHistoryManagement="false" outputFolderPath="bin" sourceFolderPath="source">
+  <compiler additionalCompilerArguments="-locale ru" copyDependentFiles="false" generateAccessible="false" strict="true" warn="true" htmlGenerate="false" htmlPlayerVersionCheck="true" htmlPlayerVersion="9.0.0" htmlExpressInstall="true" htmlHistoryManagement="false" outputFolderPath="bin" sourceFolderPath="source">
     <compilerSourcePath>
       <compilerSourcePathEntry kind="1" path="C:\flex\CachegrindVisualizer\locale\{locale}" linkType="1"/>
       <compilerSourcePathEntry kind="1" path="C:\flex\apollo-framework\source" linkType="1"/>
