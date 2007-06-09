@@ -2,33 +2,38 @@
 <mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" xmlns="develar.cachegrindVisualizer.ui.*" width="100%" height="100%" creationComplete="handleCreationComplete()">
 	
 	<mx:HDividedBox width="100%" height="100%">
-		<mx:Tree id="tree" labelField="name" wordWrap="true" variableRowHeight="true" width="30%" height="100%"/>
+		<mx:Tree id="tree" labelField="name" wordWrap="true" variableRowHeight="true" width="30%" height="100%" itemClick="handleItemClick(event)"/>
 		<mx:TabNavigator width="70%" height="100%">
 			<CallGraph id="callGraph" label="@Resource('callGraph')"/>
 		</mx:TabNavigator>
 	</mx:HDividedBox>
 	
-	<mx:Script><![CDATA[
+	<mx:Script><![CDATA[		
 		
 	import flash.filesystem.File;	
 	import flash.system.System;
+	
+	import mx.events.ListEvent;
 	
 	import develar.formatters.Formatter;
 	import develar.filesystem.FileWrapper;
 	
 	import develar.cachegrindVisualizer.Parser;
 	
-	private var _file:File;
-	public function set file(value:File):void
+	private var _fileWrapper:FileWrapper;
+	public function get fileWrapper():FileWrapper
 	{
-		_file = value;
+		return _fileWrapper;
+	}
+	public function set fileWrapper(value:FileWrapper):void
+	{
+		_fileWrapper = value;
 	}
 	
 	private function handleCreationComplete():void
 	{
 		var timeBegin:Number = new Date().time;
 		
-		var fileWrapper:FileWrapper = new FileWrapper(_file);
 		trace('Получено. Память: ', Formatter.dataSize(System.totalMemory));
 		var parser:Parser = new Parser(fileWrapper.contents);		
 		var timeEnd:Number = new Date().time;			
@@ -36,8 +41,11 @@
 		
 		tree.dataProvider = parser.result;
 		parser = null;
+		tree.validateNow();
 		
-		label = tree.dataProvider.getItemAt(0).fileName;
+		tree.selectedItem = tree.firstVisibleItem;
+		label = tree.selectedItem.fileName;
+		tree.expandItem(tree.firstVisibleItem, true);
 		
 		trace('Построение графика вызовов. Память: ', Formatter.dataSize(System.totalMemory));
 		timeBegin = new Date().time;
@@ -46,6 +54,11 @@
 		
 		timeEnd = new Date().time;			
 		trace('Затрачено на построение графика: ' + (timeEnd - timeBegin) + '. Память: ', Formatter.dataSize(System.totalMemory));
+	}
+	
+	private function handleItemClick(event:ListEvent):void
+	{
+		callGraph.build();
 	}
 	
 	]]></mx:Script>
