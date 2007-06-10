@@ -5,12 +5,13 @@ package develar.cachegrindVisualizer
 	
 	public class Parser
 	{
+		public static const MAIN_FUNCTION_NAME:String = 'main';
+		
 		/**
 		 * Длина строки для определения символа разделителя строк (первая строка это версия - version: 0.9.6, поэтому 20 вполне хватит)
 		 */
-		protected const TEST_STRING_LENGTH:uint = 20;		
-		protected const TIME_UNIT_IN_MS:uint = 10000;		
-		protected const MAIN_FUNCTION_NAME:String = 'main';
+		protected static const TEST_STRING_LENGTH:uint = 20;		
+		protected static const TIME_UNIT_IN_MS:uint = 10000;		
 		
 		protected var data:Array;
 		

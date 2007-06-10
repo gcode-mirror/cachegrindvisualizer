@@ -52,9 +52,9 @@
 		persistenceSession.data.profilerDirPath = fileWrapper.file.nativePath;
 		persistenceSession.flush();
 		
-		var tab:Tab = new Tab();	
-		tabNavigator.addChild(tab);
-		tab.fileWrapper = fileWrapper;
+		var tab:Tab = new Tab();
+		tab.fileWrapper = fileWrapper;	
+		tabNavigator.addChild(tab);		
 	}
 	
 	]]></mx:Script>	

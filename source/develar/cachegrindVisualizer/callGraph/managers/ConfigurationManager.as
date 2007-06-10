@@ -1,4 +1,4 @@
-package develar.cachegrindVisualizer.managers
+package develar.cachegrindVisualizer.callGraph.managers
 {
 	import flash.events.Event;
 	import flash.net.URLRequest;
@@ -6,10 +6,14 @@ package develar.cachegrindVisualizer.managers
 	import mx.core.Application;
 	
 	import develar.filesystem.FileWrapper;
+	import develar.utils.Selector;
+	
+	import develar.cachegrindVisualizer.ui.CallGraph;
 	
 	public class ConfigurationManager
 	{
 		protected var fileWrapper:FileWrapper;
+		protected var callGraph:CallGraph;
 		
 		protected var _object:Object;
 		public function get object():Object
@@ -17,8 +21,10 @@ package develar.cachegrindVisualizer.managers
 			return _object;
 		}
 		
-		public function ConfigurationManager():void
+		public function ConfigurationManager(call_graph:CallGraph):void
 		{
+			callGraph = call_graph;
+			
 			if (!('callGraphConfigurationName' in CachegrindVisualizer(Application.application).persistenceSession.data))
 			{
 				CachegrindVisualizer(Application.application).persistenceSession.data.callGraphConfigurationName = 'default';
@@ -27,10 +33,15 @@ package develar.cachegrindVisualizer.managers
 			fileWrapper = new FileWrapper('app-storage:/' + CachegrindVisualizer(Application.application).persistenceSession.data.callGraphConfigurationName);
 			
 			_object = fileWrapper.read();
+			apply();
 		}
 		
 		public function save():void
 		{
+			object.minNodeCost = callGraph.minNodeCost.value;
+			object.labelType = callGraph.labelType.selectedItem.data;
+			object.rankDirection = callGraph.rankDirection.selectedItem.data;
+		
 			fileWrapper = new FileWrapper('app-storage:/');
 			fileWrapper.file.addEventListener(Event.SELECT, handleSave);
 			fileWrapper.file.download(new URLRequest('http://hack'), ' ');
@@ -52,6 +63,14 @@ package develar.cachegrindVisualizer.managers
 		protected function handleLoad(event:Event):void
 		{
 			_object = fileWrapper.read();
+			apply();
+		}
+		
+		protected function apply():void
+		{
+			callGraph.minNodeCost.value = object.minNodeCost;
+			Selector.select(callGraph.labelType, object.labelType);
+			Selector.select(callGraph.rankDirection, object.rankDirection);
 		}
 	}
 }
