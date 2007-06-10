@@ -46,19 +46,19 @@
 	
 	private function handleCreationComplete():void
 	{
-		var timeBegin:Number = new Date().time;
-		
 		trace('Получено. Память: ', Formatter.dataSize(System.totalMemory));
-		var parser:Parser = new Parser(fileWrapper.contents);		
-		var timeEnd:Number = new Date().time;			
+		var parser:Parser = new Parser(fileWrapper.contents);
+		trace('Начат анализ. Память: ', Formatter.dataSize(System.totalMemory));
+		var timeBegin:Number = new Date().time;	
+		tree.dataProvider = parser.parse();
+		var timeEnd:Number = new Date().time;
 		trace('Затрачено на анализ: ' + (timeEnd - timeBegin) + '. Память: ' + Formatter.dataSize(System.totalMemory));
-		
-		tree.dataProvider = parser.result;
 		parser = null;
 		tree.validateNow();
 		
 		tree.selectedItem = tree.firstVisibleItem;
-		label = tree.selectedItem.fileName;
+		//label = tree.selectedItem.fileName;
+		label = fileWrapper.baseName.replace('cachegrind.out.', '');
 		tree.expandItem(tree.firstVisibleItem, true);
 		
 		trace('Построение графика вызовов. Память: ', Formatter.dataSize(System.totalMemory));

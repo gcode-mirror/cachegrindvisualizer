@@ -54,7 +54,8 @@
 		
 		var tab:Tab = new Tab();
 		tab.fileWrapper = fileWrapper;	
-		tabNavigator.addChild(tab);		
+		tabNavigator.addChild(tab);
+		tabNavigator.selectedChild = tab;
 	}
 	
 	]]></mx:Script>	
