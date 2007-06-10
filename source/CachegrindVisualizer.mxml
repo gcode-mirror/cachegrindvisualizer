@@ -53,7 +53,7 @@
 		persistenceSession.flush();
 		
 		var tab:Tab = new Tab();
-		tab.fileWrapper = fileWrapper;	
+		tab.fileWrapper = fileWrapper;
 		tabNavigator.addChild(tab);
 		tabNavigator.selectedChild = tab;
 	}
