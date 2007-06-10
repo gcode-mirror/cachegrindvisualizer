@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" creationComplete="handleCreationComplete()" width="100%" height="100%">
+	
+	<mx:Panel title="@Resource('configuration')" width="100%">
+		<mx:Form>
+			<mx:FormItem label="@Resource('minNodeCost')">
+				<develar:NumericStepper id="minNodeCost" maximum="100" maxChars="3" change="handleChange(event)"/>
+			</mx:FormItem>
+			<mx:FormItem label="Тип метки">
+				<mx:ComboBox id="labelType" change="handleChange(event)">
+					<mx:Array>
+						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE_AND_TIME}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('labelTypePercentageAndTime')}"/>
+						<mx:Object data="{LabelCreator.TYPE_TIME_AND_PERCENTAGE}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('labelTypeTimeAndPercentage')}"/>
+						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('labelTypePercentage')}"/>
+						<mx:Object data="{LabelCreator.TYPE_TIME}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('labelTypeTime')}"/>
+					</mx:Array>
+				</mx:ComboBox>
+			</mx:FormItem>
+			<mx:FormItem label="Расположение">
+				<mx:ComboBox id="rankDirection" change="handleChange(event)">
+					<mx:Array>
+						<mx:Object data="{Builder.RANK_DIRECTION_TB}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('rankDirectionTB')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_BT}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('rankDirectionBT')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_LR}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('rankDirectionLR')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_RL}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('rankDirectionRL')}"/>
+					</mx:Array>
+				</mx:ComboBox>
+			</mx:FormItem>
+		</mx:Form>
+		
+		<mx:ControlBar width="100%">
+			<mx:Button label="@Resource('loadConfiguration')" click="configurationManager.load()"/>
+			<mx:Button label="@Resource('saveConfiguration')" click="configurationManager.save()"/>
+		</mx:ControlBar>
+	</mx:Panel>
+	
+	<mx:Script><![CDATA[
+	
+	import mx.formatters.DateFormatter;
+	import mx.resources.ResourceBundle;
+		
+	import develar.filesystem.FileWrapper;	
+	
+	import develar.cachegrindVisualizer.Item;		
+	import develar.cachegrindVisualizer.callGraph.Builder;
+	import develar.cachegrindVisualizer.callGraph.LabelCreator;
+	import develar.cachegrindVisualizer.callGraph.managers.ConfigurationManager;
+	
+	private var configurationManager:ConfigurationManager;
+	
+	private var _builder:Builder = new Builder();
+	public function get builder():Builder
+	{
+		return _builder;
+	}
+		
+	private var fileWrapper:FileWrapper;
+	
+	private function handleCreationComplete():void
+	{
+		configurationManager = new ConfigurationManager(this);
+		fileWrapper = new FileWrapper(Tab(parentDocument).fileWrapper.file.nativePath + '.dot');
+	}
+	
+	public function build():void
+	{
+		builder.build(Item(Tab(parentDocument).tree.selectedItem), fileWrapper);
+		
+		var dateFormatter:DateFormatter = new DateFormatter();
+		dateFormatter.formatString = 'J:NN:SS';			
+		parentApplication.status = dateFormatter.format(new Date()) + ' ' + ResourceBundle.getResourceBundle('CachegrindVisualizer').getString('graphBuilt');
+	}
+	
+	private function handleChange(event:Event):void
+	{
+		if (event.target is ComboBox)
+		{
+			if (event.target == rankDirection)
+			{
+				builder.rankDirection = event.target.selectedItem.data;
+			}
+			else
+			{
+				builder.labelCreator.type = event.target.selectedItem.data;
+			}
+		}	
+		else
+		{
+			builder.minNodeCost = minNodeCost.value;
+		}
+		
+		build();
+	}
+	
+	]]></mx:Script>
+	
+</mx:VBox>

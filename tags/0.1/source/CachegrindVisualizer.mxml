@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ApolloApplication xmlns:mx="http://www.adobe.com/2006/mxml" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" creationComplete="handleCreationComplete()">
+
+	<mx:Style source="C:\flex\framework\style.css"/>
+	
+	<mx:ApplicationControlBar width="100%">
+		<mx:Button label="@Resource('open')" click="browse()"/>
+	</mx:ApplicationControlBar>
+	<mx:TabNavigator id="tabNavigator" width="100%" height="100%">
+
+	</mx:TabNavigator>
+	
+	<mx:Script><![CDATA[
+		
+	import flash.filesystem.File;	
+	import flash.system.System;
+	
+	import mx.resources.ResourceBundle;
+	
+	import develar.filesystem.FileWrapper;
+	import develar.formatters.Formatter;
+	import develar.net.PersistenceSession;		
+	
+	import develar.cachegrindVisualizer.ui.Tab;
+	
+	private var fileWrapper:FileWrapper = new FileWrapper();
+	private var fileFilters:Array = [new FileFilter(ResourceBundle.getResourceBundle('CachegrindVisualizer').getString('cachegrindFiles'), 'cachegrind.out.*'), new FileFilter(ResourceBundle.getResourceBundle('CachegrindVisualizer').getString('allFiles'), '*')];
+	
+	private var _persistenceSession:PersistenceSession = new PersistenceSession();
+	public function get persistenceSession():PersistenceSession
+	{
+		return _persistenceSession;
+	}
+	
+	private function handleCreationComplete():void
+	{
+		fileWrapper.file.addEventListener(Event.SELECT, handleSelectFile);
+		if ('profilerDirPath' in persistenceSession.data)
+		{
+			fileWrapper.file.nativePath = persistenceSession.data.profilerDirPath;
+		}
+		window.maximize();
+	}
+	
+	private function browse():void
+	{
+		fileWrapper.file.browse(fileFilters);
+	}
+	
+	private function handleSelectFile(event:Event):void
+	{	
+		persistenceSession.data.profilerDirPath = fileWrapper.file.nativePath;
+		persistenceSession.flush();
+		
+		var tab:Tab = new Tab();
+		tab.fileWrapper = fileWrapper;
+		tabNavigator.addChild(tab);
+		tabNavigator.selectedChild = tab;
+	}
+	
+	]]></mx:Script>	
+	
+</mx:ApolloApplication>

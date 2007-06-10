@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" xmlns="develar.cachegrindVisualizer.ui.*" width="100%" height="100%" creationComplete="handleCreationComplete()">
+	
+	<mx:HDividedBox width="100%" height="100%">
+		<mx:Tree id="tree" labelField="name" wordWrap="true" variableRowHeight="true" width="30%" height="100%" iconFunction="selectIcon" itemClick="handleItemClick(event)"/>
+		<mx:TabNavigator width="70%" height="100%">
+			<CallGraph id="callGraph" label="@Resource('callGraph')" styleName="nestedTab"/>
+		</mx:TabNavigator>
+	</mx:HDividedBox>
+	
+	<mx:Script><![CDATA[			
+		
+	import flash.filesystem.File;	
+	import flash.system.System;
+	
+	import mx.events.ListEvent;
+	
+	import develar.formatters.Formatter;
+	import develar.filesystem.FileWrapper;
+	
+	import develar.cachegrindVisualizer.Parser;
+	import develar.cachegrindVisualizer.Item;	
+	import develar.cachegrindVisualizer.Parser;
+	
+	[Embed(source='../../../../assets/constructor.png')]
+	private var constructorIcon:Class;
+	[Embed(source='../../../../assets/destructor.png')]
+	private var destructorIcon:Class;
+	
+	[Embed(source='../../../../assets/method.png')]
+	private var methodIcon:Class;	
+	[Embed(source='../../../../assets/function.png')]
+	private var functionIcon:Class;	
+	[Embed(source='../../../../assets/file.png')]
+	private var fileIcon:Class;
+	
+	private var _fileWrapper:FileWrapper;
+	public function get fileWrapper():FileWrapper
+	{
+		return _fileWrapper;
+	}
+	public function set fileWrapper(value:FileWrapper):void
+	{
+		_fileWrapper = value;
+	}
+	
+	private function handleCreationComplete():void
+	{
+		trace('Получено. Память: ', Formatter.dataSize(System.totalMemory));
+		var parser:Parser = new Parser(fileWrapper.contents);
+		trace('Начат анализ. Память: ', Formatter.dataSize(System.totalMemory));
+		var timeBegin:Number = new Date().time;	
+		tree.dataProvider = parser.parse();
+		var timeEnd:Number = new Date().time;
+		trace('Затрачено на анализ: ' + (timeEnd - timeBegin) + '. Память: ' + Formatter.dataSize(System.totalMemory));
+		parser = null;
+		tree.validateNow();
+		
+		tree.selectedItem = tree.firstVisibleItem;
+		//label = tree.selectedItem.fileName;
+		label = fileWrapper.baseName.replace('cachegrind.out.', '');
+		tree.expandItem(tree.firstVisibleItem, true);
+		
+		trace('Построение графа вызовов. Память: ', Formatter.dataSize(System.totalMemory));
+		timeBegin = new Date().time;
+		
+		callGraph.build();
+		
+		timeEnd = new Date().time;			
+		trace('Затрачено на построение графа: ' + (timeEnd - timeBegin) + '. Память: ', Formatter.dataSize(System.totalMemory));
+	}
+	
+	private function selectIcon(item:Item):Class
+	{
+		var parts:Array;
+		if (item.name == Parser.MAIN_FUNCTION_NAME)
+		{
+			return fileIcon;
+		}
+		// мы не храним имя файла для встроенных функций и классов PHP, оно всегда равно php:internal
+		else if (item.fileName == null)
+		{
+			// определяем, это функция или метод, предварительно убирая префикс php::
+			parts = item.name.slice(5).split('->', 2);
+			if (parts.length == 1)
+			{
+				return functionIcon;
+			}
+			else
+			{
+				// определяем, это обычный метод или конструтор (php::blitz->blitz будет иметь пиктограмму конструктора, а php::blitz->set пиктограмму метода)
+				if (parts[0] == parts[1])
+				{
+					return constructorIcon;					
+				}
+				else
+				{
+					return methodIcon;
+				}
+			}	
+		}
+		else if (item.name == '__autoload')
+		{
+			return functionIcon;
+		}
+		
+		parts = item.name.split('->', 2);
+		// конструкции include и require, а также статические методы
+		if (parts.length == 1)
+		{
+			parts = item.name.split('::', 2);
+			// в include и require имя без префикса php:: равно имени файла
+			if (parts[1] == item.fileName)
+			{
+				return fileIcon;
+			}
+			else
+			{
+				return methodIcon;
+			}
+		}
+		else
+		{
+			switch (parts[1])
+			{
+				case '__construct':
+				{
+					return constructorIcon;
+				}
+				break;
+				
+				case '__destruct':
+				{
+					return destructorIcon;
+				}
+				break;
+				
+				default:
+				{
+					return methodIcon;
+				}
+			}
+		}
+		
+		throw new Error('Token icon is unknown');
+	}
+	
+	private function handleItemClick(event:ListEvent):void
+	{
+		if (tree.selectedItem.children != null)
+		{
+			callGraph.build();
+		}		
+	}
+	
+	]]></mx:Script>
+	
+</mx:VBox>
