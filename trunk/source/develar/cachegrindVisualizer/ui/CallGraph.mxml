@@ -1,36 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" creationComplete="handleCreationComplete()" width="100%" height="100%">
 	
-	<mx:Panel label="@Resource('configuration')" width="100%">
+	<mx:Panel title="@Resource('configuration')" width="100%">
 		<mx:Form>
-			<mx:FormItem label="Минимальная стоимость узла">
+			<mx:FormItem label="@Resource('minNodeCost')">
 				<develar:NumericStepper id="minNodeCost" maximum="100" maxChars="3" change="handleChange(event)"/>
 			</mx:FormItem>
 			<mx:FormItem label="Тип метки">
 				<mx:ComboBox id="labelType" change="handleChange(event)">
 					<mx:Array>
-						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE_AND_TIME}" label="Процент и время"/>
-						<mx:Object data="{LabelCreator.TYPE_TIME_AND_PERCENTAGE}" label="Время и процент"/>
-						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE}" label="Процент"/>
-						<mx:Object data="{LabelCreator.TYPE_TIME}" label="Время"/>
+						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE_AND_TIME}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('labelTypePercentageAndTime')}"/>
+						<mx:Object data="{LabelCreator.TYPE_TIME_AND_PERCENTAGE}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('labelTypeTimeAndPercentage')}"/>
+						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('labelTypePercentage')}"/>
+						<mx:Object data="{LabelCreator.TYPE_TIME}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('labelTypeTime')}"/>
 					</mx:Array>
 				</mx:ComboBox>
 			</mx:FormItem>
 			<mx:FormItem label="Расположение">
 				<mx:ComboBox id="rankDirection" change="handleChange(event)">
 					<mx:Array>
-						<mx:Object data="{Builder.RANK_DIRECTION_TB}" label="Сверху вниз"/>
-						<mx:Object data="{Builder.RANK_DIRECTION_BT}" label="Снизу вверх"/>
-						<mx:Object data="{Builder.RANK_DIRECTION_LR}" label="Слева направо"/>
-						<mx:Object data="{Builder.RANK_DIRECTION_RL}" label="Справо налево"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_TB}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('rankDirectionTB')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_BT}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('rankDirectionBT')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_LR}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('rankDirectionLR')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_RL}" label="{ResourceBundle.getResourceBundle('CallGraph').getString('rankDirectionRL')}"/>
 					</mx:Array>
 				</mx:ComboBox>
 			</mx:FormItem>
 		</mx:Form>
 		
 		<mx:ControlBar width="100%">
-			<mx:Button label="Загрузить настройки" click="loadConfiguration()"/>
-			<mx:Button label="Сохранить настройки" click="saveConfiguration()"/>
+			<mx:Button label="@Resource('loadConfiguration')" click="configurationManager.load()"/>
+			<mx:Button label="@Resource('saveConfiguration')" click="configurationManager.save()"/>
 		</mx:ControlBar>
 	</mx:Panel>
 	
@@ -39,30 +39,26 @@
 	import mx.formatters.DateFormatter;
 	import mx.resources.ResourceBundle;
 		
-	import develar.filesystem.FileWrapper;
-	import develar.utils.Selector;
+	import develar.filesystem.FileWrapper;	
 	
 	import develar.cachegrindVisualizer.Item;		
 	import develar.cachegrindVisualizer.callGraph.Builder;
 	import develar.cachegrindVisualizer.callGraph.LabelCreator;
-	import develar.cachegrindVisualizer.managers.ConfigurationManager;
+	import develar.cachegrindVisualizer.callGraph.managers.ConfigurationManager;
 	
 	private var builder:Builder = new Builder();
-	private var configurationManager:ConfigurationManager = new ConfigurationManager();
-	
+	private var configurationManager:ConfigurationManager;
+		
 	private var fileWrapper:FileWrapper;
 	
 	private function handleCreationComplete():void
 	{
-		applyConfiguration();
+		configurationManager = new ConfigurationManager(this);
+		fileWrapper = new FileWrapper(Tab(parentDocument).fileWrapper.file.nativePath + '.dot');
 	}
 	
 	public function build():void
 	{
-		if (fileWrapper == null)
-		{
-			fileWrapper = new FileWrapper(Tab(parentDocument).fileWrapper.file.nativePath + '.dot');
-		}
 		builder.build(Item(Tab(parentDocument).tree.selectedItem), fileWrapper);
 		
 		var dateFormatter:DateFormatter = new DateFormatter();
@@ -89,28 +85,6 @@
 		}
 		
 		build();
-	}
-	
-	private function saveConfiguration():void
-	{
-		configurationManager.object.minNodeCost = minNodeCost.value;
-		configurationManager.object.labelType = labelType.selectedItem.data;
-		configurationManager.object.rankDirection = rankDirection.selectedItem.data;		
-		
-		configurationManager.save();
-	}
-	
-	private function loadConfiguration():void
-	{
-		configurationManager.load();
-		applyConfiguration();
-	}
-	
-	private function applyConfiguration():void
-	{
-		minNodeCost.value = configurationManager.object.minNodeCost;
-		Selector.select(labelType, configurationManager.object.labelType);
-		Selector.select(rankDirection, configurationManager.object.rankDirection);
 	}
 	
 	]]></mx:Script>
