@@ -9,6 +9,8 @@ package develar.cachegrindVisualizer.callGraph.managers
 	import develar.utils.Selector;
 	
 	import develar.cachegrindVisualizer.ui.CallGraph;
+	import develar.cachegrindVisualizer.callGraph.Builder;
+	import develar.cachegrindVisualizer.callGraph.LabelCreator;
 	
 	public class ConfigurationManager
 	{
@@ -31,8 +33,16 @@ package develar.cachegrindVisualizer.callGraph.managers
 			}
 			
 			fileWrapper = new FileWrapper('app-storage:/' + CachegrindVisualizer(Application.application).persistenceSession.data.callGraphConfigurationName);
+			if (fileWrapper.file.exists)
+			{
+				_object = fileWrapper.read();
+			}
+			else
+			{
+				_object = {minNodeCost: 1, labelType: LabelCreator.TYPE_PERCENTAGE_AND_TIME, rankDirection: Builder.RANK_DIRECTION_TB};
+				fileWrapper.contents = _object;
+			}
 			
-			_object = fileWrapper.read();
 			apply();
 		}
 		
@@ -64,6 +74,7 @@ package develar.cachegrindVisualizer.callGraph.managers
 		{
 			_object = fileWrapper.read();
 			apply();
+			callGraph.build();
 		}
 		
 		protected function apply():void
@@ -71,6 +82,10 @@ package develar.cachegrindVisualizer.callGraph.managers
 			callGraph.minNodeCost.value = object.minNodeCost;
 			Selector.select(callGraph.labelType, object.labelType);
 			Selector.select(callGraph.rankDirection, object.rankDirection);
+			
+			callGraph.builder.minNodeCost = object.minNodeCost;
+			callGraph.builder.labelCreator.type = object.labelType;
+			callGraph.builder.rankDirection = object.rankDirection;
 		}
 	}
 }

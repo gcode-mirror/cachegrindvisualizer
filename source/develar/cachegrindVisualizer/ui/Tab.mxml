@@ -61,13 +61,13 @@
 		label = fileWrapper.baseName.replace('cachegrind.out.', '');
 		tree.expandItem(tree.firstVisibleItem, true);
 		
-		trace('Построение графика вызовов. Память: ', Formatter.dataSize(System.totalMemory));
+		trace('Построение графа вызовов. Память: ', Formatter.dataSize(System.totalMemory));
 		timeBegin = new Date().time;
 		
 		callGraph.build();
 		
 		timeEnd = new Date().time;			
-		trace('Затрачено на построение графика: ' + (timeEnd - timeBegin) + '. Память: ', Formatter.dataSize(System.totalMemory));
+		trace('Затрачено на построение графа: ' + (timeEnd - timeBegin) + '. Память: ', Formatter.dataSize(System.totalMemory));
 	}
 	
 	private function selectIcon(item:Item):Class

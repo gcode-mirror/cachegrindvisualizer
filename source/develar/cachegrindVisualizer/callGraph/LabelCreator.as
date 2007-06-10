@@ -11,6 +11,8 @@ package develar.cachegrindVisualizer.callGraph
 		public static const TYPE_PERCENTAGE_AND_TIME:uint = 2;
 		public static const TYPE_TIME_AND_PERCENTAGE:uint = 3;
 		
+		protected const PERCENTAGE_PRECISION:uint = 2;
+		
 		protected var percentageFormatter:NumberFormatter = new NumberFormatter();
 		protected var timeFormatter:NumberFormatter = new NumberFormatter();
 		protected var timeUnit:String = ResourceBundle.getResourceBundle('CachegrindVisualizer').getString('timeUnit');
@@ -28,6 +30,7 @@ package develar.cachegrindVisualizer.callGraph
 		public function LabelCreator():void
 		{
 			timeFormatter.precision = -1;
+			percentageFormatter.precision = PERCENTAGE_PRECISION;
 		}
 		
 		public function arrow(item:Item):String
