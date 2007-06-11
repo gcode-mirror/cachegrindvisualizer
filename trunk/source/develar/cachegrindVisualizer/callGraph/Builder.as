@@ -45,7 +45,7 @@ package develar.cachegrindVisualizer.callGraph
 			nodes[data.name] = new Node();
 			setNode(data);
 			
-			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '" \n';			
+			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '";edge [labelfontsize=12]; \n';			
 			createEdge(data);
 			configurateNodes();			
 			graph += '}';
@@ -60,9 +60,21 @@ package develar.cachegrindVisualizer.callGraph
 			for each (var item:Item in parent.children)
 			{
 				item.inclusivePercentage = item.inclusiveTime / onePercentage;
-				if (item.inclusivePercentage > _minNodeCost)
+				if (item.inclusivePercentage >= _minNodeCost)
 				{
-					graph += '"' + parent.name + '" -> "' + item.name + '" [label="' + labelCreator.arrow(item) + '"];\n';
+					graph += '"' + parent.name + '" -> "' + item.name + '" [label="' + labelCreator.arrow(item) + '"';
+
+					if (parent.time > 0)
+					{
+						graph += ', taillabel="' + labelCreator.arrowTail(parent, onePercentage) + '"';
+					}
+					// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке стрелки
+					if (item.children != null && item.time > 0)
+					{
+						graph += ', headlabel="' + labelCreator.arrowTail(item, onePercentage) + '"';
+					}
+					
+					graph += '];\n';
 					
 					if (item.children != null)
 					{						
@@ -86,6 +98,10 @@ package develar.cachegrindVisualizer.callGraph
 			}
 			if (_labelCreator.type != LabelCreator.TYPE_TIME)
 			{
+				if (item.name == 'Page_types_cms->setData')
+				{
+					trace(nodes[item.name].percentage, item.inclusivePercentage);
+				}
 				nodes[item.name].percentage += item.inclusivePercentage;
 			}
 		}

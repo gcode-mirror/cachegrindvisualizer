@@ -11,8 +11,7 @@
 	</mx:TabNavigator>
 	
 	<mx:Script><![CDATA[
-		
-	import flash.filesystem.File;	
+			
 	import flash.system.System;
 	
 	import mx.resources.ResourceBundle;
@@ -34,12 +33,13 @@
 	
 	private function handleCreationComplete():void
 	{
+		window.maximize();
+		
 		fileWrapper.file.addEventListener(Event.SELECT, handleSelectFile);
 		if ('profilerDirPath' in persistenceSession.data)
 		{
 			fileWrapper.file.nativePath = persistenceSession.data.profilerDirPath;
 		}
-		window.maximize();
 	}
 	
 	private function browse():void
