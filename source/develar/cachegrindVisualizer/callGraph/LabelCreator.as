@@ -1,7 +1,10 @@
 package develar.cachegrindVisualizer.callGraph
 {
-	import mx.resources.ResourceBundle;
-	import mx.formatters.NumberFormatter;
+	import mx.resources.ResourceBundle;	
+	import mx.formatters.NumberBaseRoundType;
+	
+	import develar.formatters.NumberFormatter;
+	
 	import develar.cachegrindVisualizer.Item;
 	
 	public class LabelCreator
@@ -30,7 +33,9 @@ package develar.cachegrindVisualizer.callGraph
 		public function LabelCreator():void
 		{
 			timeFormatter.precision = -1;
+			
 			percentageFormatter.precision = PERCENTAGE_PRECISION;
+			percentageFormatter.rounding = NumberBaseRoundType.NEAREST;
 		}
 		
 		public function arrow(item:Item):String
@@ -38,6 +43,18 @@ package develar.cachegrindVisualizer.callGraph
 			var node:Node = new Node();
 			node.time = item.inclusiveTime;
 			node.percentage = item.inclusivePercentage;
+			
+			return create(node);
+		}
+		
+		public function arrowTail(item:Item, one_percentage:Number):String
+		{
+			var node:Node = new Node();
+			node.time = item.time;
+			if (type != TYPE_TIME)
+			{
+				node.percentage = item.time / one_percentage;
+			}
 			
 			return create(node);
 		}
@@ -54,7 +71,7 @@ package develar.cachegrindVisualizer.callGraph
 			if (nodeName != null)
 			{
 				// Graphviz воспринимает \ как управляющий символ, поэтому его необходимо экранировать
-				label = nodeName.replace(/\\/g, '\\\\') + '\\n'
+				label = nodeName.replace(/\\/g, '\\\\') + '\\n';
 			}
 			
 			switch (_type)

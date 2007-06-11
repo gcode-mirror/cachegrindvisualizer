@@ -23,14 +23,14 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>[source path] CachegrindVisualizer-locale-ru</name>
-			<type>2</type>
-			<location>C:/flex/CachegrindVisualizer/locale/ru</location>
-		</link>
-		<link>
 			<name>[source path] src</name>
 			<type>2</type>
 			<location>C:/Program Files/Adobe/Flex Builder 3/sdks/moxie/frameworks/projects/framework/bundles/ru/src</location>
+		</link>
+		<link>
+			<name>[source path] CachegrindVisualizer-locale-ru</name>
+			<type>2</type>
+			<location>C:/flex/CachegrindVisualizer/locale/ru</location>
 		</link>
 		<link>
 			<name>[source path] source</name>
