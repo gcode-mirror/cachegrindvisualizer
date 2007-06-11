@@ -23,19 +23,24 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>[source path] ru</name>
+			<name>[source path] CachegrindVisualizer-locale-ru</name>
 			<type>2</type>
 			<location>C:/flex/CachegrindVisualizer/locale/ru</location>
 		</link>
 		<link>
-			<name>[source path] framework-source</name>
+			<name>[source path] src</name>
+			<type>2</type>
+			<location>C:/Program Files/Adobe/Flex Builder 3/sdks/moxie/frameworks/projects/framework/bundles/ru/src</location>
+		</link>
+		<link>
+			<name>[source path] source</name>
 			<type>2</type>
 			<location>C:/flex/framework/source</location>
 		</link>
 		<link>
-			<name>[source path] apollo-framework-source</name>
+			<name>[source path] framework-locale-ru</name>
 			<type>2</type>
-			<location>C:/flex/apollo-framework/source</location>
+			<location>C:/flex/framework/locale/ru</location>
 		</link>
 	</linkedResources>
 </projectDescription>

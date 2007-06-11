@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:ApolloApplication xmlns:mx="http://www.adobe.com/2006/mxml" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" creationComplete="handleCreationComplete()">
-
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" creationComplete="handleCreationComplete()">
+	
 	<mx:Style source="C:\flex\framework\style.css"/>
 	
 	<mx:ApplicationControlBar width="100%">
@@ -60,4 +60,4 @@
 	
 	]]></mx:Script>	
 	
-</mx:ApolloApplication>
+</mx:WindowedApplication>
