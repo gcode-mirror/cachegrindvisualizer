@@ -5,7 +5,7 @@
 <compilerSourcePathEntry kind="1" linkType="1" path="locale/{locale}"/>
 <compilerSourcePathEntry kind="1" linkType="1" path="C:/flex/framework/source"/>
 <compilerSourcePathEntry kind="1" linkType="1" path="C:/flex/framework/locale/{locale}"/>
-<compilerSourcePathEntry kind="1" linkType="1" path="${PROJECT_FRAMEWORKS}/projects/framework/bundles/ru/src"/>
+<compilerSourcePathEntry kind="1" linkType="1" path="${PROJECT_FRAMEWORKS}/projects/framework/bundles/{locale}/src"/>
 </compilerSourcePath>
 <libraryPath defaultLinkType="1">
 <libraryPathEntry kind="4" path="">

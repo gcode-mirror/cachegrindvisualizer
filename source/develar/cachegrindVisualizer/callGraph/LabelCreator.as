@@ -39,32 +39,21 @@ package develar.cachegrindVisualizer.callGraph
 		}
 		
 		public function arrow(item:Item):String
-		{
-			var node:Node = new Node();
-			node.time = item.inclusiveTime;
-			node.percentage = item.inclusivePercentage;
-			
-			return create(node);
+		{			
+			return create(item.inclusiveTime, item.inclusivePercentage);
 		}
 		
-		public function arrowTail(item:Item, one_percentage:Number):String
-		{
-			var node:Node = new Node();
-			node.time = item.time;
-			if (type != TYPE_TIME)
-			{
-				node.percentage = item.time / one_percentage;
-			}
-			
-			return create(node);
+		public function arrowHeadOrTail(item:Item, one_percentage:Number):String
+		{			
+			return create(item.time / one_percentage, item.time);
 		}
 		
 		public function node(nodeName:String, node:Node):String
 		{
-			return create(node, nodeName);
+			return create(node.inclusivePercentage, node.inclusiveTime, nodeName);
 		}
 		
-		protected function create(node:Node, nodeName:String = null):String
+		protected function create(percentage:Number, time:uint, nodeName:String = null):String
 		{
 			var label:String = '';
 			
@@ -78,25 +67,25 @@ package develar.cachegrindVisualizer.callGraph
 			{
 				case TYPE_PERCENTAGE:
 				{
-					label += percentageFormatter.format(node.percentage) + ' %';
+					label += percentageFormatter.format(percentage) + ' %';
 				}
 				break;
 					
 				case TYPE_TIME:
 				{
-					label += timeFormatter.format(node.time) + ' ' + timeUnit;
+					label += timeFormatter.format(time) + ' ' + timeUnit;
 				}
 				break;
 					
 				case TYPE_PERCENTAGE_AND_TIME:
 				{
-					label += percentageFormatter.format(node.percentage) + ' % (' + timeFormatter.format(node.time) + ' ' + timeUnit + ')';
+					label += percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ' ' + timeUnit + ')';
 				}
 				break;
 					
 				case TYPE_TIME_AND_PERCENTAGE:
 				{
-					label += timeFormatter.format(node.time) + ' ' + timeUnit + ' (' + percentageFormatter.format(node.percentage) + ' %)';
+					label += timeFormatter.format(time) + ' ' + timeUnit + ' (' + percentageFormatter.format(percentage) + ' %)';
 				}
 				break;
 					
