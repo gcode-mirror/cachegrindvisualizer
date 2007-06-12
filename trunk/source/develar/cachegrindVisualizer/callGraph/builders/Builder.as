@@ -39,6 +39,12 @@ package develar.cachegrindVisualizer.callGraph.builders
 			_rankDirection = value;
 		}		
 		
+		protected var _blackAndWhite:Boolean = false;
+		public function set blackAndWhite(value:Boolean):void
+		{
+			_blackAndWhite = value;
+		}
+		
 		public function build(item:Item, fileWrapper:FileWrapper):void
 		{
 			onePercentage = item.inclusiveTime / 100;
@@ -48,7 +54,13 @@ package develar.cachegrindVisualizer.callGraph.builders
 			nodes = {};
 			setNode(item);
 			
-			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '"; node [style=filled]; edge [labelfontsize=12]; \n';			
+			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '";\nedge [labelfontsize=12];\n';		
+			if (!_blackAndWhite)
+			{
+				graph += 'node [style=filled];\n';
+			}			
+			graph += '\n';			
+				
 			buildEdge(item, item.time > 0 ? label.arrow(item, onePercentage) : '');
 			graph += '\n';
 			buildNodes();			
@@ -81,6 +93,11 @@ package develar.cachegrindVisualizer.callGraph.builders
 					{
 						itemArrowLabel = label.arrow(item, onePercentage);
 						graph += ', headlabel="' + itemArrowLabel + '"';
+					}
+					
+					if (!_blackAndWhite)
+					{
+						graph += ', color="' + color.edge(item) + '"';
 					}
 					
 					graph += '];\n';
@@ -118,7 +135,12 @@ package develar.cachegrindVisualizer.callGraph.builders
 		{
 			for (var name:String in nodes)
 			{				
-				graph += '"' + name + '" [label="' + label.node(name, nodes[name]) + '", color="' + color.build(nodes[name]) + '"];\n';
+				graph += '"' + name + '" [label="' + label.node(name, nodes[name]) + '"';
+				if (!_blackAndWhite)
+				{
+					graph += ', color="' + color.node(nodes[name]) + '"';
+				}
+				graph += '];\n';
 			}
 		}
 	}

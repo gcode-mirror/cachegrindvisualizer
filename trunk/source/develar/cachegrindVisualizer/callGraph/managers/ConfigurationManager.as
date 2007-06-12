@@ -39,7 +39,7 @@ package develar.cachegrindVisualizer.callGraph.managers
 			}
 			else
 			{
-				_object = {minNodeCost: 1, labelType: Label.TYPE_PERCENTAGE_AND_TIME, rankDirection: Builder.RANK_DIRECTION_TB};
+				_object = {minNodeCost: 1, labelType: Label.TYPE_PERCENTAGE_AND_TIME, rankDirection: Builder.RANK_DIRECTION_TB, blackAndWhite: false};
 				fileWrapper.contents = _object;
 			}
 			
@@ -51,6 +51,7 @@ package develar.cachegrindVisualizer.callGraph.managers
 			object.minNodeCost = callGraph.minNodeCost.value;
 			object.labelType = callGraph.labelType.selectedItem.data;
 			object.rankDirection = callGraph.rankDirection.selectedItem.data;
+			object.blackAndWhite = callGraph.blackAndWhite.selected;
 		
 			fileWrapper = new FileWrapper('app-storage:/');
 			fileWrapper.file.addEventListener(Event.SELECT, handleSave);
@@ -82,10 +83,12 @@ package develar.cachegrindVisualizer.callGraph.managers
 			callGraph.minNodeCost.value = object.minNodeCost;
 			Selector.select(callGraph.labelType, object.labelType);
 			Selector.select(callGraph.rankDirection, object.rankDirection);
+			callGraph.blackAndWhite.selected = object.blackAndWhite;
 			
 			callGraph.builder.minNodeCost = object.minNodeCost;
 			callGraph.builder.label.type = object.labelType;
 			callGraph.builder.rankDirection = object.rankDirection;
+			callGraph.builder.blackAndWhite = object.blackAndWhite;
 		}
 	}
 }

@@ -31,7 +31,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 			_type = value;
 		}
 		
-		public function LabelCreator():void
+		public function Label():void
 		{
 			timeFormatter.precision = -1;
 			
@@ -41,7 +41,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 		
 		public function edge(item:Item):String
 		{			
-			return build(item.inclusiveTime, item.inclusivePercentage);
+			return build(item.inclusivePercentage, item.inclusiveTime);
 		}
 		
 		public function arrow(item:Item, one_percentage:Number):String
