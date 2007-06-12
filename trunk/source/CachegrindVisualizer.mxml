@@ -6,7 +6,7 @@
 	<mx:ApplicationControlBar width="100%">
 		<mx:Button label="@Resource('open')" click="browse()"/>
 	</mx:ApplicationControlBar>
-	<mx:TabNavigator id="tabNavigator" width="100%" height="100%">
+	<mx:TabNavigator id="tabNavigator" width="100%" height="100%" change="handleTabChange()">
 
 	</mx:TabNavigator>
 	
@@ -15,6 +15,7 @@
 	import flash.system.System;
 	
 	import mx.resources.ResourceBundle;
+	import mx.events.IndexChangedEvent
 	
 	import develar.filesystem.FileWrapper;
 	import develar.formatters.Formatter;
@@ -56,6 +57,15 @@
 		tab.fileWrapper = fileWrapper;
 		tabNavigator.addChild(tab);
 		tabNavigator.selectedChild = tab;
+	}
+	
+	private function handleTabChange():void
+	{
+		// в момент создания вкладки мы еще не произвели анализ и имя анализируемого программы нам неизвестно
+		if (Tab(tabNavigator.selectedChild).initialized)
+		{
+			title = 'CachegrindVisualizer — ' + tabNavigator.selectedChild.label + ' (' + Tab(tabNavigator.selectedChild).tree.firstVisibleItem.fileName + ')';
+		}
 	}
 	
 	]]></mx:Script>	
