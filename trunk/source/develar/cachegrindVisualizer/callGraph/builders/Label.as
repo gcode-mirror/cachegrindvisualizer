@@ -1,4 +1,4 @@
-package develar.cachegrindVisualizer.callGraph
+package develar.cachegrindVisualizer.callGraph.builders
 {
 	import mx.resources.ResourceBundle;	
 	import mx.formatters.NumberBaseRoundType;
@@ -6,8 +6,9 @@ package develar.cachegrindVisualizer.callGraph
 	import develar.formatters.NumberFormatter;
 	
 	import develar.cachegrindVisualizer.Item;
+	import develar.cachegrindVisualizer.callGraph.Node;
 	
-	public class LabelCreator
+	public class Label
 	{
 		public static const TYPE_PERCENTAGE:uint = 0;
 		public static const TYPE_TIME:uint = 1;
@@ -38,22 +39,22 @@ package develar.cachegrindVisualizer.callGraph
 			percentageFormatter.rounding = NumberBaseRoundType.NEAREST;
 		}
 		
-		public function arrow(item:Item):String
+		public function edge(item:Item):String
 		{			
-			return create(item.inclusiveTime, item.inclusivePercentage);
+			return build(item.inclusiveTime, item.inclusivePercentage);
 		}
 		
-		public function arrowHeadOrTail(item:Item, one_percentage:Number):String
+		public function arrow(item:Item, one_percentage:Number):String
 		{			
-			return create(item.time / one_percentage, item.time);
+			return build(item.time / one_percentage, item.time);
 		}
 		
 		public function node(nodeName:String, node:Node):String
 		{
-			return create(node.inclusivePercentage, node.inclusiveTime, nodeName);
+			return build(node.inclusivePercentage, node.inclusiveTime, nodeName);
 		}
 		
-		protected function create(percentage:Number, time:uint, nodeName:String = null):String
+		protected function build(percentage:Number, time:uint, nodeName:String = null):String
 		{
 			var label:String = '';
 			
@@ -65,6 +66,18 @@ package develar.cachegrindVisualizer.callGraph
 			
 			switch (_type)
 			{
+				case TYPE_PERCENTAGE_AND_TIME:
+				{
+					label += percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ' ' + timeUnit + ')';
+				}
+				break;
+				
+				case TYPE_TIME_AND_PERCENTAGE:
+				{
+					label += timeFormatter.format(time) + ' ' + timeUnit + ' (' + percentageFormatter.format(percentage) + ' %)';
+				}
+				break;
+				
 				case TYPE_PERCENTAGE:
 				{
 					label += percentageFormatter.format(percentage) + ' %';
@@ -74,18 +87,6 @@ package develar.cachegrindVisualizer.callGraph
 				case TYPE_TIME:
 				{
 					label += timeFormatter.format(time) + ' ' + timeUnit;
-				}
-				break;
-					
-				case TYPE_PERCENTAGE_AND_TIME:
-				{
-					label += percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ' ' + timeUnit + ')';
-				}
-				break;
-					
-				case TYPE_TIME_AND_PERCENTAGE:
-				{
-					label += timeFormatter.format(time) + ' ' + timeUnit + ' (' + percentageFormatter.format(percentage) + ' %)';
 				}
 				break;
 					
