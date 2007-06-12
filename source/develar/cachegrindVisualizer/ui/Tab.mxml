@@ -54,12 +54,13 @@
 		var timeEnd:Number = new Date().time;
 		trace('Затрачено на анализ: ' + (timeEnd - timeBegin) + '. Память: ' + Formatter.dataSize(System.totalMemory));
 		parser = null;
-		tree.validateNow();
 		
+		tree.validateNow();		
 		tree.selectedItem = tree.firstVisibleItem;
-		//label = tree.selectedItem.fileName;
-		label = fileWrapper.baseName.replace('cachegrind.out.', '');
 		tree.expandItem(tree.firstVisibleItem, true);
+
+		label = fileWrapper.baseName.replace('cachegrind.out.', '');
+		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';
 		
 		trace('Построение графа вызовов. Память: ', Formatter.dataSize(System.totalMemory));
 		timeBegin = new Date().time;
