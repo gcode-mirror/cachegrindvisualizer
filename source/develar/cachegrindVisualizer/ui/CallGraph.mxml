@@ -26,6 +26,9 @@
 					</mx:Array>
 				</mx:ComboBox>
 			</mx:FormItem>
+			<mx:FormItem>
+				<mx:CheckBox id="blackAndWhite" label="@Resource(bundle='CallGraph', key='blackAndWhite')" change="handleChange(event)"/>
+			</mx:FormItem>
 		</mx:Form>
 		
 		<mx:ControlBar width="100%">
@@ -88,6 +91,10 @@
 				builder.label.type = event.target.selectedItem.data;
 			}
 		}	
+		else if (event.target is CheckBox)
+		{
+			builder.blackAndWhite = event.target.selected;
+		}
 		else
 		{
 			builder.minNodeCost = minNodeCost.value;
