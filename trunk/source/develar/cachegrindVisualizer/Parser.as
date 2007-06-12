@@ -18,6 +18,7 @@ package develar.cachegrindVisualizer
 			
 		public function Parser(data:String):void
 		{
+			trace('Получено. Память: ', Formatter.dataSize(System.totalMemory));
 			this.data = data.split(data.slice(0, TEST_STRING_LENGTH).search('\r\n') == -1 ? '\n' : '\r\n');
 		}
 		
