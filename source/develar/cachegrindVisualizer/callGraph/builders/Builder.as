@@ -1,8 +1,9 @@
-package develar.cachegrindVisualizer.callGraph
+package develar.cachegrindVisualizer.callGraph.builders
 {	
 	import develar.filesystem.FileWrapper;
 	
 	import develar.cachegrindVisualizer.Item;
+	import develar.cachegrindVisualizer.callGraph.Node;
 	
 	public class Builder
 	{
@@ -18,10 +19,12 @@ package develar.cachegrindVisualizer.callGraph
 		
 		protected var onePercentage:Number;
 		
-		protected var _labelCreator:LabelCreator = new LabelCreator();
-		public function get labelCreator():LabelCreator
+		protected var color:Color = new Color();
+		
+		protected var _label:Label = new Label();
+		public function get label():Label
 		{
-			return _labelCreator;
+			return _label;
 		}
 		
 		protected var _minNodeCost:uint = 1;
@@ -43,13 +46,12 @@ package develar.cachegrindVisualizer.callGraph
 			item.inclusivePercentage = 100;
 			
 			nodes = {};
-			nodes[item.name] = new Node();
 			setNode(item);
 			
-			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '"; edge [labelfontsize=12]; node [style=filled]; \n';			
-			createEdge(item);
+			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '"; node [style=filled]; edge [labelfontsize=12]; \n';			
+			buildEdge(item, item.time > 0 ? label.arrow(item, onePercentage) : '');
 			graph += '\n';
-			configurateNodes();			
+			buildNodes();			
 			graph += '}';
 			
 			fileWrapper.contents = graph;
@@ -57,7 +59,7 @@ package develar.cachegrindVisualizer.callGraph
 			graph = null;
 		}
 		
-		private function createEdge(parent:Item):void
+		protected function buildEdge(parent:Item, parentArrowLabel:String):void
 		{			
 			for each (var item:Item in parent.children)
 			{
@@ -66,75 +68,57 @@ package develar.cachegrindVisualizer.callGraph
 				
 				if (item.inclusivePercentage >= _minNodeCost)
 				{
-					graph += '"' + parent.name + '" -> "' + item.name + '" [label="' + labelCreator.arrow(item) + '"';
-
-					if (parent.time > 0)
-					{
-						graph += ', taillabel="' + labelCreator.arrowHeadOrTail(parent, onePercentage) + '"';
+					graph += '"' + parent.name + '" -> "' + item.name + '" [label="' + label.edge(item) + '"';
+					
+					if (parentArrowLabel != '')
+					{						
+						graph += ', taillabel="' + parentArrowLabel + '"';
 					}
-					// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке стрелки
+										
+					var itemArrowLabel:String = '';
+					// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
 					if (item.children != null && item.time > 0)
 					{
-						graph += ', headlabel="' + labelCreator.arrowHeadOrTail(item, onePercentage) + '"';
+						itemArrowLabel = label.arrow(item, onePercentage);
+						graph += ', headlabel="' + itemArrowLabel + '"';
 					}
 					
 					graph += '];\n';
 					
 					if (item.children != null)
 					{						
-						createEdge(item);
+						buildEdge(item, itemArrowLabel);
 					}
 					
-					if (!(item.name in nodes))
-					{
-						nodes[item.name] = new Node();
-					}
 					setNode(item);
 				}
 			}
 		}
 		
-		private function setNode(item:Item):void
+		protected function setNode(item:Item):void
 		{
+			if (!(item.name in nodes))
+			{
+				nodes[item.name] = new Node();
+			}
+			
 			var node:Node = nodes[item.name];
 			node.percentage += item.percentage;
-			if (_labelCreator.type > 0)
+			if (_label.type > 0)
 			{
 				node.inclusiveTime += item.inclusiveTime;
 			}
-			if (_labelCreator.type != LabelCreator.TYPE_TIME)
+			if (_label.type != Label.TYPE_TIME)
 			{
 				node.inclusivePercentage += item.inclusivePercentage;
 			}
 		}
 		
-		private function configurateNodes():void
+		protected function buildNodes():void
 		{
 			for (var name:String in nodes)
-			{
-				var node:Node = nodes[name];
-				
-				var colorValue:Number = node.percentage / 100;
-				
-				var hue:Number = 0.6 + colorValue;
-				if (hue > 1)
-				{
-					hue = 1;
-				}
-				
-				var saturation:Number = 0.1 + colorValue;
-				if (saturation > 1)
-				{
-					saturation = 1;
-				}
-				
-				var brightness:Number = /*colorValue + 0.99*/1;
-				if (brightness > 1)
-				{
-					brightness = 1;
-				}
-				
-				graph += '"' + name + '" [label="' + labelCreator.node(name, node) + '", color="' + hue + ' ' + saturation + ' ' + brightness + '"];\n';
+			{				
+				graph += '"' + name + '" [label="' + label.node(name, nodes[name]) + '", color="' + color.build(nodes[name]) + '"];\n';
 			}
 		}
 	}

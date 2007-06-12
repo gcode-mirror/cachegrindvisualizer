@@ -9,10 +9,10 @@
 			<mx:FormItem label="@Resource(bundle='CallGraph', key='labelType')">
 				<mx:ComboBox id="labelType" change="handleChange(event)">
 					<mx:Array>
-						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE_AND_TIME}" label="{localization.getString('labelTypePercentageAndTime')}"/>
-						<mx:Object data="{LabelCreator.TYPE_TIME_AND_PERCENTAGE}" label="{localization.getString('labelTypeTimeAndPercentage')}"/>
-						<mx:Object data="{LabelCreator.TYPE_PERCENTAGE}" label="{localization.getString('labelTypePercentage')}"/>
-						<mx:Object data="{LabelCreator.TYPE_TIME}" label="{localization.getString('labelTypeTime')}"/>
+						<mx:Object data="{Label.TYPE_PERCENTAGE_AND_TIME}" label="{localization.getString('labelTypePercentageAndTime')}"/>
+						<mx:Object data="{Label.TYPE_TIME_AND_PERCENTAGE}" label="{localization.getString('labelTypeTimeAndPercentage')}"/>
+						<mx:Object data="{Label.TYPE_PERCENTAGE}" label="{localization.getString('labelTypePercentage')}"/>
+						<mx:Object data="{Label.TYPE_TIME}" label="{localization.getString('labelTypeTime')}"/>
 					</mx:Array>
 				</mx:ComboBox>
 			</mx:FormItem>
@@ -42,8 +42,8 @@
 	import develar.filesystem.FileWrapper;	
 	
 	import develar.cachegrindVisualizer.Item;		
-	import develar.cachegrindVisualizer.callGraph.Builder;
-	import develar.cachegrindVisualizer.callGraph.LabelCreator;
+	import develar.cachegrindVisualizer.callGraph.builders.Builder;
+	import develar.cachegrindVisualizer.callGraph.builders.Label;
 	import develar.cachegrindVisualizer.callGraph.managers.ConfigurationManager;
 	
 	private var configurationManager:ConfigurationManager;
@@ -85,7 +85,7 @@
 			}
 			else
 			{
-				builder.labelCreator.type = event.target.selectedItem.data;
+				builder.label.type = event.target.selectedItem.data;
 			}
 		}	
 		else

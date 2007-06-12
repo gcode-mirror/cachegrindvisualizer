@@ -9,8 +9,8 @@ package develar.cachegrindVisualizer.callGraph.managers
 	import develar.utils.Selector;
 	
 	import develar.cachegrindVisualizer.ui.CallGraph;
-	import develar.cachegrindVisualizer.callGraph.Builder;
-	import develar.cachegrindVisualizer.callGraph.LabelCreator;
+	import develar.cachegrindVisualizer.callGraph.builders.Builder;
+	import develar.cachegrindVisualizer.callGraph.builders.Label;
 	
 	public class ConfigurationManager
 	{
@@ -39,7 +39,7 @@ package develar.cachegrindVisualizer.callGraph.managers
 			}
 			else
 			{
-				_object = {minNodeCost: 1, labelType: LabelCreator.TYPE_PERCENTAGE_AND_TIME, rankDirection: Builder.RANK_DIRECTION_TB};
+				_object = {minNodeCost: 1, labelType: Label.TYPE_PERCENTAGE_AND_TIME, rankDirection: Builder.RANK_DIRECTION_TB};
 				fileWrapper.contents = _object;
 			}
 			
@@ -84,7 +84,7 @@ package develar.cachegrindVisualizer.callGraph.managers
 			Selector.select(callGraph.rankDirection, object.rankDirection);
 			
 			callGraph.builder.minNodeCost = object.minNodeCost;
-			callGraph.builder.labelCreator.type = object.labelType;
+			callGraph.builder.label.type = object.labelType;
 			callGraph.builder.rankDirection = object.rankDirection;
 		}
 	}
