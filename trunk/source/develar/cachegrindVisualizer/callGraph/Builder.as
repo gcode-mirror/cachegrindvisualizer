@@ -36,17 +36,19 @@ package develar.cachegrindVisualizer.callGraph
 			_rankDirection = value;
 		}		
 		
-		public function build(data:Item, fileWrapper:FileWrapper):void
+		public function build(item:Item, fileWrapper:FileWrapper):void
 		{
-			onePercentage = data.inclusiveTime / 100;
-			data.inclusivePercentage = 100;
+			onePercentage = item.inclusiveTime / 100;
+			item.percentage = item.time / onePercentage;
+			item.inclusivePercentage = 100;
 			
 			nodes = {};
-			nodes[data.name] = new Node();
-			setNode(data);
+			nodes[item.name] = new Node();
+			setNode(item);
 			
-			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '";edge [labelfontsize=12]; \n';			
-			createEdge(data);
+			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '"; edge [labelfontsize=12]; node [style=filled]; \n';			
+			createEdge(item);
+			graph += '\n';
 			configurateNodes();			
 			graph += '}';
 			
@@ -59,19 +61,21 @@ package develar.cachegrindVisualizer.callGraph
 		{			
 			for each (var item:Item in parent.children)
 			{
-				item.inclusivePercentage = item.inclusiveTime / onePercentage;
+				item.percentage = item.time / onePercentage;
+				item.inclusivePercentage = item.inclusiveTime / onePercentage;				
+				
 				if (item.inclusivePercentage >= _minNodeCost)
 				{
 					graph += '"' + parent.name + '" -> "' + item.name + '" [label="' + labelCreator.arrow(item) + '"';
 
 					if (parent.time > 0)
 					{
-						graph += ', taillabel="' + labelCreator.arrowTail(parent, onePercentage) + '"';
+						graph += ', taillabel="' + labelCreator.arrowHeadOrTail(parent, onePercentage) + '"';
 					}
 					// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке стрелки
 					if (item.children != null && item.time > 0)
 					{
-						graph += ', headlabel="' + labelCreator.arrowTail(item, onePercentage) + '"';
+						graph += ', headlabel="' + labelCreator.arrowHeadOrTail(item, onePercentage) + '"';
 					}
 					
 					graph += '];\n';
@@ -92,17 +96,15 @@ package develar.cachegrindVisualizer.callGraph
 		
 		private function setNode(item:Item):void
 		{
+			var node:Node = nodes[item.name];
+			node.percentage += item.percentage;
 			if (_labelCreator.type > 0)
 			{
-				nodes[item.name].time += item.inclusiveTime;
+				node.inclusiveTime += item.inclusiveTime;
 			}
 			if (_labelCreator.type != LabelCreator.TYPE_TIME)
 			{
-				if (item.name == 'Page_types_cms->setData')
-				{
-					trace(nodes[item.name].percentage, item.inclusivePercentage);
-				}
-				nodes[item.name].percentage += item.inclusivePercentage;
+				node.inclusivePercentage += item.inclusivePercentage;
 			}
 		}
 		
@@ -110,7 +112,29 @@ package develar.cachegrindVisualizer.callGraph
 		{
 			for (var name:String in nodes)
 			{
-				graph += '"' + name + '" [label="' + labelCreator.node(name, nodes[name]) + '"];\n';
+				var node:Node = nodes[name];
+				
+				var colorValue:Number = node.percentage / 100;
+				
+				var hue:Number = 0.6 + colorValue;
+				if (hue > 1)
+				{
+					hue = 1;
+				}
+				
+				var saturation:Number = 0.1 + colorValue;
+				if (saturation > 1)
+				{
+					saturation = 1;
+				}
+				
+				var brightness:Number = /*colorValue + 0.99*/1;
+				if (brightness > 1)
+				{
+					brightness = 1;
+				}
+				
+				graph += '"' + name + '" [label="' + labelCreator.node(name, node) + '", color="' + hue + ' ' + saturation + ' ' + brightness + '"];\n';
 			}
 		}
 	}
