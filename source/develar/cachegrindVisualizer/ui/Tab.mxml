@@ -4,7 +4,7 @@
 	<mx:HDividedBox width="100%" height="100%">
 		<mx:Tree id="tree" labelField="name" wordWrap="true" variableRowHeight="true" width="30%" height="100%" iconFunction="selectIcon" itemClick="handleItemClick(event)"/>
 		<mx:TabNavigator width="70%" height="100%">
-			<CallGraph id="callGraph"  styleName="nestedTab"/> <!--label="@Resource('callGraph')" -->
+			<CallGraph id="callGraph" styleName="nestedTab"/>
 		</mx:TabNavigator>
 	</mx:HDividedBox>
 	
@@ -44,13 +44,34 @@
 		_fileWrapper = value;
 	}
 	
+	private var _modificationTime:Number;
+	public function get modificationTime():Number
+	{
+		return _modificationTime;
+	}
+	
 	private function handleCreationComplete():void
 	{
-		trace('Получено. Память: ', Formatter.dataSize(System.totalMemory));
+		refresh();
+	}
+	
+	public function refresh():void
+	{
+		trace('Начато получение файла. Память: ', Formatter.dataSize(System.totalMemory));
 		var parser:Parser = new Parser(fileWrapper.contents);
 		trace('Начат анализ. Память: ', Formatter.dataSize(System.totalMemory));
-		var timeBegin:Number = new Date().time;	
-		tree.dataProvider = parser.parse();
+		var timeBegin:Number = new Date().time;
+		
+		try
+		{
+			tree.dataProvider = parser.parse();
+		}
+		catch (e:Error)
+		{
+			parent.removeChild(this);
+			throw e;
+		}
+		
 		var timeEnd:Number = new Date().time;
 		trace('Затрачено на анализ: ' + (timeEnd - timeBegin) + '. Память: ' + Formatter.dataSize(System.totalMemory));
 		parser = null;
@@ -58,9 +79,11 @@
 		tree.validateNow();		
 		tree.selectedItem = tree.firstVisibleItem;
 		tree.expandItem(tree.firstVisibleItem, true);
-
+		
 		label = fileWrapper.baseName.replace('cachegrind.out.', '');
 		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';
+		
+		_modificationTime = fileWrapper.file.modificationDate.time;
 		
 		trace('Построение графа вызовов. Память: ', Formatter.dataSize(System.totalMemory));
 		timeBegin = new Date().time;
