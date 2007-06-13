@@ -12,15 +12,21 @@
 	</mx:TabNavigator>
 	
 	<mx:Script><![CDATA[
+		import flash.filesystem.File;
 			
 	import flash.system.System;
+	import flash.events.NativeDragEvent;
+	import flash.desktop.TransferableData;
+	import flash.desktop.TransferableFormats;
+	import flash.desktop.DragManager;
+	import flash.desktop.DragActions;
 	
 	import mx.resources.ResourceBundle;
 	import mx.events.IndexChangedEvent
 	
 	import develar.filesystem.FileWrapper;
 	import develar.formatters.Formatter;
-	import develar.net.PersistenceSession;		
+	import develar.net.PersistenceSession;
 	
 	import develar.cachegrindVisualizer.ui.Tab;
 	
@@ -36,12 +42,31 @@
 	private function handleCreationComplete():void
 	{
 		window.maximize();
+		addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, handleNativeDragEnter);
+		addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
+	}
+	
+	private function handleNativeDragEnter(event:NativeDragEvent):void
+	{
+		if (event.transferable.hasFormat(TransferableFormats.FILE_LIST_FORMAT))
+		{
+			DragManager.acceptDragDrop(this);
+		}
+	}
+	
+	private function handleNativeDragDrop(event:NativeDragEvent):void
+	{
+		for each (var file:File in event.transferable.dataForFormat(TransferableFormats.FILE_LIST_FORMAT))
+		{
+			fileWrapper = new FileWrapper(file);
+			openFile();
+		}
 	}
 	
 	private function browse():void
 	{
 		fileWrapper = new FileWrapper();
-		fileWrapper.file.addEventListener(Event.SELECT, handleSelectFile);
+		fileWrapper.file.addEventListener(Event.SELECT, openFile);
 		if ('profilerDirPath' in persistenceSession.data)
 		{
 			fileWrapper.file.nativePath = persistenceSession.data.profilerDirPath;
@@ -50,7 +75,7 @@
 		fileWrapper.file.browse(fileFilters);
 	}
 	
-	private function handleSelectFile(event:Event):void
+	private function openFile(event:Event = null):void
 	{	
 		persistenceSession.data.profilerDirPath = fileWrapper.file.nativePath;
 		persistenceSession.flush();
