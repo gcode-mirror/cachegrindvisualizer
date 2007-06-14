@@ -1,7 +1,7 @@
 package develar.cachegrindVisualizer.callGraph.builders
 {
-	import mx.resources.ResourceBundle;	
 	import mx.formatters.NumberBaseRoundType;
+	import mx.resources.ResourceManager;
 	
 	import develar.formatters.NumberFormatter;
 	
@@ -19,7 +19,6 @@ package develar.cachegrindVisualizer.callGraph.builders
 		
 		protected var percentageFormatter:NumberFormatter = new NumberFormatter();
 		protected var timeFormatter:NumberFormatter = new NumberFormatter();
-		protected var timeUnit:String = ResourceBundle.getResourceBundle('CachegrindVisualizer').getString('timeUnit');
 		
 		protected var _type:uint = 2;
 		public function get type():uint
@@ -56,8 +55,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 		
 		protected function build(percentage:Number, time:uint, nodeName:String = null):String
 		{
-			var label:String = '';
-			
+			var label:String = '';		
 			if (nodeName != null)
 			{
 				// Graphviz воспринимает \ как управляющий символ, поэтому его необходимо экранировать
@@ -68,13 +66,13 @@ package develar.cachegrindVisualizer.callGraph.builders
 			{
 				case TYPE_PERCENTAGE_AND_TIME:
 				{
-					label += percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ' ' + timeUnit + ')';
+					label += percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ' ' + ResourceManager.getInstance().getString('CachegrindVisualizer', 'timeUnit') + ')';
 				}
 				break;
 				
 				case TYPE_TIME_AND_PERCENTAGE:
 				{
-					label += timeFormatter.format(time) + ' ' + timeUnit + ' (' + percentageFormatter.format(percentage) + ' %)';
+					label += timeFormatter.format(time) + ' ' + ResourceManager.getInstance().getString('CachegrindVisualizer', 'timeUnit') + ' (' + percentageFormatter.format(percentage) + ' %)';
 				}
 				break;
 				
@@ -86,7 +84,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 					
 				case TYPE_TIME:
 				{
-					label += timeFormatter.format(time) + ' ' + timeUnit;
+					label += timeFormatter.format(time) + ' ' + ResourceManager.getInstance().getString('CachegrindVisualizer', 'timeUnit');
 				}
 				break;
 					

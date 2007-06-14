@@ -55,12 +55,11 @@ package develar.cachegrindVisualizer.callGraph.managers
 		
 			fileWrapper = new FileWrapper('app-storage:/');
 			fileWrapper.file.addEventListener(Event.SELECT, handleSave);
-			fileWrapper.file.download(new URLRequest('http://hack'), ' ');
+			fileWrapper.file.browseForSave('');
 		}
 		
 		protected function handleSave(event:Event):void
 		{
-			fileWrapper.file.cancel();
 			fileWrapper.contents = _object;
 		}
 		
@@ -68,7 +67,7 @@ package develar.cachegrindVisualizer.callGraph.managers
 		{
 			fileWrapper = new FileWrapper('app-storage:/');
 			fileWrapper.file.addEventListener(Event.SELECT, handleLoad);
-			fileWrapper.file.browse();
+			fileWrapper.file.browseForOpen('');
 		}
 		
 		protected function handleLoad(event:Event):void
