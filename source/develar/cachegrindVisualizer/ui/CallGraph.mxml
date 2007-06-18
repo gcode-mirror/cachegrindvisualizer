@@ -8,7 +8,7 @@
 	<mx:Panel title="{resourceManager.getString('CallGraph', 'configuration')}" width="100%">
 		<mx:Form>
 			<mx:FormItem label="{resourceManager.getString('CallGraph', 'minNodeCost')}">
-				<develar:NumericStepper id="minNodeCost" maximum="99" maxChars="2" change="handleChange(event)"/>
+				<develar:NumericStepper id="minNodeCost" maximum="99" maxChars="4" stepSize="0.01" change="handleChange(event)"/>
 			</mx:FormItem>
 			<mx:FormItem label="{resourceManager.getString('CallGraph', 'labelType')}">
 				<mx:ComboBox id="labelType" change="handleChange(event)">
