@@ -27,14 +27,14 @@ package develar.cachegrindVisualizer.callGraph.builders
 			return _label;
 		}
 		
-		protected var _minNodeCost:uint = 1;
-		public function set minNodeCost(value:uint):void
+		protected var _minNodeCost:Number = 1;
+		public function set minNodeCost(value:Number):void
 		{
 			_minNodeCost = value;
 		}
 		
-		protected var _rankDirection:String = 'TB';
-		public function set rankDirection(value:String):void
+		protected var _rankDirection:uint = 0;
+		public function set rankDirection(value:uint):void
 		{
 			_rankDirection = value;
 		}		
