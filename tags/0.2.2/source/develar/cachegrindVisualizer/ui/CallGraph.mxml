@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" label="{resourceManager.getString('CallGraph', 'callGraph')}" creationComplete="handleCreationComplete()" width="100%" height="100%">
+	
+	<mx:Metadata>
+		[ResourceBundle('CallGraph')]
+	</mx:Metadata>
+	
+	<mx:Panel title="{resourceManager.getString('CallGraph', 'configuration')}" width="100%">
+		<mx:Form>
+			<mx:FormItem label="{resourceManager.getString('CallGraph', 'minNodeCost')}">
+				<develar:NumericStepper id="minNodeCost" maximum="99" maxChars="4" stepSize="0.01" change="handleChange(event)"/>
+			</mx:FormItem>
+			<mx:FormItem label="{resourceManager.getString('CallGraph', 'labelType')}">
+				<mx:ComboBox id="labelType" change="handleChange(event)">
+					<mx:Array>
+						<mx:Object data="{Label.TYPE_PERCENTAGE_AND_TIME}" label="{resourceManager.getString('CallGraph', 'labelTypePercentageAndTime')}"/>
+						<mx:Object data="{Label.TYPE_TIME_AND_PERCENTAGE}" label="{resourceManager.getString('CallGraph', 'labelTypeTimeAndPercentage')}"/>
+						<mx:Object data="{Label.TYPE_PERCENTAGE}" label="{resourceManager.getString('CallGraph', 'labelTypePercentage')}"/>
+						<mx:Object data="{Label.TYPE_TIME}" label="{resourceManager.getString('CallGraph', 'labelTypeTime')}"/>
+					</mx:Array>
+				</mx:ComboBox>
+			</mx:FormItem>
+			<mx:FormItem label="{resourceManager.getString('CallGraph', 'rankDirection')}">
+				<mx:ComboBox id="rankDirection" change="handleChange(event)">
+					<mx:Array>
+						<mx:Object data="{Builder.RANK_DIRECTION_TB}" label="{resourceManager.getString('CallGraph', 'rankDirectionTB')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_BT}" label="{resourceManager.getString('CallGraph', 'rankDirectionBT')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_LR}" label="{resourceManager.getString('CallGraph', 'rankDirectionLR')}"/>
+						<mx:Object data="{Builder.RANK_DIRECTION_RL}" label="{resourceManager.getString('CallGraph', 'rankDirectionRL')}"/>
+					</mx:Array>
+				</mx:ComboBox>
+			</mx:FormItem>
+			<mx:FormItem>
+				<mx:CheckBox id="blackAndWhite" label="{resourceManager.getString('CallGraph', 'blackAndWhite')}" change="handleChange(event)"/>
+			</mx:FormItem>
+		</mx:Form>
+		
+		<mx:ControlBar width="100%">
+			<mx:Button label="{resourceManager.getString('CallGraph', 'loadConfiguration')}" click="configurationManager.load()"/>
+			<mx:Button label="{resourceManager.getString('CallGraph', 'saveConfiguration')}" click="configurationManager.save()"/>
+		</mx:ControlBar>
+	</mx:Panel>
+	
+	<mx:Script><![CDATA[
+	
+	import mx.formatters.DateFormatter;
+		
+	import develar.filesystem.FileWrapper;	
+	
+	import develar.cachegrindVisualizer.Item;		
+	import develar.cachegrindVisualizer.callGraph.builders.Builder;
+	import develar.cachegrindVisualizer.callGraph.builders.Label;
+	import develar.cachegrindVisualizer.callGraph.managers.ConfigurationManager;
+	
+	private var configurationManager:ConfigurationManager;
+	
+	private var _builder:Builder = new Builder();
+	public function get builder():Builder
+	{
+		return _builder;
+	}
+		
+	private var fileWrapper:FileWrapper;
+	
+	private function handleCreationComplete():void
+	{
+		resourceManager.addEventListener(Event.CHANGE, handleLocaleChange); 
+	}
+	
+	private function handleLocaleChange(event:Event):void
+	{
+		labelType.text = labelType.selectedItem.label;
+		rankDirection.text = rankDirection.selectedItem.label;
+		build();
+	}
+	
+	public function build():void
+	{
+		if (configurationManager == null)
+		{
+			configurationManager = new ConfigurationManager(this);
+			fileWrapper = new FileWrapper(Tab(parentDocument).fileWrapper.file.nativePath + '.dot');
+		}
+		
+		builder.build(Item(Tab(parentDocument).tree.selectedItem), fileWrapper);
+		
+		var dateFormatter:DateFormatter = new DateFormatter();
+		dateFormatter.formatString = 'J:NN:SS';			
+		parentApplication.status = dateFormatter.format(new Date()) + ' ' + resourceManager.getString('CallGraph', 'graphBuilt');
+	}
+	
+	private function handleChange(event:Event):void
+	{
+		if (event.target is ComboBox)
+		{
+			if (event.target == rankDirection)
+			{
+				builder.rankDirection = event.target.selectedItem.data;
+			}
+			else
+			{
+				builder.label.type = event.target.selectedItem.data;
+			}
+		}	
+		else if (event.target is CheckBox)
+		{
+			builder.blackAndWhite = event.target.selected;
+		}
+		else
+		{
+			builder.minNodeCost = minNodeCost.value;
+		}
+		
+		build();
+	}
+	
+	]]></mx:Script>
+	
+</mx:VBox>
