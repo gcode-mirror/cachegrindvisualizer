@@ -58,11 +58,11 @@
 	public function refresh():void
 	{
 		trace('Начато получение файла. Память: ', Formatter.dataSize(System.totalMemory));
-		var parser:Parser = new Parser(fileWrapper.contents);
+		var parser:Parser = new Parser(fileWrapper.file);
 		trace('Начат анализ. Память: ', Formatter.dataSize(System.totalMemory));
 		var timeBegin:Number = new Date().time;
 		
-		try
+		/*try
 		{
 			tree.dataProvider = parser.parse();
 		}
@@ -70,9 +70,9 @@
 		{
 			parent.removeChild(this);
 			throw e;
-		}
+		}*/
 		
-		var timeEnd:Number = new Date().time;
+		/*var timeEnd:Number = new Date().time;
 		trace('Затрачено на анализ: ' + (timeEnd - timeBegin) + '. Память: ' + Formatter.dataSize(System.totalMemory));
 		parser = null;
 		
@@ -91,7 +91,7 @@
 		callGraph.build();
 		
 		timeEnd = new Date().time;			
-		trace('Затрачено на построение графа: ' + (timeEnd - timeBegin) + '. Память: ', Formatter.dataSize(System.totalMemory));
+		trace('Затрачено на построение графа: ' + (timeEnd - timeBegin) + '. Память: ', Formatter.dataSize(System.totalMemory));*/
 	}
 	
 	private function selectIcon(item:Item):Class

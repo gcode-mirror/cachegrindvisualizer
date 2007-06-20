@@ -1,25 +1,118 @@
 package develar.cachegrindVisualizer
 {	
-	import flash.system.System;
+	import flash.system.System;	
+	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.utils.ByteArray;
+	import flash.filesystem.FileStream;	
+	import flash.data.SQLConnection;
+	import flash.data.SQLStatement;
+	import flash.events.Event;
+	import flash.events.SQLEvent;
+	import flash.events.SQLErrorEvent;
+	import flash.events.ProgressEvent;
+	
 	import develar.formatters.Formatter;
+	import develar.encryption.Sha1;
 	
 	public class Parser
 	{
 		public static const MAIN_FUNCTION_NAME:String = 'main';
 		
+		protected static const INITIAL_DB_FILE_NAME:String = 'db.db';		
+		/**
+		 * Сколько байт данных обрабатывать за одно чтение
+		 */
+		protected static const DATA_PORTION_LENGTH:uint = 10485760; // 10 МБ		
+		/**
+		 * Длина строки для расчета контрольной суммы (1 с начала, другая с середины)
+		 */
+		protected static const CHECK_STRING_LENGTH:uint = 512;		
 		/**
 		 * Длина строки для определения символа разделителя строк (первая строка это версия - version: 0.9.6, поэтому 20 вполне хватит)
 		 */
-		protected static const TEST_STRING_LENGTH:uint = 20;		
+		protected static const TEST_STRING_LENGTH:uint = 20;
+		/**
+		 * Курс преобразования стоимости в милисекунды
+		 */	
 		protected static const TIME_UNIT_IN_MS:uint = 10000;		
 		
 		protected var data:Array;		
 		protected var cursor:uint = 0;
-			
-		public function Parser(data:String):void
+		
+		protected var lineEnding:String;
+		
+		protected var insertSQLStatement:SQLStatement = new SQLStatement();
+		
+		protected var _sqlConnection:SQLConnection = new SQLConnection();
+		public function get sqlConnection():SQLConnection
 		{
-			trace('Получено. Память: ', Formatter.dataSize(System.totalMemory));
-			this.data = data.split(data.slice(0, TEST_STRING_LENGTH).search('\r\n') == -1 ? '\n' : '\r\n');
+			return _sqlConnection;
+		}
+			
+		public function Parser(file:File):void
+		{
+			var dbFile:File = File.applicationStorageDirectory.resolve(calculateChecksum(file) + '.db');			
+			if (dbFile.exists)
+			{
+				sqlConnection.open(dbFile);
+			}
+			else
+			{
+				File.applicationResourceDirectory.resolve(INITIAL_DB_FILE_NAME).copyTo(dbFile);
+				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
+				sqlConnection.open(dbFile);
+				
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(file, FileMode.READ);
+				
+				var length:Number = DATA_PORTION_LENGTH;
+				if (length > fileStream.bytesAvailable)
+				{
+					length = fileStream.bytesAvailable;
+				}
+				data = fileStream.readUTFBytes(length).split(lineEnding);
+			}
+		}
+		
+		protected function handleOpenSqlConnection(event:SQLEvent):void
+		{
+			insertSQLStatement.text = 'insert into tree values (null, :parent, :name, :fileName, :line, :time, :inclusiveTime)';
+			insertSQLStatement.sqlConnection = sqlConnection;
+			insertSQLStatement.addEventListener(SQLEvent.PREPARE, handleInsertSQLStatementPrepare);
+			insertSQLStatement.addEventListener(SQLErrorEvent.ERROR, handleError);
+			insertSQLStatement.prepare();
+		}
+		
+		protected function handleError(event:SQLErrorEvent):void
+		{
+			
+		}
+		
+		protected function handleInsertSQLStatementPrepare(event:SQLEvent):void
+		{
+			insertSQLStatement.parameters[':parent'] = 0;
+			insertSQLStatement.parameters[':name'] = 'jhj';
+			insertSQLStatement.parameters[':fileName'] = 'ffsfsdf';
+			insertSQLStatement.parameters[':line'] = 43;
+			insertSQLStatement.parameters[':time'] = 8556;
+			insertSQLStatement.parameters[':inclusiveTime'] = 2222222;
+			insertSQLStatement.execute();
+		}
+		
+		protected function calculateChecksum(file:File):String
+		{
+			var fileStream:FileStream = new FileStream();
+			fileStream.open(file, FileMode.READ);
+			
+			var checksum:String = fileStream.readUTFBytes(CHECK_STRING_LENGTH);
+			fileStream.position = fileStream.bytesAvailable / 2;
+			checksum += fileStream.readUTFBytes(CHECK_STRING_LENGTH);
+			
+			lineEnding = checksum.slice(0, TEST_STRING_LENGTH).search('\r\n') == -1 ? '\n' : '\r\n';
+			
+			checksum = Sha1.hashHmac(checksum, String(fileStream.bytesAvailable));
+			return checksum;
 		}
 		
 		public function parse():Item
@@ -61,7 +154,7 @@ package develar.cachegrindVisualizer
 			
 			return result[0];
 		}
-		
+				
 		private function parseBody(parent:Item):void
 		{				
 			var children:Array = new Array();
