@@ -18,9 +18,8 @@
 	import develar.formatters.Formatter;
 	import develar.filesystem.FileWrapper;
 	
-	import develar.cachegrindVisualizer.Parser;
 	import develar.cachegrindVisualizer.Item;	
-	import develar.cachegrindVisualizer.Parser;
+	import develar.cachegrindVisualizer.parser.Parser;
 	
 	[Embed(source='../../../../assets/constructor.png')]
 	private var constructorIcon:Class;

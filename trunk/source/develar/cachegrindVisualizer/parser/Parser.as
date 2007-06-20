@@ -1,4 +1,4 @@
-package develar.cachegrindVisualizer
+package develar.cachegrindVisualizer.parser
 {	
 	import flash.system.System;	
 	import flash.filesystem.File;
@@ -12,35 +12,23 @@ package develar.cachegrindVisualizer
 	import flash.events.SQLErrorEvent;
 	import flash.events.ProgressEvent;
 	
-	import develar.formatters.Formatter;
-	import develar.encryption.Sha1;
+	import develar.formatters.Formatter;	
+	
+	import develar.cachegrindVisualizer.Item;
 	
 	public class Parser
 	{
-		public static const MAIN_FUNCTION_NAME:String = 'main';
-		
+		public static const MAIN_FUNCTION_NAME:String = 'main';		
 		protected static const INITIAL_DB_FILE_NAME:String = 'db.db';		
-		/**
-		 * Сколько байт данных обрабатывать за одно чтение
-		 */
-		protected static const DATA_PORTION_LENGTH:uint = 10485760; // 10 МБ		
-		/**
-		 * Длина строки для расчета контрольной суммы (1 с начала, другая с середины)
-		 */
-		protected static const CHECK_STRING_LENGTH:uint = 512;		
-		/**
-		 * Длина строки для определения символа разделителя строк (первая строка это версия - version: 0.9.6, поэтому 20 вполне хватит)
-		 */
-		protected static const TEST_STRING_LENGTH:uint = 20;
+
 		/**
 		 * Курс преобразования стоимости в милисекунды
 		 */	
-		protected static const TIME_UNIT_IN_MS:uint = 10000;		
-		
-		protected var data:Array;		
+		protected static const TIME_UNIT_IN_MS:uint = 10000;
+				
 		protected var cursor:uint = 0;
-		
-		protected var lineEnding:String;
+		protected var itemId:Number = 0;
+		protected var fileReader:FileReader;
 		
 		protected var insertSQLStatement:SQLStatement = new SQLStatement();
 		
@@ -52,26 +40,26 @@ package develar.cachegrindVisualizer
 			
 		public function Parser(file:File):void
 		{
-			var dbFile:File = File.applicationStorageDirectory.resolve(calculateChecksum(file) + '.db');			
-			if (dbFile.exists)
+			fileReader = new FileReader(file);
+			trace('память: ', Formatter.dataSize(System.totalMemory));
+			var dbFile:File = File.applicationStorageDirectory.resolve(fileReader.checksum + '.db');			
+			if (/*dbFile.exists*/false)
 			{
 				sqlConnection.open(dbFile);
 			}
 			else
 			{
-				File.applicationResourceDirectory.resolve(INITIAL_DB_FILE_NAME).copyTo(dbFile);
+				File.applicationResourceDirectory.resolve(INITIAL_DB_FILE_NAME).copyTo(dbFile, true);
 				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
 				sqlConnection.open(dbFile);
 				
 				var fileStream:FileStream = new FileStream();
 				fileStream.open(file, FileMode.READ);
 				
-				var length:Number = DATA_PORTION_LENGTH;
-				if (length > fileStream.bytesAvailable)
-				{
-					length = fileStream.bytesAvailable;
-				}
-				data = fileStream.readUTFBytes(length).split(lineEnding);
+				fileReader.read();
+				
+				
+				parse();
 			}
 		}
 		
@@ -91,34 +79,18 @@ package develar.cachegrindVisualizer
 		
 		protected function handleInsertSQLStatementPrepare(event:SQLEvent):void
 		{
-			insertSQLStatement.parameters[':parent'] = 0;
+			/*insertSQLStatement.parameters[':parent'] = 0;
 			insertSQLStatement.parameters[':name'] = 'jhj';
 			insertSQLStatement.parameters[':fileName'] = 'ffsfsdf';
 			insertSQLStatement.parameters[':line'] = 43;
 			insertSQLStatement.parameters[':time'] = 8556;
 			insertSQLStatement.parameters[':inclusiveTime'] = 2222222;
-			insertSQLStatement.execute();
+			insertSQLStatement.execute();*/
 		}
 		
-		protected function calculateChecksum(file:File):String
+		protected function parse():Item
 		{
-			var fileStream:FileStream = new FileStream();
-			fileStream.open(file, FileMode.READ);
-			
-			var checksum:String = fileStream.readUTFBytes(CHECK_STRING_LENGTH);
-			fileStream.position = fileStream.bytesAvailable / 2;
-			checksum += fileStream.readUTFBytes(CHECK_STRING_LENGTH);
-			
-			lineEnding = checksum.slice(0, TEST_STRING_LENGTH).search('\r\n') == -1 ? '\n' : '\r\n';
-			
-			checksum = Sha1.hashHmac(checksum, String(fileStream.bytesAvailable));
-			return checksum;
-		}
-		
-		public function parse():Item
-		{
-			// 2 пустых строки + 1 для установки именно на позицию
-			cursor = this.data.length - 3;	
+			cursor = fileReader.data.length - 1;	
 				
 			var result:Array = new Array();
 			while (cursor > 4)
@@ -127,7 +99,7 @@ package develar.cachegrindVisualizer
 				parseBody(result[0]);
 			}
 			
-			this.data = null;
+			fileReader = null;
 			
 			var result_length:uint = result.length;
 			if (result_length > 1)
@@ -160,13 +132,13 @@ package develar.cachegrindVisualizer
 			var children:Array = new Array();
 			while (true)
 			{					
-				var line_and_time:Array = data[cursor].split(' ');				
+				var line_and_time:Array = fileReader.data[cursor].split(' ');				
 				// нет детей
-				if (data[cursor - 1].charAt(0) == 'f')
+				if (fileReader.data[cursor - 1].charAt(0) == 'f')
 				{
 					parent.time = line_and_time[1] / TIME_UNIT_IN_MS;
-					parent.name = data[cursor - 1].slice(3);					
-					var fileName:String = data[cursor - 2];
+					parent.name = fileReader.data[cursor - 1].slice(3);					
+					var fileName:String = fileReader.data[cursor - 2];
 					if (fileName != 'fl=php:internal')
 					{
 						parent.fileName = fileName.slice(3);
@@ -177,13 +149,22 @@ package develar.cachegrindVisualizer
 				}
 				else
 				{
+					insertSQLStatement.parameters[':parent'] = 0;
+					insertSQLStatement.parameters[':name'] = fileReader.data[cursor - 2].slice(4);
+					insertSQLStatement.parameters[':fileName'] = 'ffsfsdf';
+					insertSQLStatement.parameters[':line'] = line_and_time[0];
+					insertSQLStatement.parameters[':time'] = 8556;
+					insertSQLStatement.parameters[':inclusiveTime'] = line_and_time[1] / TIME_UNIT_IN_MS;
+					insertSQLStatement.execute();
+			
 					var child:Item = new Item();
-					child.name = data[cursor - 2].slice(4);
-					child.line = line_and_time[0];
-					child.inclusiveTime = line_and_time[1] / TIME_UNIT_IN_MS;
-					children.unshift(child);
+					//child.name = fileReader.data[cursor - 2].slice(4);
+					//child.line = line_and_time[0];
+					//child.inclusiveTime = line_and_time[1] / TIME_UNIT_IN_MS;
+					children.unshift(itemId);
+					itemId++;
 		
-					var sample:String = data[cursor - 4].charAt(0);
+					var sample:String = fileReader.data[cursor - 4].charAt(0);
 					// следующий ребенок (cfn)
 					if (sample == 'c')
 					{
@@ -192,21 +173,21 @@ package develar.cachegrindVisualizer
 					// данные о родителе после всех детей
 					else
 					{
-						line_and_time = data[cursor - 3].split(' ');						
+						line_and_time = fileReader.data[cursor - 3].split(' ');						
 						parent.time = line_and_time[1] / TIME_UNIT_IN_MS;
 						
 						if (sample == 'f')
 						{
-							parent.name = data[cursor - 4].slice(3);
-							parent.fileName = data[cursor - 5].slice(3);
+							parent.name = fileReader.data[cursor - 4].slice(3);
+							parent.fileName = fileReader.data[cursor - 5].slice(3);
 							cursor -= 7;		
 						}
 						// для функции main не указывается файл, есть строка summary, отделенная пустыми строками
 						else if (sample == '' || sample == 's')
 						{
 							parent.name = MAIN_FUNCTION_NAME;
-							parent.fileName = data[cursor - 8].slice(3);
-							parent.inclusiveTime = data[cursor - 5].slice(9) / TIME_UNIT_IN_MS;
+							parent.fileName = fileReader.data[cursor - 8].slice(3);
+							parent.inclusiveTime = fileReader.data[cursor - 5].slice(9) / TIME_UNIT_IN_MS;
 							
 							cursor -= 10;
 						}
