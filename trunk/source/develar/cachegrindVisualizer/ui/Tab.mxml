@@ -22,16 +22,16 @@
 	import develar.cachegrindVisualizer.parser.Parser;
 	
 	[Embed(source='../../../../assets/constructor.png')]
-	private var constructorIcon:Class;
+	private static const constructorIcon:Class;
 	[Embed(source='../../../../assets/destructor.png')]
-	private var destructorIcon:Class;
+	private static var destructorIcon:Class;
 	
 	[Embed(source='../../../../assets/method.png')]
-	private var methodIcon:Class;	
+	private static var methodIcon:Class;	
 	[Embed(source='../../../../assets/function.png')]
-	private var functionIcon:Class;	
+	private static var functionIcon:Class;	
 	[Embed(source='../../../../assets/file.png')]
-	private var fileIcon:Class;
+	private static var fileIcon:Class;
 	
 	private var _fileWrapper:FileWrapper;
 	public function get fileWrapper():FileWrapper
@@ -56,10 +56,8 @@
 	
 	public function refresh():void
 	{
-		trace('Начато получение файла. Память: ', Formatter.dataSize(System.totalMemory));
 		var parser:Parser = new Parser(fileWrapper.file);
-		trace('Начат анализ. Память: ', Formatter.dataSize(System.totalMemory));
-		var timeBegin:Number = new Date().time;
+		parser.sqlConnection;
 		
 		/*try
 		{

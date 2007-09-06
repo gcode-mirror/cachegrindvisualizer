@@ -2,10 +2,8 @@ package develar.cachegrindVisualizer.parser
 {	
 	import flash.system.System;	
 	import flash.filesystem.File;
-	import flash.filesystem.FileMode;
-	import flash.utils.ByteArray;
-	import flash.filesystem.FileStream;	
 	import flash.data.SQLConnection;
+	import flash.data.SQLTransactionLockType;
 	import flash.data.SQLStatement;
 	import flash.events.Event;
 	import flash.events.SQLEvent;
@@ -27,10 +25,11 @@ package develar.cachegrindVisualizer.parser
 		protected static const TIME_UNIT_IN_MS:uint = 10000;
 				
 		protected var cursor:uint = 0;
-		protected var itemId:Number = 0;
+		protected var itemId:uint = 1;
 		protected var fileReader:FileReader;
 		
-		protected var insertSQLStatement:SQLStatement = new SQLStatement();
+		//protected var insertSqlStatement:SQLStatement = new SQLStatement();
+		protected var updateSqlStatement:SQLStatement = new SQLStatement();
 		
 		protected var _sqlConnection:SQLConnection = new SQLConnection();
 		public function get sqlConnection():SQLConnection
@@ -52,24 +51,27 @@ package develar.cachegrindVisualizer.parser
 				File.applicationResourceDirectory.resolve(INITIAL_DB_FILE_NAME).copyTo(dbFile, true);
 				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
 				sqlConnection.open(dbFile);
-				
-				var fileStream:FileStream = new FileStream();
-				fileStream.open(file, FileMode.READ);
-				
+							
 				fileReader.read();
-				
-				
-				parse();
+				//parse();				
 			}
 		}
 		
 		protected function handleOpenSqlConnection(event:SQLEvent):void
 		{
-			insertSQLStatement.text = 'insert into tree values (null, :parent, :name, :fileName, :line, :time, :inclusiveTime)';
-			insertSQLStatement.sqlConnection = sqlConnection;
-			insertSQLStatement.addEventListener(SQLEvent.PREPARE, handleInsertSQLStatementPrepare);
-			insertSQLStatement.addEventListener(SQLErrorEvent.ERROR, handleError);
-			insertSQLStatement.prepare();
+			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);
+			parse();	
+			
+			/*insertSqlStatement.text = 'insert into tree values (:id, :parent, :name, :fileName, :line, :time, :inclusiveTime)';
+			insertSqlStatement.sqlConnection = sqlConnection;
+			insertSqlStatement.addEventListener(SQLErrorEvent.ERROR, handleError);
+			updateSqlStatement.addEventListener(SQLEvent.PREPARE, parse);
+			insertSqlStatement.prepare();*/
+			
+			
+			/*updateSqlStatement.addEventListener(SQLErrorEvent.ERROR, handleError);
+			updateSqlStatement.addEventListener(SQLEvent.PREPARE, parse);
+			updateSqlStatement.prepare();*/
 		}
 		
 		protected function handleError(event:SQLErrorEvent):void
@@ -77,57 +79,59 @@ package develar.cachegrindVisualizer.parser
 			
 		}
 		
-		protected function handleInsertSQLStatementPrepare(event:SQLEvent):void
+		protected function parse(event:SQLEvent = null):void
 		{
-			/*insertSQLStatement.parameters[':parent'] = 0;
-			insertSQLStatement.parameters[':name'] = 'jhj';
-			insertSQLStatement.parameters[':fileName'] = 'ffsfsdf';
-			insertSQLStatement.parameters[':line'] = 43;
-			insertSQLStatement.parameters[':time'] = 8556;
-			insertSQLStatement.parameters[':inclusiveTime'] = 2222222;
-			insertSQLStatement.execute();*/
-		}
-		
-		protected function parse():Item
-		{
-			cursor = fileReader.data.length - 1;	
-				
-			var result:Array = new Array();
-			while (cursor > 4)
+			if (/*insertSqlStatement.prepared && */true)
 			{
-				result.unshift(new Item());
-				parseBody(result[0]);
-			}
-			
-			fileReader = null;
-			
-			var result_length:uint = result.length;
-			if (result_length > 1)
-			{
-				for (var i:uint = 1; i < result_length; i++)
-				{
-					var parent:Item = result[i];
-					if (parent.children == null)
-					{
-						parent.inclusiveTime = parent.time;
-					}
-					else
-					{
-						for each (var child:Item in parent.children)
-						{
-							parent.inclusiveTime += child.inclusiveTime;
-						}
-					}
+				cursor = fileReader.data.length - 1;	
 					
-					result[0].children.push(parent);
-					result[0].inclusiveTime += parent.inclusiveTime;
+				while (cursor > 4)
+				{
+					var insertSqlStatement:SQLStatement = new SQLStatement();
+					insertSqlStatement.addEventListener(SQLErrorEvent.ERROR, handleError);
+					insertSqlStatement.text = 'insert into tree values (:id, :parent, :name, :fileName, :line, :time, :inclusiveTime)';
+					insertSqlStatement.sqlConnection = sqlConnection;
+					insertSqlStatement.parameters[':id'] = itemId;
+					insertSqlStatement.parameters[':parent'] = 0;
+					insertSqlStatement.parameters[':name'] = fileReader.data[cursor - (fileReader.data[cursor - 1].charAt(0) == 'f' ? 1 : 4)].slice(3);
+					insertSqlStatement.parameters[':fileName'] = '';
+					insertSqlStatement.parameters[':line'] = 0;
+					insertSqlStatement.parameters[':time'] = 0;
+					insertSqlStatement.parameters[':inclusiveTime'] = 0;
+					insertSqlStatement.execute();
+	
+					parseBody(itemId++);
 				}
+				
+				fileReader = null;
+				sqlConnection.commit();				
+				
+				/*var result_length:uint = result.length;
+				if (result_length > 1)
+				{
+					for (var i:uint = 1; i < result_length; i++)
+					{
+						var parent:Item = result[i];
+						if (parent.children == null)
+						{
+							parent.inclusiveTime = parent.time;
+						}
+						else
+						{
+							for each (var child:Item in parent.children)
+							{
+								parent.inclusiveTime += child.inclusiveTime;
+							}
+						}
+						
+						result[0].children.push(parent);
+						result[0].inclusiveTime += parent.inclusiveTime;
+					}
+				}*/
 			}
-			
-			return result[0];
 		}
 				
-		private function parseBody(parent:Item):void
+		protected function parseBody(parentId:uint):void
 		{				
 			var children:Array = new Array();
 			while (true)
@@ -136,33 +140,33 @@ package develar.cachegrindVisualizer.parser
 				// нет детей
 				if (fileReader.data[cursor - 1].charAt(0) == 'f')
 				{
-					parent.time = line_and_time[1] / TIME_UNIT_IN_MS;
-					parent.name = fileReader.data[cursor - 1].slice(3);					
+					var updateSqlStatement:SQLStatement = new SQLStatement();
+					updateSqlStatement.text = 'update tree set time = :time, fileName = :fileName where id = :id';
+					updateSqlStatement.sqlConnection = sqlConnection;
+					updateSqlStatement.parameters[':id'] = parentId;
+					updateSqlStatement.parameters[':time'] = line_and_time[1] / TIME_UNIT_IN_MS;							
 					var fileName:String = fileReader.data[cursor - 2];
-					if (fileName != 'fl=php:internal')
-					{
-						parent.fileName = fileName.slice(3);
-					}
+					updateSqlStatement.parameters[':fileName'] = fileName == 'fl=php:internal' ? '' : fileName.slice(3);
+					updateSqlStatement.execute();
 					
 					cursor -= 4;
 					break;
 				}
 				else
 				{
-					insertSQLStatement.parameters[':parent'] = 0;
-					insertSQLStatement.parameters[':name'] = fileReader.data[cursor - 2].slice(4);
-					insertSQLStatement.parameters[':fileName'] = 'ffsfsdf';
-					insertSQLStatement.parameters[':line'] = line_and_time[0];
-					insertSQLStatement.parameters[':time'] = 8556;
-					insertSQLStatement.parameters[':inclusiveTime'] = line_and_time[1] / TIME_UNIT_IN_MS;
-					insertSQLStatement.execute();
+					var insertSqlStatement:SQLStatement = new SQLStatement();
+					insertSqlStatement.text = 'insert into tree values (:id, :parent, :name, :fileName, :line, :time, :inclusiveTime)';
+					insertSqlStatement.sqlConnection = sqlConnection;
+					insertSqlStatement.parameters[':id'] = itemId;
+					insertSqlStatement.parameters[':parent'] = parentId;
+					insertSqlStatement.parameters[':name'] = fileReader.data[cursor - 2].slice(4);
+					insertSqlStatement.parameters[':fileName'] = '';
+					insertSqlStatement.parameters[':line'] = line_and_time[0];
+					insertSqlStatement.parameters[':time'] = 0;
+					insertSqlStatement.parameters[':inclusiveTime'] = line_and_time[1] / TIME_UNIT_IN_MS;
+					insertSqlStatement.execute();
 			
-					var child:Item = new Item();
-					//child.name = fileReader.data[cursor - 2].slice(4);
-					//child.line = line_and_time[0];
-					//child.inclusiveTime = line_and_time[1] / TIME_UNIT_IN_MS;
-					children.unshift(itemId);
-					itemId++;
+					children.push(itemId++);					
 		
 					var sample:String = fileReader.data[cursor - 4].charAt(0);
 					// следующий ребенок (cfn)
@@ -173,39 +177,49 @@ package develar.cachegrindVisualizer.parser
 					// данные о родителе после всех детей
 					else
 					{
-						line_and_time = fileReader.data[cursor - 3].split(' ');						
-						parent.time = line_and_time[1] / TIME_UNIT_IN_MS;
-						
-						if (sample == 'f')
-						{
-							parent.name = fileReader.data[cursor - 4].slice(3);
-							parent.fileName = fileReader.data[cursor - 5].slice(3);
-							cursor -= 7;		
-						}
-						// для функции main не указывается файл, есть строка summary, отделенная пустыми строками
-						else if (sample == '' || sample == 's')
-						{
-							parent.name = MAIN_FUNCTION_NAME;
-							parent.fileName = fileReader.data[cursor - 8].slice(3);
-							parent.inclusiveTime = fileReader.data[cursor - 5].slice(9) / TIME_UNIT_IN_MS;
-							
-							cursor -= 10;
-						}
-						else
-						{
-							throw new Error('Unknown format or analyzer error');
-						}
+						updateParentItem(parentId, sample);
 		
-						parent.children = children;
-						for (var childIndex:int = children.length - 1; childIndex > -1; childIndex--)
+						for each (var childId:uint in children)
 						{
-							parseBody(children[childIndex]);
+							parseBody(childId);
 						}
 												
 						break;
 					}
 				}
 			}
+		}
+		
+		protected function updateParentItem(parentId:uint, sample:String):void
+		{
+			var updateSqlStatement:SQLStatement = new SQLStatement();
+			updateSqlStatement.addEventListener(SQLErrorEvent.ERROR, handleError);
+			updateSqlStatement.text = 'update tree set time = :time, fileName = :fileName where id = :id';
+			updateSqlStatement.sqlConnection = sqlConnection;
+			updateSqlStatement.parameters[':id'] = parentId;
+			
+			var line_and_time:Array = fileReader.data[cursor - 3].split(' ');
+			updateSqlStatement.parameters[':time'] = line_and_time[1] / TIME_UNIT_IN_MS;
+			
+			if (sample == 'f')
+			{
+				updateSqlStatement.parameters[':fileName'] = fileReader.data[cursor - 5].slice(3);
+				cursor -= 7;
+			}
+			// для функции main не указывается файл, есть строка summary, отделенная пустыми строками
+			else if (sample == '' || sample == 's')
+			{
+				updateSqlStatement.parameters[':fileName'] = fileReader.data[cursor - 8].slice(3);
+				//parent.inclusiveTime = fileReader.data[cursor - 5].slice(9) / TIME_UNIT_IN_MS;
+			
+				cursor -= 10;
+			}
+			else
+			{
+				throw new Error('Unknown format or analyzer error');
+			}
+			
+			updateSqlStatement.execute();
 		}
 	}
 }
