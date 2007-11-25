@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+	@author Vladimir Krivosheev
+	@version $Id$
+-->
 <mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" creationComplete="handleCreationComplete()">
-	
-	<mx:Style source="C:\flex\framework\style.css"/>
 	
 	<mx:Metadata>
 		[ResourceBundle('Shared')]
 		[ResourceBundle('CachegrindVisualizer')]
 	</mx:Metadata>
+	
+	<mx:Style source="../../../framework/style.css"/>
 	
 	<mx:ApplicationControlBar width="100%">
 		<mx:Button label="{resourceManager.getString('Shared', 'open')}" click="browse()"/>
@@ -19,13 +23,12 @@
 	<mx:Script><![CDATA[
 	
 	[Bindable]
-	private var locales:Array = [{id: 'en_US', label: 'English'}, {id: 'ru', label: 'Russian'}];
+	private var locales:Array = new Array({id: 'en_US', label: 'English'}, {id: 'ru', label: 'Russian'});
 		
 	import flash.filesystem.File;
 	import flash.system.System;
 	import flash.events.NativeDragEvent;
-	import flash.desktop.TransferableData;
-	import flash.desktop.TransferableFormats;
+	import flash.desktop.ClipboardFormats;
 	import flash.desktop.DragManager;
 	import flash.desktop.DragActions;
 	
@@ -33,33 +36,27 @@
 	
 	import develar.filesystem.FileWrapper;
 	import develar.formatters.Formatter;
-	import develar.net.PersistenceSession;
 	
 	import develar.cachegrindVisualizer.ui.Tab;
+	import develar.cachegrindVisualizer.net.PersistenceSession;
 	
 	private var fileWrapper:FileWrapper;
 	private var fileFilters:Array;
-	
-	private var _persistenceSession:PersistenceSession = new PersistenceSession();
-	public function get persistenceSession():PersistenceSession
-	{
-		return _persistenceSession;
-	}
-	
+
 	private function handleCreationComplete():void
 	{
-		window.maximize();
-		window.visible = true;
+		nativeWindow.maximize();
+		nativeWindow.visible = true;
 		
 		addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, handleNativeDragEnter);
 		addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
 		
-		fileFilters = [new FileFilter(resourceManager.getString('CachegrindVisualizer', 'cachegrindFiles'), 'cachegrind.out.*'), new FileFilter(resourceManager.getString('CachegrindVisualizer', 'allFiles'), '*')];
+		fileFilters = new Array(new FileFilter(resourceManager.getString('CachegrindVisualizer', 'cachegrindFiles'), 'cachegrind.out.*'), new FileFilter(resourceManager.getString('CachegrindVisualizer', 'allFiles'), '*'));
 	}
 	
 	private function handleNativeDragEnter(event:NativeDragEvent):void
 	{
-		if (event.transferable.hasFormat(TransferableFormats.FILE_LIST_FORMAT))
+		if (event.clipboard.hasFormat(ClipboardFormats.FILE_LIST_FORMAT))
 		{
 			DragManager.acceptDragDrop(this);
 		}
@@ -67,7 +64,7 @@
 	
 	private function handleNativeDragDrop(event:NativeDragEvent):void
 	{
-		for each (var file:File in event.transferable.dataForFormat(TransferableFormats.FILE_LIST_FORMAT))
+		for each (var file:File in event.clipboard.dataForFormat(ClipboardFormats.FILE_LIST_FORMAT))
 		{
 			fileWrapper = new FileWrapper(file);
 			openFile();
@@ -78,9 +75,9 @@
 	{
 		fileWrapper = new FileWrapper();
 		fileWrapper.file.addEventListener(FileListEvent.SELECT_MULTIPLE, handleSelectMultiple);
-		if ('profilerDirPath' in persistenceSession.data)
+		if (PersistenceSession.instance.profilerOutputDirectory != null)
 		{
-			fileWrapper.file.nativePath = persistenceSession.data.profilerDirPath;
+			fileWrapper.file.nativePath = PersistenceSession.instance.profilerOutputDirectory;
 		}
 		
 		fileWrapper.file.browseForOpenMultiple('', fileFilters);
@@ -97,8 +94,8 @@
 	
 	private function openFile():void
 	{	
-		persistenceSession.data.profilerDirPath = fileWrapper.file.nativePath;
-		persistenceSession.flush();
+		PersistenceSession.instance.profilerOutputDirectory = fileWrapper.file.nativePath;
+		PersistenceSession.instance.flush();
 		
 		for each (var existTab:Tab in tabNavigator.getChildren())
 		{

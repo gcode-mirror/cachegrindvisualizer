@@ -2,18 +2,19 @@
 <actionScriptProperties mainApplicationPath="CachegrindVisualizer.mxml" version="3">
 <compiler additionalCompilerArguments="-locale en_US ru" copyDependentFiles="false" enableModuleDebug="false" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersion="9.0.0" htmlPlayerVersionCheck="true" outputFolderPath="bin" sourceFolderPath="source" strict="true" useApolloConfig="false" verifyDigests="true" warn="true">
 <compilerSourcePath>
-<compilerSourcePathEntry kind="1" linkType="1" path="C:/flex/framework/source"/>
+<compilerSourcePathEntry kind="1" linkType="1" path="${DOCUMENTS}/framework/source"/>
 </compilerSourcePath>
 <libraryPath defaultLinkType="1">
 <libraryPathEntry kind="4" path="">
 <excludedEntries>
-<libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_agent.swc" useDefaultLinkType="false"/>
 <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation.swc" useDefaultLinkType="false"/>
+<libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_agent.swc" useDefaultLinkType="false"/>
+<libraryPathEntry kind="1" linkType="1" path="${PROJECT_FRAMEWORKS}/locale/{locale}"/>
 <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/qtp.swc" useDefaultLinkType="false"/>
 <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/automation_dmv.swc" useDefaultLinkType="false"/>
 </excludedEntries>
 </libraryPathEntry>
-<libraryPathEntry kind="1" linkType="1" path="C:/flex/framework/libs"/>
+<libraryPathEntry kind="1" linkType="1" path="${DOCUMENTS}/framework/libs"/>
 <libraryPathEntry kind="1" linkType="1" path="locale"/>
 </libraryPath>
 <sourceAttachmentPath/>

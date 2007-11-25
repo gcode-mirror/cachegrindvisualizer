@@ -41,14 +41,14 @@ package develar.cachegrindVisualizer.parser
 		{
 			fileReader = new FileReader(file);
 			trace('память: ', Formatter.dataSize(System.totalMemory));
-			var dbFile:File = File.applicationStorageDirectory.resolve(fileReader.checksum + '.db');			
+			var dbFile:File = File.applicationStorageDirectory.resolvePath(fileReader.checksum + '.db');			
 			if (/*dbFile.exists*/false)
 			{
 				sqlConnection.open(dbFile);
 			}
 			else
 			{
-				File.applicationResourceDirectory.resolve(INITIAL_DB_FILE_NAME).copyTo(dbFile, true);
+				File.applicationResourceDirectory.resolvePath(INITIAL_DB_FILE_NAME).copyTo(dbFile, true);
 				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
 				sqlConnection.open(dbFile);
 							
