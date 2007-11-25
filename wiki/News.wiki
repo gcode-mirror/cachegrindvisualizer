@@ -1,6 +1,7 @@
 #labels Featured
 == 25 November 2007 0.3 dev (svn only) ==
  * File  checksum calculated by SHA256 rather than SHA1. This is not linked to security, but only to the update to the version used framework.
+ * Updated to use Adobe AIR Beta 2.
 
 == 18 June 2007 0.2.2 ==
  * minNodeCost теперь не целое число, а с плавающей точкой — до 2 знаков
@@ -29,4 +30,3 @@
  * локализованы заголовки rankDirection и labelType для английской версии.
 == 10 June 2007 0.1 ==
  * Первый выпуск.
-
