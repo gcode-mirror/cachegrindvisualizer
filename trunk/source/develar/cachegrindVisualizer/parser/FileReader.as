@@ -4,7 +4,7 @@ package develar.cachegrindVisualizer.parser
 	import flash.filesystem.FileStream;
 	import flash.filesystem.FileMode;
 	
-	import develar.encryption.Sha1;
+	import develar.encryption.Sha256;
 	
 	public class FileReader
 	{
@@ -49,7 +49,7 @@ package develar.cachegrindVisualizer.parser
 			fileStream.position = file.size / 2;
 			_checksum += fileStream.readUTFBytes(CHECK_STRING_LENGTH);		
 			lineEnding = checksum.slice(0, TEST_STRING_LENGTH).search('\r\n') == -1 ? '\n' : '\r\n';			
-			_checksum = Sha1.hashHmac(checksum, String(file.size));
+			_checksum = Sha256.hmac(checksum, String(file.size));
 			
 			fileStream.position = file.size - (END_EMPTY_LINE_AMOUNT * (lineEnding == '\n' ? 1 : 2));
 		}

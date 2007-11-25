@@ -1,3 +1,7 @@
+/**
+ * @author Vladimir Krivosheev
+ * @version $Id: PersistenceSession.as 151 2007-11-19 15:41:34Z develar $
+ */
 package develar.cachegrindVisualizer.callGraph.managers
 {
 	import flash.events.Event;
@@ -11,6 +15,7 @@ package develar.cachegrindVisualizer.callGraph.managers
 	import develar.cachegrindVisualizer.ui.CallGraph;
 	import develar.cachegrindVisualizer.callGraph.builders.Builder;
 	import develar.cachegrindVisualizer.callGraph.builders.Label;
+	import develar.cachegrindVisualizer.net.PersistenceSession;
 	
 	public class ConfigurationManager
 	{
@@ -27,12 +32,12 @@ package develar.cachegrindVisualizer.callGraph.managers
 		{
 			callGraph = call_graph;
 			
-			if (!('callGraphConfigurationName' in CachegrindVisualizer(Application.application).persistenceSession.data))
+			if (PersistenceSession.instance.callGraphConfigurationName == null)
 			{
-				CachegrindVisualizer(Application.application).persistenceSession.data.callGraphConfigurationName = 'default';
+				PersistenceSession.instance.callGraphConfigurationName = 'default';
 			}
 			
-			fileWrapper = new FileWrapper('app-storage:/' + CachegrindVisualizer(Application.application).persistenceSession.data.callGraphConfigurationName);
+			fileWrapper = new FileWrapper('app-storage:/' + PersistenceSession.instance.callGraphConfigurationName);
 			if (fileWrapper.file.exists)
 			{
 				_object = fileWrapper.read();
