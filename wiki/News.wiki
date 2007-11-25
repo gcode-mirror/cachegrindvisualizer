@@ -1,5 +1,5 @@
 #labels Featured
-== 25 November 2007 0.3 dev (svn only) ==
+== 25-... November 2007 0.3 dev (svn only) ==
  * File  checksum calculated by SHA256 rather than SHA1. This is not linked to security, but only to the update to the version used framework.
  * Updated to use Adobe AIR Beta 2.
  * Caching result analysis (can be moved to another computer — "C:\Users\!YOUR USER NAME!\AppData\Roaming\develar.cachegrindVisualizer\Local Store" (Vista) or "C:\Documents and Settings\!YOUR USER NAME!\Application Data\develar.CachegrindVisualizer\Local Store" (Windows XP)).
