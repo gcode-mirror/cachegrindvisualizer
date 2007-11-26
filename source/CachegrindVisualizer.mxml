@@ -3,7 +3,7 @@
 	@author Vladimir Krivosheev
 	@version $Id$
 -->
-<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" creationComplete="handleCreationComplete()">
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()">
 	
 	<mx:Metadata>
 		[ResourceBundle('Shared')]
@@ -30,28 +30,34 @@
 	import flash.events.NativeDragEvent;
 	import flash.desktop.ClipboardFormats;
 	import flash.desktop.DragManager;
-	import flash.desktop.DragActions;
+	import flash.desktop.DragActions;	
 	
 	import mx.events.IndexChangedEvent
 	
 	import develar.filesystem.FileWrapper;
 	import develar.formatters.Formatter;
+	import develar.core.Singleton;
 	
 	import develar.cachegrindVisualizer.ui.Tab;
 	import develar.cachegrindVisualizer.net.PersistenceSession;
 	
 	private var fileWrapper:FileWrapper;
 	private var fileFilters:Array;
+	
+	private function handlePreInitialize():void
+	{
+		Singleton.registerClass('develar.net::IPersistenceSession', PersistenceSession);
+	}
 
 	private function handleCreationComplete():void
-	{
+	{		
 		nativeWindow.maximize();
 		nativeWindow.visible = true;
 		
 		addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, handleNativeDragEnter);
 		addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
 		
-		fileFilters = new Array(new FileFilter(resourceManager.getString('CachegrindVisualizer', 'cachegrindFiles'), 'cachegrind.out.*'), new FileFilter(resourceManager.getString('CachegrindVisualizer', 'allFiles'), '*'));
+		fileFilters = new Array(new FileFilter(resourceManager.getString('CachegrindVisualizer', 'cachegrindFiles'), '*.cg;cachegrind.out.*'), new FileFilter(resourceManager.getString('CachegrindVisualizer', 'allFiles'), '*'));
 	}
 	
 	private function handleNativeDragEnter(event:NativeDragEvent):void
@@ -70,7 +76,7 @@
 			openFile();
 		}
 	}
-	
+
 	private function browse():void
 	{
 		fileWrapper = new FileWrapper();
