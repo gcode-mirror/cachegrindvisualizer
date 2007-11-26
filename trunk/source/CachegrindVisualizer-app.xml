@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<application xmlns="http://ns.adobe.com/air/application/1.0.M4" appId="develar.cachegrindVisualizer" version="0.3">
-	<name>CachegrindVisualizer</name>
-	<description>Visualize profiling data</description>
-	<rootContent systemChrome="standard" transparent="false" visible="false">[SWF reference is generated]</rootContent>
-	<icon>
-	<!--	<image16x16>icons/AIRApp_16.png</image16x16>
-		<image32x32>icons/AIRApp_32.png</image32x32>
-		<image48x48>icons/AIRApp_48.png</image48x48>-->
-		<image128x128>128x128.png</image128x128>
-	</icon>
+<application xmlns="http://ns.adobe.com/air/application/1.0.M5" appId="develar.cachegrindVisualizer" version="0.3">
+    <name>CachegrindVisualizer</name>
+    <title>CachegrindVisualizer</title>
+    <description/>
+	<copyright/>
+
+	<initialWindow>
+		<title>CachegrindVisualizer</title>
+		<content>!ApolloApplicationWizardPage.rootContentValue!</content>
+		<systemChrome>standard</systemChrome>
+		<transparent>false</transparent>
+		<visible>false</visible>
+	</initialWindow>
+
+	<fileTypes>
+		<fileType>
+			<name>cachegrind</name>
+			<extension>cg</extension>
+			<description>Cachegrind out file</description>
+			<contentType>text/plain</contentType>
+		</fileType>
+	</fileTypes>
 </application>

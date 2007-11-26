@@ -57,7 +57,6 @@
 	public function refresh():void
 	{
 		var parser:Parser = new Parser(fileWrapper.file);
-		parser.sqlConnection;
 		
 		/*try
 		{
