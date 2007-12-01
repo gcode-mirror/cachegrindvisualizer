@@ -20,6 +20,10 @@
 	
 	import develar.cachegrindVisualizer.Item;	
 	import develar.cachegrindVisualizer.parser.Parser;
+	import develar.cachegrindVisualizer.controls.tree.TreeDataDescriptor;
+	import develar.cachegrindVisualizer.controls.tree.TreeItem;
+	
+	private var selectStatement:SQLStatement;
 	
 	[Embed(source='../../../../assets/constructor.png')]
 	private static const constructorIcon:Class;
@@ -32,6 +36,8 @@
 	private static var functionIcon:Class;	
 	[Embed(source='../../../../assets/file.png')]
 	private static var fileIcon:Class;
+	
+	protected var sqlConnection:SQLConnection;
 	
 	private var _fileWrapper:FileWrapper;
 	public function get fileWrapper():FileWrapper
@@ -57,40 +63,45 @@
 	public function refresh():void
 	{
 		var parser:Parser = new Parser(fileWrapper.file);
+		parser.addEventListener(Event.COMPLETE, handleParserComplete);
 		
-		/*try
-		{
-			tree.dataProvider = parser.parse();
-		}
-		catch (e:Error)
-		{
-			parent.removeChild(this);
-			throw e;
-		}*/
+		label = fileWrapper.name.replace('cachegrind.out.', '');
+	}
+	
+	private function handleParserComplete(event:Event):void
+	{
+		sqlConnection = new SQLConnection(true);
+		sqlConnection.open(event.target.dbFile);
 		
-		/*var timeEnd:Number = new Date().time;
-		trace('Затрачено на анализ: ' + (timeEnd - timeBegin) + '. Память: ' + Formatter.dataSize(System.totalMemory));
-		parser = null;
+		sqlConnection.begin();
+		callGraph.builder.sqlConnection = sqlConnection;
+		tree.dataDescriptor = new TreeDataDescriptor(sqlConnection);
 		
-		tree.validateNow();		
+		selectStatement = new SQLStatement();
+		selectStatement.itemClass = TreeItem;
+		selectStatement.sqlConnection = sqlConnection;
+		selectStatement.text = 'select id, name, fileName, exists (select 1 from tree where parent = pt.id) as isBranch from tree as pt where parent is null';
+		selectStatement.execute();
+		
+		tree.dataProvider = selectStatement.getResult().data;		
+		tree.validateNow();
 		tree.selectedItem = tree.firstVisibleItem;
-		tree.expandItem(tree.firstVisibleItem, true);
-		
-		label = fileWrapper.baseName.replace('cachegrind.out.', '');
-		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';
+		tree.expandItem(tree.firstVisibleItem, true);	
 		
 		_modificationTime = fileWrapper.file.modificationDate.time;
 		
-		trace('Построение графа вызовов. Память: ', Formatter.dataSize(System.totalMemory));
-		timeBegin = new Date().time;
+		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';
+		
+		/*trace('Построение графа вызовов. Память: ', Formatter.dataSize(System.totalMemory));
+		timeBegin = new Date().time;*/
 		
 		callGraph.build();
 		
-		timeEnd = new Date().time;			
+		/*timeEnd = new Date().time;			
 		trace('Затрачено на построение графа: ' + (timeEnd - timeBegin) + '. Память: ', Formatter.dataSize(System.totalMemory));*/
 	}
 	
-	private function selectIcon(item:Item):Class
+	private function selectIcon(item:TreeItem):Class
 	{
 		var parts:Array;
 		if (item.name == Parser.MAIN_FUNCTION_NAME)

@@ -1,9 +1,12 @@
 package develar.cachegrindVisualizer.callGraph.builders
 {	
-	import develar.filesystem.FileWrapper;
-	
 	import develar.cachegrindVisualizer.Item;
 	import develar.cachegrindVisualizer.callGraph.Node;
+	import develar.cachegrindVisualizer.controls.tree.TreeItem;
+	import develar.filesystem.FileWrapper;
+	
+	import flash.data.SQLConnection;
+	import flash.data.SQLStatement;
 	
 	public class Builder
 	{
@@ -11,6 +14,8 @@ package develar.cachegrindVisualizer.callGraph.builders
 		public static const RANK_DIRECTION_LR:uint = 1;
 		public static const RANK_DIRECTION_BT:uint = 2;
 		public static const RANK_DIRECTION_RL:uint = 3;
+		
+		protected var selectStatement:SQLStatement = new SQLStatement();;
 		
 		protected var rankDirections:Array = ['TB', 'LR', 'BT', 'RL'];
 		
@@ -20,6 +25,12 @@ package develar.cachegrindVisualizer.callGraph.builders
 		protected var onePercentage:Number;
 		
 		protected var color:Color = new Color();
+		
+		public function Builder():void
+		{
+			selectStatement.itemClass = Item;
+			selectStatement.text = 'select id, name, fileName, line, time, inclusiveTime from tree where parent = :parent';
+		}
 		
 		protected var _label:Label = new Label();
 		public function get label():Label
@@ -45,9 +56,32 @@ package develar.cachegrindVisualizer.callGraph.builders
 			_blackAndWhite = value;
 		}
 		
-		public function build(item:Item, fileWrapper:FileWrapper):void
+		public function set sqlConnection(value:SQLConnection):void
 		{
-			onePercentage = item.inclusiveTime / 100;
+			selectStatement.sqlConnection = value;
+		}
+		
+		protected function getItem(id:uint):Item
+		{
+			var selectStatement:SQLStatement = new SQLStatement();
+			selectStatement.itemClass = Item;
+			selectStatement.sqlConnection = this.selectStatement.sqlConnection;
+			selectStatement.text = 'select id, name, fileName, line, time, inclusiveTime from tree where id = :id';
+			selectStatement.parameters[':id'] = id;
+			selectStatement.execute();
+			return selectStatement.getResult().data[0];
+		}
+		
+		public function build(treeItem:TreeItem, fileWrapper:FileWrapper):void
+		{
+			var item:Item = getItem(treeItem.id);
+			/*selectStatement.parameters[':parent'] = treeItem.id;
+			selectStatement.execute();
+			var items:Array = selectStatement.getResult().data;*/
+			
+			
+			
+			/*onePercentage = item.inclusiveTime / 100;
 			item.percentage = item.time / onePercentage;
 			item.inclusivePercentage = 100;
 			
@@ -68,12 +102,12 @@ package develar.cachegrindVisualizer.callGraph.builders
 			
 			fileWrapper.contents = graph;
 			nodes = null;
-			graph = null;
+			graph = null;*/
 		}
 		
 		protected function buildEdge(parent:Item, parentArrowLabel:String):void
 		{			
-			for each (var item:Item in parent.children)
+			/*for each (var item:Item in parent.children)
 			{
 				item.percentage = item.time / onePercentage;
 				item.inclusivePercentage = item.inclusiveTime / onePercentage;				
@@ -109,7 +143,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 					
 					setNode(item);
 				}
-			}
+			}*/
 		}
 		
 		protected function setNode(item:Item):void

@@ -51,6 +51,7 @@
 	import develar.cachegrindVisualizer.callGraph.builders.Builder;
 	import develar.cachegrindVisualizer.callGraph.builders.Label;
 	import develar.cachegrindVisualizer.callGraph.managers.ConfigurationManager;
+	import develar.cachegrindVisualizer.controls.tree.TreeItem;
 	
 	private var configurationManager:ConfigurationManager;
 	
@@ -82,7 +83,7 @@
 			fileWrapper = new FileWrapper(Tab(parentDocument).fileWrapper.file.nativePath + '.dot');
 		}
 		
-		builder.build(Item(Tab(parentDocument).tree.selectedItem), fileWrapper);
+		builder.build(TreeItem(Tab(parentDocument).tree.selectedItem), fileWrapper);
 		
 		var dateFormatter:DateFormatter = new DateFormatter();
 		dateFormatter.formatString = 'J:NN:SS';			
