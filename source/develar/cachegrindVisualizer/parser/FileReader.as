@@ -8,6 +8,7 @@ package develar.cachegrindVisualizer.parser
 	
 	public class FileReader
 	{
+		protected static const CHAR_SET:String = 'us-ascii';
 		/**
 		 * Сколько байт данных обрабатывать за одно чтение
 		 */
@@ -48,22 +49,32 @@ package develar.cachegrindVisualizer.parser
 			
 			if (file.size > (CHECK_STRING_LENGTH * 2))
 			{
-				_checksum = fileStream.readUTFBytes(CHECK_STRING_LENGTH);
+				_checksum = fileStream.readMultiByte(CHECK_STRING_LENGTH, CHAR_SET);
 				fileStream.position = file.size / 2;
-				_checksum += fileStream.readUTFBytes(CHECK_STRING_LENGTH);		
+				_checksum += fileStream.readMultiByte(CHECK_STRING_LENGTH, CHAR_SET);		
 				lineEnding = checksum.slice(0, TEST_STRING_LENGTH).search('\r\n') == -1 ? '\n' : '\r\n';
 			}
 			else
 			{
-				_checksum = fileStream.readUTFBytes(file.size);
+				_checksum = fileStream.readMultiByte(file.size, CHAR_SET);
 			}
 			_checksum = Sha256.hmac(checksum, String(file.size));
-			
-			fileStream.position = file.size - (END_EMPTY_LINE_AMOUNT * (lineEnding == '\n' ? 1 : 2));
+			// закрываем, так как файл может быть в кеше и чтения не будет, а также в связи с проблемой описанной в методе read
+			fileStream = null;
+			//fileStream.close();
+			//fileStream.position = file.size - (END_EMPTY_LINE_AMOUNT * (lineEnding == '\n' ? 1 : 2));
 		}
 		
 		public function read():void
 		{
+			// странный глюк FileStream - даже при указании position = 0, чтение происходит не с начала файла, если закрыть FileStream после расчета checksum и открыть здесь, то все работает
+			if (fileStream == null)
+			{
+				fileStream = new FileStream();
+				fileStream.open(file, FileMode.READ);
+				fileStream.position = file.size - (END_EMPTY_LINE_AMOUNT * (lineEnding == '\n' ? 1 : 2));
+			}
+			
 			var length:Number = PORTION_LENGTH;
 			// если после чтения останется меньше, чем порция, то нам проще взять все оставшееся сразу в один заход
 			if (fileStream.position < (PORTION_LENGTH * 2))
@@ -78,7 +89,7 @@ package develar.cachegrindVisualizer.parser
 				if (fileStream.position != 0)
 				{	
 					fileStream.position -= ZERO_ELEMENT_STRING_LENGTH;
-					var checkString:String = fileStream.readUTFBytes(ZERO_ELEMENT_STRING_LENGTH);
+					var checkString:String = fileStream.readMultiByte(ZERO_ELEMENT_STRING_LENGTH, CHAR_SET);
 					var lastIndexOfLineEnding:int = checkString.lastIndexOf(lineEnding);
 					if (lastIndexOfLineEnding == -1)
 					{
@@ -89,8 +100,9 @@ package develar.cachegrindVisualizer.parser
 					length += offset;
 				}
 			}
-				
-			data = fileStream.readUTFBytes(length).split(lineEnding);
+			
+			var tmp:String = fileStream.readMultiByte(length, CHAR_SET);
+			data = tmp.split(lineEnding);
 			fileStream.position -= length;
 			cursor = data.length - 1;
 		}
