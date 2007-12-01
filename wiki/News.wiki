@@ -5,6 +5,7 @@
  * Updated to use Adobe AIR Beta 2.
  * Caching result analysis (can be moved to another computer — "C:\Users\!YOUR USER NAME!\AppData\Roaming\develar.cachegrindVisualizer\Local Store" (Vista) or "C:\Documents and Settings\!YOUR USER NAME!\Application Data\develar.CachegrindVisualizer\Local Store" (Windows XP)).
  * Registration file type for opening in one click (you must add to php configuration xdebug.profiler_output_name extension ".cg", for example, — "xdebug.profiler_output_name = %t.cg").
+ * Asynchronous analysis.
 
 == 18 June 2007 0.2.2 ==
  * minNodeCost теперь не целое число, а с плавающей точкой — до 2 знаков
