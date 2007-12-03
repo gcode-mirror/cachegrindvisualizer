@@ -1,5 +1,5 @@
 #labels Featured
-== 2 December 2007 0.3 beta 1 ==
+== 3 December 2007 0.3 beta 1 (svn only) ==
  * File  checksum calculated by SHA256 rather than SHA1. This is not linked to security, but only to the update to the version used framework.
  * Reading file using char set us-ascii rather than utf-8. Faster and according to the standard.
  * Updated to use Adobe AIR Beta 2.
