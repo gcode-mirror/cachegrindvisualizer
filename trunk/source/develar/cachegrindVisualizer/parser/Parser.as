@@ -28,7 +28,7 @@ package develar.cachegrindVisualizer.parser
 		/**
 		 * Мы выполняем запросы асинхронно, поэтому нам нужен счетчик чтобы знать, когда все операции завершены
 		 */
-		protected var executingSqlStatementAmount:uint;		
+		//protected var executingSqlStatementsAmount:uint;		
 			
 		public function Parser(file:File):void
 		{
@@ -59,8 +59,10 @@ package develar.cachegrindVisualizer.parser
 		{
 			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);
 			parseBody(0);
+			
 			fileReader = null;			
-			checkComplete();			
+			sqlConnection.addEventListener(SQLEvent.COMMIT, handleCommit);
+			sqlConnection.commit();			
 		}
 				
 		protected function parseBody(parentId:uint):void
@@ -88,13 +90,12 @@ package develar.cachegrindVisualizer.parser
 					else
 					{
 						var updateSqlStatement:SQLStatement = createSqlStatement();
-						updateSqlStatement.text = 'update tree set time = :time, fileName = :fileName where id = :id';
+						updateSqlStatement.text = 'update tree set time = round(:time, 1), fileName = :fileName where id = :id';
 						updateSqlStatement.parameters[':id'] = parentId;
-						updateSqlStatement.parameters[':time'] = convertTime(lineAndTime[1]);							
+						updateSqlStatement.parameters[':time'] = lineAndTime[1] / TIME_UNIT_IN_MS;							
 						var fileName:String = fileReader.getLine(2);
 						updateSqlStatement.parameters[':fileName'] = fileName == 'fl=php:internal' ? null : fileName.slice(3); // не храним php:internal для экономии, - раз null, значит это php:internal
 						updateSqlStatement.execute();
-						executingSqlStatementAmount++;
 						
 						fileReader.shiftCursor(4);						
 					}
@@ -103,16 +104,15 @@ package develar.cachegrindVisualizer.parser
 				else
 				{
 					var insertSqlStatement:SQLStatement = createSqlStatement();
-					insertSqlStatement.text = 'insert into tree values (:id, :parent, :name, :fileName, :line, :time, :inclusiveTime)';
+					insertSqlStatement.text = 'insert into tree values (:id, :parent, :name, :fileName, :line, :time, round(:inclusiveTime, 1))';
 					insertSqlStatement.parameters[':id'] = itemId;
 					insertSqlStatement.parameters[':parent'] = parentId;
 					insertSqlStatement.parameters[':name'] = fileReader.getLine(2).slice(4);
 					insertSqlStatement.parameters[':fileName'] = null;
 					insertSqlStatement.parameters[':line'] = lineAndTime[0];
 					insertSqlStatement.parameters[':time'] = 0;
-					insertSqlStatement.parameters[':inclusiveTime'] = convertTime(lineAndTime[1]);
+					insertSqlStatement.parameters[':inclusiveTime'] = lineAndTime[1] / TIME_UNIT_IN_MS;
 					insertSqlStatement.execute();
-					executingSqlStatementAmount++;
 			
 					children.push(itemId++);					
 		
@@ -147,12 +147,11 @@ package develar.cachegrindVisualizer.parser
 				if (parentId != 0)
 				{
 					var updateSqlStatement:SQLStatement = createSqlStatement();
-					updateSqlStatement.text = 'update tree set time = :time, fileName = :fileName where id = :id';
+					updateSqlStatement.text = 'update tree set time = round(:time, 1), fileName = :fileName where id = :id';
 					updateSqlStatement.parameters[':id'] = parentId;
-					updateSqlStatement.parameters[':time'] = convertTime(lineAndTime[1]);
+					updateSqlStatement.parameters[':time'] = lineAndTime[1] / TIME_UNIT_IN_MS;
 					updateSqlStatement.parameters[':fileName'] = fileReader.getLine(5).slice(3);
-					updateSqlStatement.execute();
-					executingSqlStatementAmount++;			
+					updateSqlStatement.execute();		
 				}
 				fileReader.shiftCursor(7);
 			}
@@ -160,14 +159,13 @@ package develar.cachegrindVisualizer.parser
 			else if (sample == '' || sample == 's')
 			{
 				var insertSqlStatement:SQLStatement = createSqlStatement();			
-				insertSqlStatement.text = 'insert into tree (id, name, fileName, time, inclusiveTime) values (:id, :name, :fileName, :time, :inclusiveTime)';
+				insertSqlStatement.text = 'insert into tree (id, name, fileName, time, inclusiveTime) values (:id, :name, :fileName, round(:time, 1), round(:inclusiveTime, 1))';
 				insertSqlStatement.parameters[':id'] = itemId;
 				insertSqlStatement.parameters[':name'] = MAIN_FUNCTION_NAME;
 				insertSqlStatement.parameters[':fileName'] = fileReader.getLine(8).slice(3);
-				insertSqlStatement.parameters[':time'] = convertTime(lineAndTime[1]);
-				insertSqlStatement.parameters[':inclusiveTime'] = convertTime(uint(fileReader.getLine(5).slice(9)));
+				insertSqlStatement.parameters[':time'] = lineAndTime[1] / TIME_UNIT_IN_MS;
+				insertSqlStatement.parameters[':inclusiveTime'] = Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS;
 				insertSqlStatement.execute();
-				executingSqlStatementAmount++;
 								
 				SqlUtil.execute('update tree set parent = ' + itemId + ' where parent = 0', sqlConnection);
 				itemId++;
@@ -180,38 +178,21 @@ package develar.cachegrindVisualizer.parser
 			}
 		}
 		
-		protected function convertTime(value:uint):uint
-		{
-			return uint(value / TIME_UNIT_IN_MS);
-		}
-		
 		protected function createSqlStatement():SQLStatement
 		{
 			var statement:SQLStatement = new SQLStatement();
 			statement.sqlConnection = sqlConnection;
-			statement.addEventListener(SQLEvent.RESULT, handleSqlStatementResult);
 			return statement;
-		}
-		
-		protected function handleSqlStatementResult(event:SQLEvent):void
-		{
-			executingSqlStatementAmount--;
-			checkComplete();
-		}
-		
-		protected function checkComplete():void
-		{
-			if (fileReader == null && executingSqlStatementAmount == 0)
-			{
-				SqlUtil.execute('create index tree_parent on tree (parent)', sqlConnection);
-				sqlConnection.addEventListener(SQLEvent.COMMIT, handleCommit);
-				sqlConnection.commit();				
-			}
 		}
 		
 		protected function handleCommit(event:SQLEvent):void
 		{
-			sqlConnection.close();
+			sqlConnection.addEventListener(SQLEvent.CLOSE, handleCloseSqlConnection);
+			sqlConnection.close();			
+		}
+		
+		protected function handleCloseSqlConnection(event:SQLEvent):void
+		{
 			sqlConnection = null;
 			dispatchEvent(new Event(Event.COMPLETE));
 		}

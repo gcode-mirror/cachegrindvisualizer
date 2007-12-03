@@ -43,9 +43,9 @@
 	
 	<mx:Script><![CDATA[
 	
+	import flash.filesystem.File;
+	
 	import mx.formatters.DateFormatter;
-		
-	import develar.filesystem.FileWrapper;	
 	
 	import develar.cachegrindVisualizer.Item;		
 	import develar.cachegrindVisualizer.callGraph.builders.Builder;
@@ -61,7 +61,7 @@
 		return _builder;
 	}
 		
-	private var fileWrapper:FileWrapper;
+	private var file:File;
 	
 	private function handleCreationComplete():void
 	{
@@ -80,10 +80,16 @@
 		if (configurationManager == null)
 		{
 			configurationManager = new ConfigurationManager(this);
-			fileWrapper = new FileWrapper(Tab(parentDocument).fileWrapper.file.nativePath + '.dot');
+			var filePath:String = Tab(parentDocument).fileWrapper.file.nativePath;
+			if (Tab(parentDocument).fileWrapper.file.extension == 'cg')
+			{
+				// это вам не PHP, length только положительный
+				filePath = filePath.substr(0, filePath.length - 3);
+			}
+			file = new File(filePath + '.dot');
 		}
 		
-		builder.build(TreeItem(Tab(parentDocument).tree.selectedItem), fileWrapper);
+		builder.build(TreeItem(Tab(parentDocument).tree.selectedItem).id, file);
 		
 		var dateFormatter:DateFormatter = new DateFormatter();
 		dateFormatter.formatString = 'J:NN:SS';			
