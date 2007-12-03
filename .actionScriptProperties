@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <actionScriptProperties mainApplicationPath="CachegrindVisualizer.mxml" version="3">
-<compiler additionalCompilerArguments="-locale en_US ru" copyDependentFiles="false" enableModuleDebug="false" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersion="9.0.0" htmlPlayerVersionCheck="true" outputFolderPath="bin" sourceFolderPath="source" strict="true" useApolloConfig="false" verifyDigests="true" warn="true">
+<compiler additionalCompilerArguments="-locale=en_US,ru -source-path=../locale/{locale}" copyDependentFiles="false" enableModuleDebug="false" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersion="9.0.0" htmlPlayerVersionCheck="true" outputFolderPath="bin" sourceFolderPath="source" strict="true" useApolloConfig="false" verifyDigests="true" warn="true">
 <compilerSourcePath>
 <compilerSourcePathEntry kind="1" linkType="1" path="${DOCUMENTS}/framework/source"/>
 </compilerSourcePath>
@@ -15,7 +15,6 @@
 </excludedEntries>
 </libraryPathEntry>
 <libraryPathEntry kind="1" linkType="1" path="${DOCUMENTS}/framework/libs"/>
-<libraryPathEntry kind="1" linkType="1" path="locale"/>
 </libraryPath>
 <sourceAttachmentPath/>
 </compiler>

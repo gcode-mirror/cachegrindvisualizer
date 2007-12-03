@@ -30,7 +30,7 @@ package develar.cachegrindVisualizer.controls.tree
 		
 		override public function getChildren(node:Object, model:Object=null):ICollectionView
 		{
-			if (!('children' in node))
+			if (node.children == null)
 			{
 				selectStatement.parameters[':parent'] = node.id;
 				selectStatement.execute();

@@ -2,34 +2,46 @@ package develar.cachegrindVisualizer.callGraph.builders
 {	
 	import develar.cachegrindVisualizer.Item;
 	import develar.cachegrindVisualizer.callGraph.Node;
-	import develar.cachegrindVisualizer.controls.tree.TreeItem;
-	import develar.filesystem.FileWrapper;
 	
 	import flash.data.SQLConnection;
 	import flash.data.SQLStatement;
+	import flash.events.Event;
+	import flash.events.OutputProgressEvent;
+	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
 	
 	public class Builder
-	{
+	{		
 		public static const RANK_DIRECTION_TB:uint = 0;
 		public static const RANK_DIRECTION_LR:uint = 1;
 		public static const RANK_DIRECTION_BT:uint = 2;
 		public static const RANK_DIRECTION_RL:uint = 3;
 		
-		protected var selectStatement:SQLStatement = new SQLStatement();;
+		protected static const PREFETCH:uint = 5000;
+		
+		protected var selectStatement:SQLStatement = new SQLStatement();
+		protected var selectNodeStatement:SQLStatement = new SQLStatement();
+		protected var selectNodeWithSpecifiedParentStatement:SQLStatement = new SQLStatement();
+		protected var fileStream:FileStream = new FileStream();
 		
 		protected var rankDirections:Array = ['TB', 'LR', 'BT', 'RL'];
-		
-		protected var graph:String;
-		protected var nodes:Object;
-		
-		protected var onePercentage:Number;
-		
+			
+		protected var onePercentage:Number;		
 		protected var color:Color = new Color();
+		
+		//protected var rootId:uint 
 		
 		public function Builder():void
 		{
-			selectStatement.itemClass = Item;
-			selectStatement.text = 'select id, name, fileName, line, time, inclusiveTime from tree where parent = :parent';
+			selectStatement.itemClass = Item;			
+			selectStatement.text = 'select id, name, fileName, line, time, inclusiveTime, exists (select 1 from tree where parent = pt.id) as isBranch from tree as pt where parent = :parent';
+			
+			selectNodeStatement.itemClass = Node;
+			selectNodeWithSpecifiedParentStatement.itemClass = Node;
+			selectNodeStatement.text = selectNodeWithSpecifiedParentStatement.text = 'select name, sum(time) as time, sum(inclusiveTime) as inclusiveTime, round(sum(time) / 0.9, 2) as percentage, round(sum(inclusiveTime) / 0.9, 2) as inclusivePercentage from tree';
+			selectNodeWithSpecifiedParentStatement.text += ' where left >= :left and rigth <= :rigth';
+			selectNodeStatement.text += selectNodeWithSpecifiedParentStatement.text += 'group by name having inclusivePercentage >= :cost';
 		}
 		
 		protected var _label:Label = new Label();
@@ -61,7 +73,27 @@ package develar.cachegrindVisualizer.callGraph.builders
 			selectStatement.sqlConnection = value;
 		}
 		
-		protected function getItem(id:uint):Item
+		public function build(id:uint, file:File):void
+		{				
+			fileStream.openAsync(file, FileMode.WRITE);
+			// вводить переменную экземпляра для передачи id лень
+			var callerHandlerWriteHeader:Function = function ():void
+			{
+				fileStream.removeEventListener(OutputProgressEvent.OUTPUT_PROGRESS, callerHandlerWriteHeader); 
+				create(id);
+			}; 
+			fileStream.addEventListener(OutputProgressEvent.OUTPUT_PROGRESS, callerHandlerWriteHeader);
+							
+			var header:String = 'digraph { rankdir="' + rankDirections[_rankDirection] + '";\nedge [labelfontsize=12];\n';		
+			if (!_blackAndWhite)
+			{
+				header += 'node [style=filled];\n';
+			}			
+			header += '\n';
+			fileStream.writeUTFBytes(header);
+		}
+		
+		protected function create(id:uint):void
 		{
 			var selectStatement:SQLStatement = new SQLStatement();
 			selectStatement.itemClass = Item;
@@ -69,84 +101,63 @@ package develar.cachegrindVisualizer.callGraph.builders
 			selectStatement.text = 'select id, name, fileName, line, time, inclusiveTime from tree where id = :id';
 			selectStatement.parameters[':id'] = id;
 			selectStatement.execute();
-			return selectStatement.getResult().data[0];
-		}
-		
-		public function build(treeItem:TreeItem, fileWrapper:FileWrapper):void
-		{
-			var item:Item = getItem(treeItem.id);
-			/*selectStatement.parameters[':parent'] = treeItem.id;
-			selectStatement.execute();
-			var items:Array = selectStatement.getResult().data;*/
-			
-			
-			
-			/*onePercentage = item.inclusiveTime / 100;
+			var item:Item = selectStatement.getResult().data[0];
+			onePercentage = item.inclusiveTime / 100;
 			item.percentage = item.time / onePercentage;
 			item.inclusivePercentage = 100;
-			
-			nodes = {};
-			setNode(item);
-			
-			graph = 'digraph { rankdir="' + rankDirections[_rankDirection] + '";\nedge [labelfontsize=12];\n';		
-			if (!_blackAndWhite)
-			{
-				graph += 'node [style=filled];\n';
-			}			
-			graph += '\n';			
 				
 			buildEdge(item, item.time > 0 ? label.arrow(item, onePercentage) : '');
-			graph += '\n';
 			buildNodes();			
-			graph += '}';
+			fileStream.writeUTFBytes('}');
 			
-			fileWrapper.contents = graph;
-			nodes = null;
-			graph = null;*/
+			fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
+			fileStream.close();
 		}
 		
 		protected function buildEdge(parent:Item, parentArrowLabel:String):void
-		{			
-			/*for each (var item:Item in parent.children)
+		{
+			selectStatement.parameters[':parent'] = parent.id;
+			selectStatement.execute();
+			for each (var item:Item in selectStatement.getResult().data)
 			{
+				item.inclusivePercentage = item.inclusiveTime / onePercentage;
 				item.percentage = item.time / onePercentage;
-				item.inclusivePercentage = item.inclusiveTime / onePercentage;				
-				
 				if (item.inclusivePercentage >= _minNodeCost)
-				{
-					graph += '"' + parent.name + '" -> "' + item.name + '" [label="' + label.edge(item) + '"';
+				{					
+					var edge:String = '"' + parent.name + '" -> "' + item.name + '" [label="' + label.edge(item) + '"';
 					
 					if (parentArrowLabel != '')
 					{						
-						graph += ', taillabel="' + parentArrowLabel + '"';
+						edge += ', taillabel="' + parentArrowLabel + '"';
 					}
 										
 					var itemArrowLabel:String = '';
 					// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
-					if (item.children != null && item.time > 0)
+					if (item.isBranch && item.time > 0)
 					{
 						itemArrowLabel = label.arrow(item, onePercentage);
-						graph += ', headlabel="' + itemArrowLabel + '"';
+						edge += ', headlabel="' + itemArrowLabel + '"';
 					}
 					
 					if (!_blackAndWhite)
 					{
-						graph += ', color="' + color.edge(item) + '"';
+						edge += ', color="' + color.edge(item) + '"';
 					}
 					
-					graph += '];\n';
+					edge += '];\n';
+					fileStream.writeUTFBytes(edge);
 					
-					if (item.children != null)
-					{						
+					if (item.isBranch)
+					{
 						buildEdge(item, itemArrowLabel);
 					}
 					
-					setNode(item);
+					//setNode(item);
 				}
-			}*/
+			}
 		}
 		
-		protected function setNode(item:Item):void
+		/*protected function setNode(item:Item):void
 		{
 			if (!(item.name in nodes))
 			{
@@ -155,27 +166,39 @@ package develar.cachegrindVisualizer.callGraph.builders
 			
 			var node:Node = nodes[item.name];
 			node.percentage += item.percentage;
-			if (_label.type > 0)
+			if (label.type > 0)
 			{
 				node.inclusiveTime += item.inclusiveTime;
 			}
-			if (_label.type != Label.TYPE_TIME)
+			if (label.type != Label.TYPE_TIME)
 			{
 				node.inclusivePercentage += item.inclusivePercentage;
 			}
-		}
+		}*/
 		
 		protected function buildNodes():void
 		{
+			/*selectNodeStatement.parameters[':cost'] = _minNodeCost;
+			selectNodeStatement.execute(PREFETCH);
+			
+			
+			var node:String = '';
 			for (var name:String in nodes)
 			{				
-				graph += '"' + name + '" [label="' + label.node(name, nodes[name]) + '"';
+				node += '"' + name + '" [label="' + label.node(name, nodes[name]) + '"';
 				if (!_blackAndWhite)
 				{
-					graph += ', color="' + color.node(nodes[name]) + '"';
+					node += ', color="' + color.node(nodes[name]) + '"';
 				}
-				graph += '];\n';
+				node += '];\n';								
 			}
+			nodes = null;	
+			fileStream.writeUTFBytes(node);	*/		
+		}		
+		
+		protected function handleCloseFileStream(event:Event):void
+		{
+			
 		}
 	}
 }

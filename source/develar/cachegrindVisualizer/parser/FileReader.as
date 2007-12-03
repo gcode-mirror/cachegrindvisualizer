@@ -12,15 +12,11 @@ package develar.cachegrindVisualizer.parser
 		/**
 		 * Сколько байт данных обрабатывать за одно чтение
 		 */
-		protected static const PORTION_LENGTH:uint = 104857/* 10485760*/; // 10 МБ  
+		protected static const PORTION_LENGTH:uint = 52428800; // 50 МБ 
 		/**
 		 * Длина строки для расчета контрольной суммы (одна с начала, другая с середины)
 		 */
-		protected static const CHECK_STRING_LENGTH:uint = 500;		
-		/**
-		 * Длина строки для определения символа разделителя строк (первая строка это версия - version: 0.9.6, поэтому 20 вполне хватит)
-		 */
-		protected static const TEST_STRING_LENGTH:uint = 20;
+		protected static const CHECK_STRING_LENGTH:uint = 500;
 		/**
 		 * Длина строки для определения символа разделителя строк в порции данных и корректного дополнения нулевого элемента до полной строки
 		 */
@@ -51,13 +47,13 @@ package develar.cachegrindVisualizer.parser
 			{
 				_checksum = fileStream.readMultiByte(CHECK_STRING_LENGTH, CHAR_SET);
 				fileStream.position = file.size / 2;
-				_checksum += fileStream.readMultiByte(CHECK_STRING_LENGTH, CHAR_SET);		
-				lineEnding = checksum.slice(0, TEST_STRING_LENGTH).search('\r\n') == -1 ? '\n' : '\r\n';
+				_checksum += fileStream.readMultiByte(CHECK_STRING_LENGTH, CHAR_SET);
 			}
 			else
 			{
 				_checksum = fileStream.readMultiByte(file.size, CHAR_SET);
 			}
+			lineEnding = checksum.search('\r\n') == -1 ? '\n' : '\r\n';
 			_checksum = Sha256.hmac(checksum, String(file.size));
 			// закрываем, так как файл может быть в кеше и чтения не будет, а также в связи с проблемой описанной в методе read
 			fileStream = null;
@@ -72,10 +68,11 @@ package develar.cachegrindVisualizer.parser
 			{
 				fileStream = new FileStream();
 				fileStream.open(file, FileMode.READ);
-				fileStream.position = file.size - (END_EMPTY_LINE_AMOUNT * (lineEnding == '\n' ? 1 : 2));
+				fileStream.position = file.size - (END_EMPTY_LINE_AMOUNT * lineEnding.length);
 			}
 			
 			var length:Number = PORTION_LENGTH;
+			var offset:uint;
 			// если после чтения останется меньше, чем порция, то нам проще взять все оставшееся сразу в один заход
 			if (fileStream.position < (PORTION_LENGTH * 2))
 			{
@@ -95,7 +92,7 @@ package develar.cachegrindVisualizer.parser
 					{
 						throw new Error('Хм. Однако ZERO_ELEMENT_STRING_LENGTH не хватило. Или еще что-нибудь. Киньте файлом и еще чем-нибудь тяжелым в того, кто написал это.');
 					}
-					var offset:uint = ZERO_ELEMENT_STRING_LENGTH - lastIndexOfLineEnding;
+					offset = ZERO_ELEMENT_STRING_LENGTH - (lastIndexOfLineEnding + lineEnding.length);
 					fileStream.position -= offset;
 					length += offset;
 				}
@@ -104,6 +101,11 @@ package develar.cachegrindVisualizer.parser
 			var tmp:String = fileStream.readMultiByte(length, CHAR_SET);
 			data = tmp.split(lineEnding);
 			fileStream.position -= length;
+			// мы должны игнорировать lineEnding на стыках порций, иначе это будет пустой элемент в data и позиционирование курсора будет нарушено
+			if (offset != 0)
+			{
+				fileStream.position -= lineEnding.length;
+			}
 			cursor = data.length - 1;
 		}
 		
@@ -121,11 +123,6 @@ package develar.cachegrindVisualizer.parser
 				read();
 				data = data.concat(remainder);
 				cursor += remainder.length;
-			}
-			else if ((cursor - offset) == 0)
-			{
-				var ff:int;
-				ff++;
 			}
 		}
 		
