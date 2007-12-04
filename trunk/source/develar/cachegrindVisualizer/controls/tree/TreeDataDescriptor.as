@@ -2,20 +2,24 @@ package develar.cachegrindVisualizer.controls.tree
 {
 	import flash.data.SQLConnection;
 	import flash.data.SQLStatement;
+	import flash.filesystem.File;
 	
-	import mx.collections.ICollectionView;
 	import mx.collections.ArrayCollection;
+	import mx.collections.ICollectionView;
 	import mx.controls.treeClasses.DefaultDataDescriptor;
 	
 	public class TreeDataDescriptor extends DefaultDataDescriptor
 	{
+		protected var sqlConnection:SQLConnection = new SQLConnection(true);
 		protected var selectStatement:SQLStatement = new SQLStatement();
 		
-		public function TreeDataDescriptor(sqlConnection:SQLConnection):void
+		public function TreeDataDescriptor(file:File):void
 		{
+			sqlConnection.open(file);
+			
 			selectStatement.itemClass = TreeItem;
 			selectStatement.sqlConnection = sqlConnection;
-			selectStatement.text = 'select id, name, fileName, exists (select 1 from tree where parent = pt.id) as isBranch from tree as pt where parent = :parent';
+			selectStatement.text = 'select id, name, fileName, path, exists (select 1 from tree where path = pt.path || \'.\' || pt.id) as isBranch from tree as pt where path = :path';
 		}
 		
 		override public function hasChildren(node:Object, model:Object = null):Boolean
@@ -32,7 +36,7 @@ package develar.cachegrindVisualizer.controls.tree
 		{
 			if (node.children == null)
 			{
-				selectStatement.parameters[':parent'] = node.id;
+				selectStatement.parameters[':path'] = node.path == '' ? node.id : (node.path + '.' + node.id);
 				selectStatement.execute();
 				node.children = new ArrayCollection(selectStatement.getResult().data);
 			}
