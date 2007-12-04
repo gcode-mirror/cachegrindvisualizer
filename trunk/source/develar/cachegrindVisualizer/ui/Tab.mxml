@@ -53,14 +53,34 @@
 	
 	public function refresh():void
 	{
-		var parser:Parser = new Parser(sqlConnection, file);
-		parser.addEventListener(Event.COMPLETE, handleParserComplete);
+		var parser:Parser = new Parser(/*sqlConnection, */file);
+		//parser.addEventListener(Event.COMPLETE, handleParserComplete);
+		
+		if (!sqlConnection.connected)
+		{
+			sqlConnection.open(parser.dbFile);
+		}
+		
+		tree.dataDescriptor = new TreeDataDescriptor(parser.dbFile);		
+		tree.dataProvider = parser.mainTreeItem;		
+		tree.validateNow();
+		tree.selectedItem = tree.firstVisibleItem;
+		tree.expandItem(tree.firstVisibleItem, true);
+		
+		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';	
+		callGraph.build();
 		
 		label = file.name.replace('cachegrind.out.', '');
 	}
 	
-	private function handleParserComplete(event:Event):void
+	/*private function handleParserComplete(event:Event):void
 	{
+		// бардак с sqlConnection из-за того, что надо уже выпустить бету, а асинхронный разбор кушает память, временно он синхронен, потом доделаем
+		if (!sqlConnection.connected)
+		{
+			sqlConnection.open(Parser(event.target).dbFile);
+		}
+		
 		tree.dataDescriptor = new TreeDataDescriptor(sqlConnection.getFile());		
 		tree.dataProvider = Parser(event.target).mainTreeItem;		
 		tree.validateNow();
@@ -69,7 +89,7 @@
 		
 		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';	
 		callGraph.build();
-	}
+	}*/
 	
 	private function selectIcon(item:TreeItem):Class
 	{

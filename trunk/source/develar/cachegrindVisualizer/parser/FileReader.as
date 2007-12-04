@@ -12,7 +12,7 @@ package develar.cachegrindVisualizer.parser
 		/**
 		 * Сколько байт данных обрабатывать за одно чтение
 		 */
-		protected static const PORTION_LENGTH:uint = 52428800; // 50 МБ 
+		protected static const PORTION_LENGTH:uint = 5 * 1024 * 1024; // 10 МБ 
 		/**
 		 * Длина строки для расчета контрольной суммы (одна с начала, другая с середины)
 		 */
@@ -20,7 +20,7 @@ package develar.cachegrindVisualizer.parser
 		/**
 		 * Длина строки для определения символа разделителя строк в порции данных и корректного дополнения нулевого элемента до полной строки
 		 */
-		protected static const ZERO_ELEMENT_STRING_LENGTH:uint = 250;
+		protected static const ZERO_ELEMENT_STRING_LENGTH:uint = 200;
 		
 		protected static const END_EMPTY_LINE_AMOUNT:uint = 2;
 		
@@ -31,12 +31,6 @@ package develar.cachegrindVisualizer.parser
 		
 		protected var data:Array;
 		protected var cursor:uint;
-		
-		protected var _checksum:String;
-		public function get checksum():String
-		{
-			return _checksum;
-		}
 		
 		public function FileReader(file:File):void
 		{
@@ -57,8 +51,18 @@ package develar.cachegrindVisualizer.parser
 			_checksum = Sha256.hmac(checksum, String(file.size));
 			// закрываем, так как файл может быть в кеше и чтения не будет, а также в связи с проблемой описанной в методе read
 			fileStream = null;
-			//fileStream.close();
-			//fileStream.position = file.size - (END_EMPTY_LINE_AMOUNT * (lineEnding == '\n' ? 1 : 2));
+		}
+		
+		protected var _checksum:String;
+		public function get checksum():String
+		{
+			return _checksum;
+		}
+		
+		protected var _complete:Boolean = false;
+		public function get complete():Boolean
+		{
+			return _complete && cursor < 5;
 		}
 		
 		public function read():void
@@ -78,6 +82,7 @@ package develar.cachegrindVisualizer.parser
 			{
 				length = fileStream.position;
 				fileStream.position = 0;
+				_complete = true;
 			}		
 			else
 			{
@@ -98,8 +103,9 @@ package develar.cachegrindVisualizer.parser
 				}
 			}
 			
-			var tmp:String = fileStream.readMultiByte(length, CHAR_SET);
-			data = tmp.split(lineEnding);
+			/*var tmp:String = fileStream.readMultiByte(length, CHAR_SET);
+			data = tmp.split(lineEnding);*/
+			data = fileStream.readMultiByte(length, CHAR_SET).split(lineEnding);
 			fileStream.position -= length;
 			// мы должны игнорировать lineEnding на стыках порций, иначе это будет пустой элемент в data и позиционирование курсора будет нарушено
 			if (offset != 0)
@@ -121,7 +127,11 @@ package develar.cachegrindVisualizer.parser
 			{
 				var remainder:Array = data.slice(0, cursor + 1);
 				read();
-				data = data.concat(remainder);
+				// concat создает копию
+				for each (var item:String in remainder)
+				{
+					data.push(item);
+				}
 				cursor += remainder.length;
 			}
 		}
