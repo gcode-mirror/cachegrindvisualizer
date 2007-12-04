@@ -16,14 +16,11 @@
 	import mx.events.ListEvent;
 	
 	import develar.formatters.Formatter;
-	import develar.filesystem.FileWrapper;
 	
 	import develar.cachegrindVisualizer.Item;	
 	import develar.cachegrindVisualizer.parser.Parser;
 	import develar.cachegrindVisualizer.controls.tree.TreeDataDescriptor;
 	import develar.cachegrindVisualizer.controls.tree.TreeItem;
-	
-	private var selectStatement:SQLStatement;
 	
 	[Embed(source='../../../../assets/constructor.png')]
 	private static const constructorIcon:Class;
@@ -37,74 +34,48 @@
 	[Embed(source='../../../../assets/file.png')]
 	private static var fileIcon:Class;
 	
-	protected var sqlConnection:SQLConnection;
+	protected var sqlConnection:SQLConnection = new SQLConnection();
 	
-	private var _fileWrapper:FileWrapper;
-	public function get fileWrapper():FileWrapper
+	private var _file:File;
+	public function get file():File
 	{
-		return _fileWrapper;
+		return _file;
 	}
-	public function set fileWrapper(value:FileWrapper):void
+	public function set file(value:File):void
 	{
-		_fileWrapper = value;
-	}
-	
-	private var _modificationTime:Number;
-	public function get modificationTime():Number
-	{
-		return _modificationTime;
+		_file = value;
 	}
 	
 	private function handleCreationComplete():void
 	{
+		callGraph.builder.sqlConnection = sqlConnection;
 		refresh();
 	}
 	
 	public function refresh():void
 	{
-		var parser:Parser = new Parser(fileWrapper.file);
+		var parser:Parser = new Parser(sqlConnection, file);
 		parser.addEventListener(Event.COMPLETE, handleParserComplete);
 		
-		label = fileWrapper.name.replace('cachegrind.out.', '');
+		label = file.name.replace('cachegrind.out.', '');
 	}
 	
 	private function handleParserComplete(event:Event):void
 	{
-		sqlConnection = new SQLConnection(true);
-		sqlConnection.open(event.target.dbFile);
-		
-		sqlConnection.begin();
-		callGraph.builder.sqlConnection = sqlConnection;
-		tree.dataDescriptor = new TreeDataDescriptor(sqlConnection);
-		
-		selectStatement = new SQLStatement();
-		selectStatement.itemClass = TreeItem;
-		selectStatement.sqlConnection = sqlConnection;
-		selectStatement.text = 'select id, name, fileName, exists (select 1 from tree where parent = pt.id) as isBranch from tree as pt where parent is null';
-		selectStatement.execute();
-		
-		tree.dataProvider = selectStatement.getResult().data;		
+		tree.dataDescriptor = new TreeDataDescriptor(sqlConnection.getFile());		
+		tree.dataProvider = Parser(event.target).mainTreeItem;		
 		tree.validateNow();
 		tree.selectedItem = tree.firstVisibleItem;
-		tree.expandItem(tree.firstVisibleItem, true);	
+		tree.expandItem(tree.firstVisibleItem, true);
 		
-		_modificationTime = fileWrapper.file.modificationDate.time;
-		
-		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';
-		
-		/*trace('Построение графа вызовов. Память: ', Formatter.dataSize(System.totalMemory));
-		timeBegin = new Date().time;*/
-		
+		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';	
 		callGraph.build();
-		
-		/*timeEnd = new Date().time;			
-		trace('Затрачено на построение графа: ' + (timeEnd - timeBegin) + '. Память: ', Formatter.dataSize(System.totalMemory));*/
 	}
 	
 	private function selectIcon(item:TreeItem):Class
 	{
 		var parts:Array;
-		if (item.name == Parser.MAIN_FUNCTION_NAME)
+		if (item.id == Parser.MAIN_FUNCTION_ID)
 		{
 			return fileIcon;
 		}

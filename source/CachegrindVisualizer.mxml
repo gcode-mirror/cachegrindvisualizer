@@ -3,7 +3,7 @@
 	@author Vladimir Krivosheev
 	@version $Id$
 -->
-<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()">
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()" invoke="handleInvoke(event)">
 	
 	<mx:Metadata>
 		[ResourceBundle('Shared')]
@@ -35,14 +35,15 @@
 	
 	import mx.events.IndexChangedEvent
 	
-	import develar.filesystem.FileWrapper;
 	import develar.formatters.Formatter;
 	import develar.core.Singleton;
 	
 	import develar.cachegrindVisualizer.ui.Tab;
 	import develar.cachegrindVisualizer.net.PersistenceSession;
 	
-	private var fileWrapper:FileWrapper;
+	public const FILE_TYPE:String = 'cg';
+	
+	private var file:File;
 	private var fileFilters:Array;
 	
 	private function handlePreInitialize():void
@@ -51,7 +52,7 @@
 	}
 
 	private function handleCreationComplete():void
-	{
+	{			
 		//cb_automaticallyBuildGraph.selected = PersistenceSession.instance.automaticallyBuildGraph;
 		nativeWindow.maximize();
 		nativeWindow.visible = true;
@@ -75,45 +76,43 @@
 	
 	private function handleNativeDragDrop(event:NativeDragEvent):void
 	{
-		for each (var file:File in event.clipboard.dataForFormat(ClipboardFormats.FILE_LIST_FORMAT))
+		for each (file in event.clipboard.dataForFormat(ClipboardFormats.FILE_LIST_FORMAT))
 		{
-			fileWrapper = new FileWrapper(file);
 			openFile();
 		}
 	}
 
 	private function browse():void
 	{
-		fileWrapper = new FileWrapper();
-		fileWrapper.file.addEventListener(FileListEvent.SELECT_MULTIPLE, handleSelectMultiple);
+		file = new File();
+		file.addEventListener(FileListEvent.SELECT_MULTIPLE, handleSelectMultiple);
 		if (PersistenceSession.instance.profilerOutputDirectory != null)
 		{
-			fileWrapper.file.nativePath = PersistenceSession.instance.profilerOutputDirectory;
+			file.nativePath = PersistenceSession.instance.profilerOutputDirectory;
 		}
 		
-		fileWrapper.file.browseForOpenMultiple('', fileFilters);
+		file.browseForOpenMultiple('', fileFilters);
 	}
 	
 	private function handleSelectMultiple(event:FileListEvent):void
 	{
-		for each (var file:File in event.files)
+		for each (file in event.files)
 		{
-			fileWrapper = new FileWrapper(file);
 			openFile();
 		}
 	}
 	
 	private function openFile():void
 	{	
-		PersistenceSession.instance.profilerOutputDirectory = fileWrapper.file.nativePath;
+		PersistenceSession.instance.profilerOutputDirectory = file.nativePath;
 		PersistenceSession.instance.flush();
 		
 		for each (var existTab:Tab in tabNavigator.getChildren())
 		{
-			if (existTab.fileWrapper.file.name == fileWrapper.file.name)
+			if (existTab.file.name == file.name)
 			{
 				tabNavigator.selectedChild = existTab;
-				if (existTab.modificationTime != fileWrapper.file.modificationDate.time)
+				if (existTab.file.modificationDate.time != file.modificationDate.time)
 				{
 					existTab.refresh();
 				}
@@ -122,8 +121,8 @@
 		}
 		
 		var tab:Tab = new Tab();		
-		tab.fileWrapper = fileWrapper;
-		fileWrapper = null;
+		tab.file = file;
+		file = null;
 		tabNavigator.addChild(tab);
 		tabNavigator.selectedChild = tab;
 		
@@ -143,6 +142,15 @@
 	private function handleCBAutomaticallyBuildGraphClick(event:Event):void
 	{
 		PersistenceSession.instance.automaticallyBuildGraph = event.target.selected;
+	}
+	
+	protected function handleInvoke(event:InvokeEvent):void
+	{
+		for each (var filePath:String in event.arguments)
+		{
+			file = new File(filePath);
+			openFile();
+		}
 	}
 	
 	]]></mx:Script>	

@@ -80,8 +80,8 @@
 		if (configurationManager == null)
 		{
 			configurationManager = new ConfigurationManager(this);
-			var filePath:String = Tab(parentDocument).fileWrapper.file.nativePath;
-			if (Tab(parentDocument).fileWrapper.file.extension == 'cg')
+			var filePath:String = Tab(parentDocument).file.nativePath;
+			if (Tab(parentDocument).file.extension == CachegrindVisualizer(parentApplication).FILE_TYPE)
 			{
 				// это вам не PHP, length только положительный
 				filePath = filePath.substr(0, filePath.length - 3);
@@ -89,7 +89,7 @@
 			file = new File(filePath + '.dot');
 		}
 		
-		builder.build(TreeItem(Tab(parentDocument).tree.selectedItem).id, file);
+		builder.build(TreeItem(Tab(parentDocument).tree.selectedItem), file);
 		
 		var dateFormatter:DateFormatter = new DateFormatter();
 		dateFormatter.formatString = 'J:NN:SS';			

@@ -2,11 +2,13 @@ package develar.cachegrindVisualizer.callGraph.builders
 {	
 	import develar.cachegrindVisualizer.Item;
 	import develar.cachegrindVisualizer.callGraph.Node;
+	import develar.cachegrindVisualizer.controls.tree.TreeItem;
 	
 	import flash.data.SQLConnection;
+	import flash.data.SQLResult;
 	import flash.data.SQLStatement;
 	import flash.events.Event;
-	import flash.events.OutputProgressEvent;
+	import flash.events.SQLEvent;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
@@ -19,10 +21,10 @@ package develar.cachegrindVisualizer.callGraph.builders
 		public static const RANK_DIRECTION_RL:uint = 3;
 		
 		protected static const PREFETCH:uint = 5000;
+		protected static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree where path like :path || \'%\' group by name having inclusivePercentage >= :cost';
 		
-		protected var selectStatement:SQLStatement = new SQLStatement();
+		protected var selectEdgeStatement:SQLStatement = new SQLStatement();
 		protected var selectNodeStatement:SQLStatement = new SQLStatement();
-		protected var selectNodeWithSpecifiedParentStatement:SQLStatement = new SQLStatement();
 		protected var fileStream:FileStream = new FileStream();
 		
 		protected var rankDirections:Array = ['TB', 'LR', 'BT', 'RL'];
@@ -30,18 +32,21 @@ package develar.cachegrindVisualizer.callGraph.builders
 		protected var onePercentage:Number;		
 		protected var color:Color = new Color();
 		
-		//protected var rootId:uint 
+		protected var treeItem:TreeItem;
+		protected var parentItem:Item;
+		protected var previousItem:Item;
+		
+		protected var edgesBuilt:Boolean;
+		protected var nodesBuilt:Boolean;
 		
 		public function Builder():void
 		{
-			selectStatement.itemClass = Item;			
-			selectStatement.text = 'select id, name, fileName, line, time, inclusiveTime, exists (select 1 from tree where parent = pt.id) as isBranch from tree as pt where parent = :parent';
+			selectEdgeStatement.itemClass = Item;
+			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
+			selectEdgeStatement.text = 'select path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from tree where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
 			
 			selectNodeStatement.itemClass = Node;
-			selectNodeWithSpecifiedParentStatement.itemClass = Node;
-			selectNodeStatement.text = selectNodeWithSpecifiedParentStatement.text = 'select name, sum(time) as time, sum(inclusiveTime) as inclusiveTime, round(sum(time) / 0.9, 2) as percentage, round(sum(inclusiveTime) / 0.9, 2) as inclusivePercentage from tree';
-			selectNodeWithSpecifiedParentStatement.text += ' where left >= :left and rigth <= :rigth';
-			selectNodeStatement.text += selectNodeWithSpecifiedParentStatement.text += 'group by name having inclusivePercentage >= :cost';
+			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);			
 		}
 		
 		protected var _label:Label = new Label();
@@ -70,19 +75,17 @@ package develar.cachegrindVisualizer.callGraph.builders
 		
 		public function set sqlConnection(value:SQLConnection):void
 		{
-			selectStatement.sqlConnection = value;
+			selectEdgeStatement.sqlConnection = value;
+			selectNodeStatement.sqlConnection = value;
 		}
 		
-		public function build(id:uint, file:File):void
-		{				
+		public function build(treeItem:TreeItem, file:File):void
+		{	
+			edgesBuilt = false;
+			nodesBuilt = false;
+				
+			this.treeItem = treeItem;
 			fileStream.openAsync(file, FileMode.WRITE);
-			// вводить переменную экземпляра для передачи id лень
-			var callerHandlerWriteHeader:Function = function ():void
-			{
-				fileStream.removeEventListener(OutputProgressEvent.OUTPUT_PROGRESS, callerHandlerWriteHeader); 
-				create(id);
-			}; 
-			fileStream.addEventListener(OutputProgressEvent.OUTPUT_PROGRESS, callerHandlerWriteHeader);
 							
 			var header:String = 'digraph { rankdir="' + rankDirections[_rankDirection] + '";\nedge [labelfontsize=12];\n';		
 			if (!_blackAndWhite)
@@ -91,109 +94,125 @@ package develar.cachegrindVisualizer.callGraph.builders
 			}			
 			header += '\n';
 			fileStream.writeUTFBytes(header);
+			
+			selectEdgeStatement.sqlConnection.begin();
+			selectRootItem();			
 		}
 		
-		protected function create(id:uint):void
+		protected function selectRootItem():void
 		{
 			var selectStatement:SQLStatement = new SQLStatement();
-			selectStatement.itemClass = Item;
-			selectStatement.sqlConnection = this.selectStatement.sqlConnection;
-			selectStatement.text = 'select id, name, fileName, line, time, inclusiveTime from tree where id = :id';
-			selectStatement.parameters[':id'] = id;
+			selectStatement.itemClass = Item;			
+			selectStatement.sqlConnection = selectEdgeStatement.sqlConnection;
+			selectStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
+			selectStatement.text = 'select time, inclusiveTime from tree where path = :path and id = :id';
+			selectStatement.parameters[':path'] = treeItem.path;
+			selectStatement.parameters[':id'] = treeItem.id;
 			selectStatement.execute();
-			var item:Item = selectStatement.getResult().data[0];
-			onePercentage = item.inclusiveTime / 100;
-			item.percentage = item.time / onePercentage;
-			item.inclusivePercentage = 100;
-				
-			buildEdge(item, item.time > 0 ? label.arrow(item, onePercentage) : '');
-			buildNodes();			
-			fileStream.writeUTFBytes('}');
-			
-			fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
-			fileStream.close();
 		}
 		
-		protected function buildEdge(parent:Item, parentArrowLabel:String):void
+		protected function handleSelectRootItem(event:SQLEvent):void
 		{
-			selectStatement.parameters[':parent'] = parent.id;
-			selectStatement.execute();
-			for each (var item:Item in selectStatement.getResult().data)
-			{
-				item.inclusivePercentage = item.inclusiveTime / onePercentage;
-				item.percentage = item.time / onePercentage;
-				if (item.inclusivePercentage >= _minNodeCost)
-				{					
-					var edge:String = '"' + parent.name + '" -> "' + item.name + '" [label="' + label.edge(item) + '"';
-					
-					if (parentArrowLabel != '')
-					{						
-						edge += ', taillabel="' + parentArrowLabel + '"';
-					}
-										
-					var itemArrowLabel:String = '';
-					// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
-					if (item.isBranch && item.time > 0)
-					{
-						itemArrowLabel = label.arrow(item, onePercentage);
-						edge += ', headlabel="' + itemArrowLabel + '"';
-					}
-					
-					if (!_blackAndWhite)
-					{
-						edge += ', color="' + color.edge(item) + '"';
-					}
-					
-					edge += '];\n';
-					fileStream.writeUTFBytes(edge);
-					
-					if (item.isBranch)
-					{
-						buildEdge(item, itemArrowLabel);
-					}
-					
-					//setNode(item);
-				}
-			}
-		}
-		
-		/*protected function setNode(item:Item):void
-		{
-			if (!(item.name in nodes))
-			{
-				nodes[item.name] = new Node();
-			}
+			previousItem = event.target.getResult().data[0];
+			previousItem.path = treeItem.path;
+			previousItem.name = treeItem.name;
+			previousItem.inclusivePercentage = 100;
+			previousItem.percentage = previousItem.time / onePercentage;
 			
-			var node:Node = nodes[item.name];
-			node.percentage += item.percentage;
-			if (label.type > 0)
-			{
-				node.inclusiveTime += item.inclusiveTime;
-			}
-			if (label.type != Label.TYPE_TIME)
-			{
-				node.inclusivePercentage += item.inclusivePercentage;
-			}
-		}*/
-		
-		protected function buildNodes():void
-		{
-			/*selectNodeStatement.parameters[':cost'] = _minNodeCost;
+			onePercentage = previousItem.inclusiveTime / 100;
+			previousItem.arrowLabel = previousItem.time > 0 ? label.arrow(previousItem, onePercentage) : '';
+
+			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;
+			selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = _minNodeCost;
+			selectNodeStatement.parameters[':path'] = selectEdgeStatement.parameters[':path'] = treeItem.path == '' ? treeItem.id : (treeItem.path + '.' + treeItem.id);
+						
+			selectEdgeStatement.execute(PREFETCH);
+			
+			selectNodeStatement.text = "select '" + previousItem.name + "', " + previousItem.inclusiveTime + ", " + previousItem.percentage + ", 100 union " + SELECT_NODE_SQL;			
 			selectNodeStatement.execute(PREFETCH);
-			
-			
-			var node:String = '';
-			for (var name:String in nodes)
-			{				
-				node += '"' + name + '" [label="' + label.node(name, nodes[name]) + '"';
+		}
+		
+		protected function handleSelectEdge(event:SQLEvent):void
+		{
+			var edges:String = '';
+			var sqlResult:SQLResult = selectEdgeStatement.getResult();
+			for each (var item:Item in sqlResult.data)
+			{
+				if (item.path.length != previousItem.path.length) // сравнение длины, оно как число, быстрее чем строки
+				{
+					parentItem = previousItem;
+				}
+				
+				edges += '"' + parentItem.name + '" -> "' + item.name + '" [label="' + label.edge(item) + '"';
+				if (parentItem.arrowLabel != '')
+				{						
+					edges += ', taillabel="' + parentItem.arrowLabel + '"';
+				}
+				
+				// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
+				if (/*item.isBranch && */item.time > 0)
+				{
+					item.arrowLabel = label.arrow(item, onePercentage);
+					edges += ', headlabel="' + item.arrowLabel + '"';
+				}
+				
 				if (!_blackAndWhite)
 				{
-					node += ', color="' + color.node(nodes[name]) + '"';
+					edges += ', color="' + color.edge(item) + '"';
 				}
-				node += '];\n';								
+				
+				edges += '];\n';
+				
+				previousItem = item;
 			}
-			nodes = null;	
-			fileStream.writeUTFBytes(node);	*/		
+			
+			fileStream.writeUTFBytes(edges);
+			if (sqlResult.complete)
+			{	
+				edgesBuilt = true;
+				checkComplete();
+			}
+			else
+			{
+				selectEdgeStatement.next(PREFETCH);				
+			}
+		}
+		
+		protected function handleSelectNode(event:SQLEvent):void
+		{
+			var nodes:String = '\n';
+			var sqlResult:SQLResult = selectNodeStatement.getResult();
+			for each (var node:Node in sqlResult.data)
+			{
+				nodes += '"' + node.name + '" [label="' + label.node(node) + '"';
+				if (!_blackAndWhite)
+				{
+					nodes += ', color="' + color.node(node) + '"';
+				}
+				nodes += '];\n';
+			}		
+
+			fileStream.writeUTFBytes(nodes);
+			if (sqlResult.complete)
+			{
+				nodesBuilt = true;
+				checkComplete();
+			}
+			else
+			{
+				selectNodeStatement.next(PREFETCH);
+			}
+		}
+		
+		protected function checkComplete():void
+		{
+			if (edgesBuilt && nodesBuilt)
+			{
+				fileStream.writeUTFBytes('}');
+				
+				fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
+				fileStream.close();
+			}
 		}		
 		
 		protected function handleCloseFileStream(event:Event):void

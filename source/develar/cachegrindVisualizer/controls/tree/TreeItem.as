@@ -5,6 +5,7 @@ package develar.cachegrindVisualizer.controls.tree
 	public class TreeItem
 	{
 		public var id:uint;
+		public var path:String;
 		public var isBranch:Boolean;
 		
 		public var name:String;		

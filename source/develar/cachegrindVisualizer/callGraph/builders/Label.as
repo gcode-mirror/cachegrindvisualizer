@@ -43,14 +43,14 @@ package develar.cachegrindVisualizer.callGraph.builders
 			return build(item.inclusivePercentage, item.inclusiveTime);
 		}
 		
-		public function arrow(item:Item, one_percentage:Number):String
+		public function arrow(item:Item, onePercentage:Number):String
 		{			
-			return build(item.time / one_percentage, item.time);
+			return build(item.time / onePercentage, item.time);
 		}
 		
-		public function node(nodeName:String, node:Node):String
+		public function node(node:Node):String
 		{
-			return build(node.inclusivePercentage, node.inclusiveTime, nodeName);
+			return build(node.inclusivePercentage, node.inclusiveTime, node.name);
 		}
 		
 		protected function build(percentage:Number, time:uint, nodeName:String = null):String

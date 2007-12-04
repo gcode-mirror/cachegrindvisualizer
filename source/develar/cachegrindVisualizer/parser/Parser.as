@@ -1,20 +1,25 @@
 package develar.cachegrindVisualizer.parser
 {	
+	import develar.cachegrindVisualizer.controls.tree.TreeItem;
 	import develar.formatters.Formatter;
 	import develar.utils.SqlUtil;
 	
 	import flash.data.SQLConnection;
+	import flash.data.SQLResult;
 	import flash.data.SQLStatement;
 	import flash.data.SQLTransactionLockType;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import flash.events.SQLErrorEvent;
 	import flash.events.SQLEvent;
 	import flash.filesystem.File;
 	import flash.system.System;
 	
 	public class Parser extends EventDispatcher
 	{
-		public static const MAIN_FUNCTION_NAME:String = 'main';		
+		public static const MAIN_FUNCTION_ID:uint = 1;
+		protected static const MAIN_FUNCTION_NAME:String = 'main';
+		protected static const MAIN_FUNCTION_PATH:String = '';		
 		protected static const INITIAL_DB_FILE_NAME:String = 'db.db';		
 
 		/**
@@ -22,32 +27,45 @@ package develar.cachegrindVisualizer.parser
 		 */	
 		protected static const TIME_UNIT_IN_MS:uint = 10000;
 				
-		protected var itemId:uint = 1;
-		protected var sqlConnection:SQLConnection = new SQLConnection();
+		protected var itemId:uint = MAIN_FUNCTION_ID + 1;
+		protected var sqlConnection:SQLConnection;
 		protected var fileReader:FileReader;
-		/**
-		 * Мы выполняем запросы асинхронно, поэтому нам нужен счетчик чтобы знать, когда все операции завершены
-		 */
-		//protected var executingSqlStatementsAmount:uint;		
-			
-		public function Parser(file:File):void
+		
+		protected var inclusiveTime:Object = new Object();
+
+		public function Parser(sqlConnection:SQLConnection, file:File):void
 		{
+			_mainTreeItem.id = MAIN_FUNCTION_ID;
+			_mainTreeItem.name = MAIN_FUNCTION_NAME;
+			_mainTreeItem.isBranch = true;
+			_mainTreeItem.path = MAIN_FUNCTION_PATH;
+			
+			this.sqlConnection = sqlConnection;
+			
 			fileReader = new FileReader(file);
 			trace('память: ', Formatter.dataSize(System.totalMemory));
 			_dbFile = File.applicationStorageDirectory.resolvePath(fileReader.checksum + '.db');			
-			if (/*dbFile.exists*/false)
+			if (dbFile.exists/*false*/)
 			{
-				sqlConnection.open(dbFile);
+				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnectionToExistDb);
+				sqlConnection.open(dbFile);				
 			}
 			else
-			{
+			{				
 				File.applicationResourceDirectory.resolvePath(INITIAL_DB_FILE_NAME).copyTo(dbFile, true);
 				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
+				sqlConnection.addEventListener(SQLEvent.COMMIT, handleCommit);
 				sqlConnection.open(dbFile);
 							
 				fileReader.read();
 			}
-		}		
+		}
+		
+		protected var _mainTreeItem:TreeItem = new TreeItem();
+		public function get mainTreeItem():TreeItem 
+		{
+			return _mainTreeItem;
+		}
 		
 		protected var _dbFile:File;
 		public function get dbFile():File
@@ -58,14 +76,32 @@ package develar.cachegrindVisualizer.parser
 		protected function handleOpenSqlConnection(event:SQLEvent):void
 		{
 			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);
-			parseBody(0);
 			
-			fileReader = null;			
-			sqlConnection.addEventListener(SQLEvent.COMMIT, handleCommit);
-			sqlConnection.commit();			
+			parseBody(MAIN_FUNCTION_ID, MAIN_FUNCTION_PATH, String(MAIN_FUNCTION_ID));
+			
+			fileReader = null;
+			SqlUtil.execute('create index tree_path on tree (path)', sqlConnection);		
+			sqlConnection.commit();	
+		}
+		
+		protected function handleOpenSqlConnectionToExistDb(event:SQLEvent):void
+		{
+			var statement:SQLStatement = new SQLStatement();
+			statement.sqlConnection = sqlConnection;
+			statement.addEventListener(SQLEvent.RESULT, handleSelectMainTreeItem);					
+			statement.text = 'select fileName from main.tree where path = :path';
+			statement.parameters[':path'] = MAIN_FUNCTION_PATH;
+			statement.execute();
+		}
+		
+		protected function handleSelectMainTreeItem(event:SQLEvent):void
+		{
+			_mainTreeItem.fileName = SQLStatement(event.target).getResult().data[0].fileName;
+			
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 				
-		protected function parseBody(parentId:uint):void
+		protected function parseBody(parentId:uint, parentPath:String, path:String):void
 		{				
 			var children:Array = new Array();
 			while (true)
@@ -75,7 +111,7 @@ package develar.cachegrindVisualizer.parser
 				if (fileReader.getLine(1).charAt(0) == 'f')
 				{
 					// деструкторы вне main, то есть сами по себе
-					if (parentId == 0)
+					if (parentId == 1)
 					{
 						var tmp:String = 'ff';
 						tmp += 'hh';
@@ -89,13 +125,8 @@ package develar.cachegrindVisualizer.parser
 					}
 					else
 					{
-						var updateSqlStatement:SQLStatement = createSqlStatement();
-						updateSqlStatement.text = 'update tree set time = round(:time, 1), fileName = :fileName where id = :id';
-						updateSqlStatement.parameters[':id'] = parentId;
-						updateSqlStatement.parameters[':time'] = lineAndTime[1] / TIME_UNIT_IN_MS;							
-						var fileName:String = fileReader.getLine(2);
-						updateSqlStatement.parameters[':fileName'] = fileName == 'fl=php:internal' ? null : fileName.slice(3); // не храним php:internal для экономии, - раз null, значит это php:internal
-						updateSqlStatement.execute();
+						var fileName:String = fileReader.getLine(2); // не храним php:internal для экономии, - раз null, значит это php:internal
+						insert(parentId, parentPath, fileReader.getLine(1).slice(3), fileName == 'fl=php:internal' ? null : fileName.slice(3), lineAndTime[0], lineAndTime[1]);
 						
 						fileReader.shiftCursor(4);						
 					}
@@ -103,17 +134,8 @@ package develar.cachegrindVisualizer.parser
 				}
 				else
 				{
-					var insertSqlStatement:SQLStatement = createSqlStatement();
-					insertSqlStatement.text = 'insert into tree values (:id, :parent, :name, :fileName, :line, :time, round(:inclusiveTime, 1))';
-					insertSqlStatement.parameters[':id'] = itemId;
-					insertSqlStatement.parameters[':parent'] = parentId;
-					insertSqlStatement.parameters[':name'] = fileReader.getLine(2).slice(4);
-					insertSqlStatement.parameters[':fileName'] = null;
-					insertSqlStatement.parameters[':line'] = lineAndTime[0];
-					insertSqlStatement.parameters[':time'] = 0;
-					insertSqlStatement.parameters[':inclusiveTime'] = lineAndTime[1] / TIME_UNIT_IN_MS;
-					insertSqlStatement.execute();
-			
+					// вставка сразу невозможна, так как мы не знаем всех данных, а потом придется обновлять - в 2 раза больше запросов и необходимость индекса на поле id			
+					inclusiveTime[itemId] = lineAndTime[1] / TIME_UNIT_IN_MS;			
 					children.push(itemId++);					
 		
 					var sample:String = fileReader.getLine(4).charAt(0);
@@ -125,50 +147,63 @@ package develar.cachegrindVisualizer.parser
 					// данные о родителе после всех детей
 					else
 					{
-						updateParentItem(parentId, sample);
-		
+						insertParentItem(parentId, parentPath, sample);								
 						for each (var childId:uint in children)
 						{
-							parseBody(childId);
-						}
-												
+							parseBody(childId, path, path + '.' + childId);
+						}												
 						break;
 					}
 				}
 			}
 		}
 		
-		protected function updateParentItem(parentId:uint, sample:String):void
+		/**
+		 * Мы не передаем массив lineAndTime вместо 2 параметров line и time для типизации
+		 */
+		protected function insert(id:uint, path:String, name:String, fileName:String, line:uint, time:Number):void
+		{	
+			var statement:SQLStatement = new SQLStatement();
+			statement.sqlConnection = sqlConnection;					
+			statement.text = 'insert into main.tree (id, path, name, fileName, line, time, inclusiveTime) values (:id, :path, :name, :fileName, :line, round(:time, 1), round(:inclusiveTime, 1))';
+			statement.parameters[':id'] = id;
+			statement.parameters[':path'] = path;
+			statement.parameters[':name'] = name;			
+			statement.parameters[':fileName'] = fileName;
+			statement.parameters[':line'] = line;
+			statement.parameters[':time'] = time / TIME_UNIT_IN_MS;
+			statement.parameters[':inclusiveTime'] = inclusiveTime[id];
+			
+			statement.addEventListener(SQLErrorEvent.ERROR, handleSqlError);
+			statement.execute();		
+			delete inclusiveTime[id];
+		}
+		
+		protected function handleSqlError(event:SQLErrorEvent):void
+		{
+			
+		}
+		
+		protected function insertParentItem(id:uint, path:String, sample:String):void
 		{
 			var lineAndTime:Array = fileReader.getLine(3).split(' ');
 			
 			if (sample == 'f')
 			{
-				if (parentId != 0)
-				{
-					var updateSqlStatement:SQLStatement = createSqlStatement();
-					updateSqlStatement.text = 'update tree set time = round(:time, 1), fileName = :fileName where id = :id';
-					updateSqlStatement.parameters[':id'] = parentId;
-					updateSqlStatement.parameters[':time'] = lineAndTime[1] / TIME_UNIT_IN_MS;
-					updateSqlStatement.parameters[':fileName'] = fileReader.getLine(5).slice(3);
-					updateSqlStatement.execute();		
-				}
+				/*if (id != 1)
+				{*/
+					insert(id, path, fileReader.getLine(4).slice(3), fileReader.getLine(5).slice(3), lineAndTime[0], lineAndTime[1]);				
+				//}
 				fileReader.shiftCursor(7);
 			}
 			// для функции main не указывается файл, есть строка summary, отделенная пустыми строками
 			else if (sample == '' || sample == 's')
 			{
-				var insertSqlStatement:SQLStatement = createSqlStatement();			
-				insertSqlStatement.text = 'insert into tree (id, name, fileName, time, inclusiveTime) values (:id, :name, :fileName, round(:time, 1), round(:inclusiveTime, 1))';
-				insertSqlStatement.parameters[':id'] = itemId;
-				insertSqlStatement.parameters[':name'] = MAIN_FUNCTION_NAME;
-				insertSqlStatement.parameters[':fileName'] = fileReader.getLine(8).slice(3);
-				insertSqlStatement.parameters[':time'] = lineAndTime[1] / TIME_UNIT_IN_MS;
-				insertSqlStatement.parameters[':inclusiveTime'] = Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS;
-				insertSqlStatement.execute();
-								
-				SqlUtil.execute('update tree set parent = ' + itemId + ' where parent = 0', sqlConnection);
-				itemId++;
+				var fileName:String = fileReader.getLine(8).slice(3);
+				_mainTreeItem.fileName = fileName;				
+				inclusiveTime[id] = Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS;			
+				
+				insert(id, path, MAIN_FUNCTION_NAME, fileName, lineAndTime[0], lineAndTime[1]);							
 			
 				fileReader.shiftCursor(10);
 			}
@@ -178,23 +213,9 @@ package develar.cachegrindVisualizer.parser
 			}
 		}
 		
-		protected function createSqlStatement():SQLStatement
-		{
-			var statement:SQLStatement = new SQLStatement();
-			statement.sqlConnection = sqlConnection;
-			return statement;
-		}
-		
 		protected function handleCommit(event:SQLEvent):void
-		{
-			sqlConnection.addEventListener(SQLEvent.CLOSE, handleCloseSqlConnection);
-			sqlConnection.close();			
-		}
-		
-		protected function handleCloseSqlConnection(event:SQLEvent):void
-		{
-			sqlConnection = null;
-			dispatchEvent(new Event(Event.COMPLETE));
+		{			
+			dispatchEvent(new Event(Event.COMPLETE));	
 		}
 	}
 }
