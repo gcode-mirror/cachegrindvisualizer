@@ -47,7 +47,6 @@
 	
 	import mx.formatters.DateFormatter;
 	
-	import develar.cachegrindVisualizer.Item;		
 	import develar.cachegrindVisualizer.callGraph.builders.Builder;
 	import develar.cachegrindVisualizer.callGraph.builders.Label;
 	import develar.cachegrindVisualizer.callGraph.managers.ConfigurationManager;

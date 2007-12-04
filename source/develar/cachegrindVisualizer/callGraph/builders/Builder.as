@@ -1,7 +1,5 @@
 package develar.cachegrindVisualizer.callGraph.builders
-{	
-	import develar.cachegrindVisualizer.Item;
-	import develar.cachegrindVisualizer.callGraph.Node;
+{
 	import develar.cachegrindVisualizer.controls.tree.TreeItem;
 	
 	import flash.data.SQLConnection;
@@ -21,7 +19,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 		public static const RANK_DIRECTION_RL:uint = 3;
 		
 		protected static const PREFETCH:uint = 5000;
-		protected static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree where path like :path || \'%\' group by name having inclusivePercentage >= :cost';
+		protected static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree where path like :path || \'%\' group by name having max(inclusiveTime) / :onePercentage >= :cost';
 		
 		protected var selectEdgeStatement:SQLStatement = new SQLStatement();
 		protected var selectNodeStatement:SQLStatement = new SQLStatement();
@@ -33,15 +31,15 @@ package develar.cachegrindVisualizer.callGraph.builders
 		protected var color:Color = new Color();
 		
 		protected var treeItem:TreeItem;
-		protected var parentItem:Item;
-		protected var previousItem:Item;
+		protected var parentEdge:Edge;
+		protected var previousEdge:Edge;
 		
 		protected var edgesBuilt:Boolean;
 		protected var nodesBuilt:Boolean;
 		
 		public function Builder():void
 		{
-			selectEdgeStatement.itemClass = Item;
+			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
 			selectEdgeStatement.text = 'select path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from tree where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
 			
@@ -102,7 +100,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 		protected function selectRootItem():void
 		{
 			var selectStatement:SQLStatement = new SQLStatement();
-			selectStatement.itemClass = Item;			
+			selectStatement.itemClass = Edge;			
 			selectStatement.sqlConnection = selectEdgeStatement.sqlConnection;
 			selectStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
 			selectStatement.text = 'select time, inclusiveTime from tree where path = :path and id = :id';
@@ -113,14 +111,13 @@ package develar.cachegrindVisualizer.callGraph.builders
 		
 		protected function handleSelectRootItem(event:SQLEvent):void
 		{
-			previousItem = event.target.getResult().data[0];
-			previousItem.path = treeItem.path;
-			previousItem.name = treeItem.name;
-			previousItem.inclusivePercentage = 100;
-			previousItem.percentage = previousItem.time / onePercentage;
-			
-			onePercentage = previousItem.inclusiveTime / 100;
-			previousItem.arrowLabel = previousItem.time > 0 ? label.arrow(previousItem, onePercentage) : '';
+			previousEdge = event.target.getResult().data[0];
+			previousEdge.path = treeItem.path;
+			previousEdge.name = treeItem.name;
+			previousEdge.inclusivePercentage = 100;
+			onePercentage = previousEdge.inclusiveTime / 100;
+			previousEdge.percentage = previousEdge.time / onePercentage;
+			previousEdge.arrowLabel = previousEdge.time > 0 ? label.arrow(previousEdge, onePercentage) : '';
 
 			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;
 			selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = _minNodeCost;
@@ -128,7 +125,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 						
 			selectEdgeStatement.execute(PREFETCH);
 			
-			selectNodeStatement.text = "select '" + previousItem.name + "', " + previousItem.inclusiveTime + ", " + previousItem.percentage + ", 100 union " + SELECT_NODE_SQL;			
+			selectNodeStatement.text = SELECT_NODE_SQL + " union select '" + previousEdge.name + "', " + previousEdge.inclusiveTime + ", " + previousEdge.percentage + ", 100";			
 			selectNodeStatement.execute(PREFETCH);
 		}
 		
@@ -136,34 +133,34 @@ package develar.cachegrindVisualizer.callGraph.builders
 		{
 			var edges:String = '';
 			var sqlResult:SQLResult = selectEdgeStatement.getResult();
-			for each (var item:Item in sqlResult.data)
+			for each (var edge:Edge in sqlResult.data)
 			{
-				if (item.path.length != previousItem.path.length) // сравнение длины, оно как число, быстрее чем строки
+				if (edge.path.length != previousEdge.path.length) // сравнение длины, оно как число, быстрее чем строки
 				{
-					parentItem = previousItem;
+					parentEdge = previousEdge;
 				}
 				
-				edges += '"' + parentItem.name + '" -> "' + item.name + '" [label="' + label.edge(item) + '"';
-				if (parentItem.arrowLabel != '')
+				edges += '"' + parentEdge.name + '" -> "' + edge.name + '" [label="' + label.edge(edge) + '"';
+				if (parentEdge.arrowLabel != '')
 				{						
-					edges += ', taillabel="' + parentItem.arrowLabel + '"';
+					edges += ', taillabel="' + parentEdge.arrowLabel + '"';
 				}
 				
 				// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
-				if (/*item.isBranch && */item.time > 0)
+				if (/*item.isBranch && */edge.time > 0)
 				{
-					item.arrowLabel = label.arrow(item, onePercentage);
-					edges += ', headlabel="' + item.arrowLabel + '"';
+					edge.arrowLabel = label.arrow(edge, onePercentage);
+					edges += ', headlabel="' + edge.arrowLabel + '"';
 				}
 				
 				if (!_blackAndWhite)
 				{
-					edges += ', color="' + color.edge(item) + '"';
+					edges += ', color="' + color.edge(edge) + '"';
 				}
 				
 				edges += '];\n';
 				
-				previousItem = item;
+				previousEdge = edge;
 			}
 			
 			fileStream.writeUTFBytes(edges);
@@ -208,6 +205,10 @@ package develar.cachegrindVisualizer.callGraph.builders
 		{
 			if (edgesBuilt && nodesBuilt)
 			{
+				parentEdge = null;
+				parentEdge = null;
+				treeItem = null;
+				
 				fileStream.writeUTFBytes('}');
 				
 				fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);

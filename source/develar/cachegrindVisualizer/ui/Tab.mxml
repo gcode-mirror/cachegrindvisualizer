@@ -17,7 +17,6 @@
 	
 	import develar.formatters.Formatter;
 	
-	import develar.cachegrindVisualizer.Item;	
 	import develar.cachegrindVisualizer.parser.Parser;
 	import develar.cachegrindVisualizer.controls.tree.TreeDataDescriptor;
 	import develar.cachegrindVisualizer.controls.tree.TreeItem;

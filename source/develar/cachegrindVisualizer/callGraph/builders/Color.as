@@ -1,8 +1,5 @@
 package develar.cachegrindVisualizer.callGraph.builders
-{
-	import develar.cachegrindVisualizer.callGraph.Node;
-	import develar.cachegrindVisualizer.Item;
-	
+{	
 	public class Color
 	{	
 		protected static const MIN_HUE:Number = 0.6;
@@ -17,9 +14,9 @@ package develar.cachegrindVisualizer.callGraph.builders
 			return build(node.percentage);
 		}
 		
-		public function edge(item:Item):String
+		public function edge(edge:Edge):String
 		{				
-			return build(item.percentage, EDGE_HUE_COEFFICIENT, EDGE_SATURATION_COEFFICIENT);
+			return build(edge.percentage, EDGE_HUE_COEFFICIENT, EDGE_SATURATION_COEFFICIENT);
 		}
 		
 		protected function build(percentage:Number, hueCoefficient:Number = 0, saturationCoefficient:Number = 0):String
