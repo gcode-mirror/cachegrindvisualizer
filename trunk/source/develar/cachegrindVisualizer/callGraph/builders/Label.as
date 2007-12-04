@@ -5,9 +5,6 @@ package develar.cachegrindVisualizer.callGraph.builders
 	
 	import develar.formatters.NumberFormatter;
 	
-	import develar.cachegrindVisualizer.Item;
-	import develar.cachegrindVisualizer.callGraph.Node;
-	
 	public class Label
 	{
 		public static const TYPE_PERCENTAGE:uint = 0;
@@ -38,14 +35,14 @@ package develar.cachegrindVisualizer.callGraph.builders
 			percentageFormatter.rounding = NumberBaseRoundType.NEAREST;
 		}
 		
-		public function edge(item:Item):String
+		public function edge(edge:Edge):String
 		{			
-			return build(item.inclusivePercentage, item.inclusiveTime);
+			return build(edge.inclusivePercentage, edge.inclusiveTime);
 		}
 		
-		public function arrow(item:Item, onePercentage:Number):String
+		public function arrow(edge:Edge, onePercentage:Number):String
 		{			
-			return build(item.time / onePercentage, item.time);
+			return build(edge.time / onePercentage, edge.time);
 		}
 		
 		public function node(node:Node):String

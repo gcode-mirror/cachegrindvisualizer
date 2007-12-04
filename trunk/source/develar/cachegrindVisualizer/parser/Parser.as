@@ -80,7 +80,8 @@ package develar.cachegrindVisualizer.parser
 			parseBody(MAIN_FUNCTION_ID, MAIN_FUNCTION_PATH, String(MAIN_FUNCTION_ID));
 			
 			fileReader = null;
-			SqlUtil.execute('create index tree_path on tree (path)', sqlConnection);		
+			SqlUtil.execute('create index tree_path on tree (path)', sqlConnection);
+			SqlUtil.execute('create unique index tree_id on tree (id)', sqlConnection);		
 			sqlConnection.commit();	
 		}
 		

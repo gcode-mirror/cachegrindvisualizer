@@ -1,6 +1,6 @@
-package develar.cachegrindVisualizer
+package develar.cachegrindVisualizer.callGraph.builders
 {
-	public class Item
+	public class Edge
 	{
 		public var path:String;
 		

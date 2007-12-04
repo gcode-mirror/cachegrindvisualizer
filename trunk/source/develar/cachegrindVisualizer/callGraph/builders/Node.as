@@ -1,4 +1,4 @@
-package develar.cachegrindVisualizer.callGraph
+package develar.cachegrindVisualizer.callGraph.builders
 {
 	public class Node
 	{
