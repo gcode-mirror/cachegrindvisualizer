@@ -2,6 +2,7 @@ package develar.cachegrindVisualizer.controls.tree
 {
 	import flash.data.SQLConnection;
 	import flash.data.SQLStatement;
+	import flash.data.SQLMode;
 	import flash.filesystem.File;
 	
 	import mx.collections.ArrayCollection;
@@ -12,8 +13,11 @@ package develar.cachegrindVisualizer.controls.tree
 	{
 		protected var selectStatement:SQLStatement = new SQLStatement();
 		
-		public function TreeDataDescriptor(sqlConnection:SQLConnection):void
-		{						
+		public function TreeDataDescriptor(db:File):void
+		{	
+			var sqlConnection:SQLConnection = new SQLConnection();
+			sqlConnection.open(db, SQLMode.READ);
+								
 			selectStatement.itemClass = TreeItem;
 			selectStatement.sqlConnection = sqlConnection;
 			selectStatement.text = 'select id, name, fileName, path, exists (select 1 from tree where path = pt.path || \'.\' || pt.id) as isBranch from tree as pt where path = :path order by id desc';
