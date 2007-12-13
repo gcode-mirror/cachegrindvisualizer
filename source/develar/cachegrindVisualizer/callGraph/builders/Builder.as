@@ -19,7 +19,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 		public static const RANK_DIRECTION_RL:uint = 3;
 		
 		protected static const PREFETCH:uint = 5000;
-		protected static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree where path like :path || \'%\' group by name having max(inclusiveTime) / :onePercentage >= :cost';
+		protected static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from main.tree where path like :path || \'%\' group by name having max(inclusiveTime) / :onePercentage >= :cost';
 		
 		protected var selectEdgeStatement:SQLStatement = new SQLStatement();
 		protected var selectNodeStatement:SQLStatement = new SQLStatement();
@@ -41,7 +41,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 		{
 			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
-			selectEdgeStatement.text = 'select path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from tree where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
+			selectEdgeStatement.text = 'select path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage, exists (select 1 from main.tree where path = pt.path || \'.\' || pt.id) as isBranch from main.tree as pt where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
 			
 			selectNodeStatement.itemClass = Node;
 			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);			
@@ -147,7 +147,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 				}
 				
 				// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
-				if (/*item.isBranch && */edge.time > 0)
+				if (edge.isBranch && edge.time > 0)
 				{
 					edge.arrowLabel = label.arrow(edge, onePercentage);
 					edges += ', headlabel="' + edge.arrowLabel + '"';

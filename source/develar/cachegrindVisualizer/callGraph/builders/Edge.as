@@ -13,5 +13,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 		public var inclusivePercentage:Number;
 		
 		public var arrowLabel:String = '';
+		
+		public var isBranch:Boolean;
 	}
 }
