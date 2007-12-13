@@ -6,13 +6,17 @@ package develar.cachegrindVisualizer.parser
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	
+	import mx.controls.ProgressBar;
+	import mx.controls.ProgressBarMode;
+	import mx.managers.PopUpManager;
+	
 	public class FileReader
 	{
 		protected static const CHAR_SET:String = 'us-ascii';
 		/**
 		 * Сколько байт данных обрабатывать за одно чтение
 		 */
-		protected static const PORTION_LENGTH:uint = 5 * 1024 * 1024; // 10 МБ 
+		protected static const PORTION_LENGTH:uint = 5 * 1024 * 1024; 
 		/**
 		 * Длина строки для расчета контрольной суммы (одна с начала, другая с середины)
 		 */
@@ -33,7 +37,7 @@ package develar.cachegrindVisualizer.parser
 		protected var cursor:uint;
 		
 		public function FileReader(file:File):void
-		{
+		{			
 			this.file = file;
 			fileStream.open(file, FileMode.READ);
 			
@@ -50,6 +54,7 @@ package develar.cachegrindVisualizer.parser
 			lineEnding = checksum.search('\r\n') == -1 ? '\n' : '\r\n';
 			_checksum = Sha256.hmac(checksum, String(file.size));
 			// закрываем, так как файл может быть в кеше и чтения не будет, а также в связи с проблемой описанной в методе read
+			fileStream.close();
 			fileStream = null;
 		}
 		
@@ -62,12 +67,20 @@ package develar.cachegrindVisualizer.parser
 		protected var _complete:Boolean = false;
 		public function get complete():Boolean
 		{
-			return _complete && cursor < 5;
+			if (_complete && cursor < 5)
+			{
+				fileStream.close();
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
 		
 		public function read():void
 		{
-			// странный глюк FileStream - даже при указании position = 0, чтение происходит не с начала файла, если закрыть FileStream после расчета checksum и открыть здесь, то все работает
+			// странный глюк FileStream - даже при указании position = 0, чтение происходит не с начала файла, если закрыть FileStream после расчета checksum и открыть здесь, то все работает (AIR beta 2)
 			if (fileStream == null)
 			{
 				fileStream = new FileStream();

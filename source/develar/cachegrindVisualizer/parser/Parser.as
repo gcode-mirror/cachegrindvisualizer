@@ -9,7 +9,6 @@ package develar.cachegrindVisualizer.parser
 	import flash.data.SQLTransactionLockType;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
-	import flash.events.SQLEvent;
 	import flash.filesystem.File;
 	import flash.system.System;
 	
@@ -18,7 +17,9 @@ package develar.cachegrindVisualizer.parser
 		public static const MAIN_FUNCTION_ID:uint = 1;
 		protected static const MAIN_FUNCTION_NAME:String = 'main';
 		protected static const MAIN_FUNCTION_PATH:String = '';		
-		protected static const INITIAL_DB_FILE_NAME:String = 'db.db';		
+		protected static const INITIAL_DB_FILE_NAME:String = 'db.db';
+		
+		protected static const PARSE_CHILDREN:String = 'parseChildren';
 
 		/**
 		 * Курс преобразования стоимости в милисекунды
@@ -26,45 +27,42 @@ package develar.cachegrindVisualizer.parser
 		protected static const TIME_UNIT_IN_MS:uint = 10000;
 				
 		protected var itemId:uint = MAIN_FUNCTION_ID + 1;
-		protected var sqlConnection:SQLConnection;
 		protected var fileReader:FileReader;
 		
 		protected var insertStatement:SQLStatement = new SQLStatement();
 		protected var inclusiveTime:Object = new Object();
 		protected var notInMainInclusiveTime:Number = 0;
+		
+		protected var handlerParseChildren:Function = function (event:Event):void {};
 
-		public function Parser(/*sqlConnection:SQLConnection, */file:File):void
-		{
+		public function Parser(file:File):void
+		{			
 			_mainTreeItem.id = MAIN_FUNCTION_ID;
 			_mainTreeItem.name = MAIN_FUNCTION_NAME;
 			_mainTreeItem.isBranch = true;
 			_mainTreeItem.path = MAIN_FUNCTION_PATH;
 			
-			sqlConnection = new SQLConnection(true);			
-			
 			fileReader = new FileReader(file);
-			trace('память: ', Formatter.dataSize(System.totalMemory));
-			_dbFile = File.applicationStorageDirectory.resolvePath(fileReader.checksum + '.db');			
-			if (dbFile.exists)
-			//if (false)
+			var db:File = File.applicationStorageDirectory.resolvePath(fileReader.checksum + '.db');
+			trace('память: ', Formatter.dataSize(System.totalMemory));	
+			//if (dbFile.exists)
+			if (false)
 			{
-				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnectionToExistDb);
-				sqlConnection.open(dbFile);
+				sqlConnection.open(db);
+				open();			
 			}
 			else
-			{
-				insertStatement.sqlConnection = sqlConnection;
-				insertStatement.text = 'insert into main.tree (id, path, name, fileName, line, time, inclusiveTime) values (:id, :path, :name, :fileName, :line, :time, :inclusiveTime)';
-							
-				File.applicationResourceDirectory.resolvePath(INITIAL_DB_FILE_NAME).copyTo(dbFile, true);
-				//sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
-				//sqlConnection.addEventListener(SQLEvent.COMMIT, handleCommit);
-				sqlConnection.open(dbFile);
-							
-				fileReader.read();
-				
-				handleOpenSqlConnection();
+			{							
+				File.applicationDirectory.resolvePath(INITIAL_DB_FILE_NAME).copyTo(db, true);				
+				sqlConnection.open(db);
+				parse();
 			}
+		}
+		
+		protected var _sqlConnection:SQLConnection = new SQLConnection();
+		public function get sqlConnection():SQLConnection
+		{
+			return _sqlConnection;
 		}
 		
 		protected var _mainTreeItem:TreeItem = new TreeItem();
@@ -73,14 +71,15 @@ package develar.cachegrindVisualizer.parser
 			return _mainTreeItem;
 		}
 		
-		protected var _dbFile:File;
-		public function get dbFile():File
+		protected function parse():void
 		{
-			return _dbFile;
-		}
-		
-		protected function handleOpenSqlConnection(/*event:SQLEvent*/):void
-		{
+			addEventListener(PARSE_CHILDREN, handlerParseChildren);
+			
+			insertStatement.sqlConnection = sqlConnection;
+			insertStatement.text = 'insert into main.tree (id, path, name, fileName, line, time, inclusiveTime) values (:id, :path, :name, :fileName, :line, :time, :inclusiveTime)';
+				
+			fileReader.read();
+			
 			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);
 			
 			// Деструкторы вне main, вызываются внутренним механизмом PHP
@@ -93,26 +92,19 @@ package develar.cachegrindVisualizer.parser
 			fileReader = null;
 			SqlUtil.execute('create index tree_path on tree (path)', sqlConnection);
 			SqlUtil.execute('create unique index tree_id on tree (id)', sqlConnection);		
-			sqlConnection.commit();	
 			
-			dispatchEvent(new Event(Event.COMPLETE));
+			sqlConnection.commit();
 		}
 		
-		protected function handleOpenSqlConnectionToExistDb(event:SQLEvent):void
+		protected function open():void
 		{
 			var statement:SQLStatement = new SQLStatement();
-			statement.sqlConnection = sqlConnection;
-			statement.addEventListener(SQLEvent.RESULT, handleSelectMainTreeItem);					
+			statement.sqlConnection = sqlConnection;				
 			statement.text = 'select fileName from main.tree where path = :path';
 			statement.parameters[':path'] = MAIN_FUNCTION_PATH;
 			statement.execute();
-		}
-		
-		protected function handleSelectMainTreeItem(event:SQLEvent):void
-		{
-			_mainTreeItem.fileName = SQLStatement(event.target).getResult().data[0].fileName;
 			
-			dispatchEvent(new Event(Event.COMPLETE));
+			_mainTreeItem.fileName = statement.getResult().data[0].fileName;
 		}
 				
 		protected function parseBody(parentId:uint, parentPath:String, path:String):void
@@ -160,29 +152,13 @@ package develar.cachegrindVisualizer.parser
 											
 						for each (var childId:uint in children)
 						{
-							parseBody(childId, path, path + '.' + childId);
+							handlerParseChildren = function (event:Event):void { parseBody(childId, path, path + '.' + childId) };
+							dispatchEvent(new Event(PARSE_CHILDREN));
 						}												
 						break;
 					}
 				}
 			}
-		}
-		
-		/**
-		 * Мы не передаем массив lineAndTime вместо 2 параметров line и time для типизации
-		 */
-		protected function insert(id:uint, path:String, name:String, fileName:String, line:uint, time:Number):void
-		{
-			insertStatement.parameters[':id'] = id;
-			insertStatement.parameters[':path'] = path;
-			insertStatement.parameters[':name'] = name;			
-			insertStatement.parameters[':fileName'] = fileName;
-			insertStatement.parameters[':line'] = line;
-			insertStatement.parameters[':time'] = time / TIME_UNIT_IN_MS;
-			insertStatement.parameters[':inclusiveTime'] = inclusiveTime[id];
-			
-			insertStatement.execute();
-			delete inclusiveTime[id];
 		}
 		
 		protected function insertParentItem(id:uint, path:String, sample:String, children:Array):void
@@ -224,9 +200,21 @@ package develar.cachegrindVisualizer.parser
 			}
 		}
 		
-		protected function handleCommit(event:SQLEvent):void
-		{			
-			dispatchEvent(new Event(Event.COMPLETE));	
+		/**
+		 * Мы не передаем массив lineAndTime вместо 2 параметров line и time для типизации
+		 */
+		protected function insert(id:uint, path:String, name:String, fileName:String, line:uint, time:Number):void
+		{
+			insertStatement.parameters[':id'] = id;
+			insertStatement.parameters[':path'] = path;
+			insertStatement.parameters[':name'] = name;			
+			insertStatement.parameters[':fileName'] = fileName;
+			insertStatement.parameters[':line'] = line;
+			insertStatement.parameters[':time'] = time / TIME_UNIT_IN_MS;
+			insertStatement.parameters[':inclusiveTime'] = inclusiveTime[id];
+			
+			insertStatement.execute();
+			delete inclusiveTime[id];
 		}
 	}
 }
