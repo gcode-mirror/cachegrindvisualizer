@@ -10,13 +10,10 @@ package develar.cachegrindVisualizer.controls.tree
 	
 	public class TreeDataDescriptor extends DefaultDataDescriptor
 	{
-		protected var sqlConnection:SQLConnection = new SQLConnection(true);
 		protected var selectStatement:SQLStatement = new SQLStatement();
 		
-		public function TreeDataDescriptor(file:File):void
-		{
-			sqlConnection.open(file);
-			
+		public function TreeDataDescriptor(sqlConnection:SQLConnection):void
+		{						
 			selectStatement.itemClass = TreeItem;
 			selectStatement.sqlConnection = sqlConnection;
 			selectStatement.text = 'select id, name, fileName, path, exists (select 1 from tree where path = pt.path || \'.\' || pt.id) as isBranch from tree as pt where path = :path order by id desc';

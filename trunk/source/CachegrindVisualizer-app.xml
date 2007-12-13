@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<application xmlns="http://ns.adobe.com/air/application/1.0.M5" appId="develar.cachegrindVisualizer" version="0.3beta1">
-    <name>CachegrindVisualizer</name>
-    <title>CachegrindVisualizer</title>
-    <description/>
-	<copyright/>
+<application xmlns="http://ns.adobe.com/air/application/1.0.M6">
+	<id>develar.cachegrindVisualizer</id>
+	<version>0.3</version>
+    <filename>CachegrindVisualizer</filename>
 
 	<initialWindow>
 		<title>CachegrindVisualizer</title>
 		<content>!ApolloApplicationWizardPage.rootContentValue!</content>
 		<systemChrome>standard</systemChrome>
-		<transparent>false</transparent>
-		<visible>false</visible>
 	</initialWindow>
+
+	<allowBrowserInvocation>true</allowBrowserInvocation>
 
 	<fileTypes>
 		<fileType>

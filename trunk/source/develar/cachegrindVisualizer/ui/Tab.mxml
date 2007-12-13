@@ -8,18 +8,23 @@
 		</mx:TabNavigator>
 	</mx:HDividedBox>
 	
-	<mx:Script><![CDATA[			
+	<mx:Script><![CDATA[
+		import mx.events.FlexEvent;	
 		
 	import flash.filesystem.File;	
 	import flash.system.System;
 	
 	import mx.events.ListEvent;
+	import mx.controls.ProgressBar;		
+	import mx.managers.PopUpManager;
 	
 	import develar.formatters.Formatter;
 	
 	import develar.cachegrindVisualizer.parser.Parser;
 	import develar.cachegrindVisualizer.controls.tree.TreeDataDescriptor;
 	import develar.cachegrindVisualizer.controls.tree.TreeItem;
+	
+	private static const PROGRESS_BAR_THRESHOLD:uint = 10 * 1024 * 1024;
 	
 	[Embed(source='../../../../assets/constructor.png')]
 	private static const constructorIcon:Class;
@@ -53,43 +58,26 @@
 	
 	public function refresh():void
 	{
-		var parser:Parser = new Parser(/*sqlConnection, */file);
-		//parser.addEventListener(Event.COMPLETE, handleParserComplete);
+		label = file.name.replace('cachegrind.out.', '');
 		
-		if (!sqlConnection.connected)
-		{
-			sqlConnection.open(parser.dbFile);
-		}
+		var parser:Parser = new Parser(file);
 		
-		tree.dataDescriptor = new TreeDataDescriptor(parser.dbFile);		
-		tree.dataProvider = parser.mainTreeItem;		
+		sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
+		//sqlConnection.open(parser.sqlConnection.getFile());
+						
+		tree.dataDescriptor = new TreeDataDescriptor(parser.sqlConnection);					
+		tree.dataProvider = parser.mainTreeItem;
 		tree.validateNow();
 		tree.selectedItem = tree.firstVisibleItem;
 		tree.expandItem(tree.firstVisibleItem, true);
 		
-		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';	
-		callGraph.build();
-		
-		label = file.name.replace('cachegrind.out.', '');
+		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';
 	}
 	
-	/*private function handleParserComplete(event:Event):void
+	protected function handleOpenSqlConnection(event:SQLEvent):void
 	{
-		// бардак с sqlConnection из-за того, что надо уже выпустить бету, а асинхронный разбор кушает память, временно он синхронен, потом доделаем
-		if (!sqlConnection.connected)
-		{
-			sqlConnection.open(Parser(event.target).dbFile);
-		}
-		
-		tree.dataDescriptor = new TreeDataDescriptor(sqlConnection.getFile());		
-		tree.dataProvider = Parser(event.target).mainTreeItem;		
-		tree.validateNow();
-		tree.selectedItem = tree.firstVisibleItem;
-		tree.expandItem(tree.firstVisibleItem, true);
-		
-		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';	
 		callGraph.build();
-	}*/
+	} 
 	
 	private function selectIcon(item:TreeItem):Class
 	{

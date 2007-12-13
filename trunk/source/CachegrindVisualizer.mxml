@@ -30,10 +30,9 @@
 	import flash.system.System;
 	import flash.events.NativeDragEvent;
 	import flash.desktop.ClipboardFormats;
-	import flash.desktop.DragManager;
-	import flash.desktop.DragActions;	
+	import flash.desktop.NativeDragManager;
 	
-	import mx.events.IndexChangedEvent
+	import mx.events.IndexChangedEvent;
 	
 	import develar.formatters.Formatter;
 	import develar.core.Singleton;
@@ -70,13 +69,13 @@
 	{
 		if (event.clipboard.hasFormat(ClipboardFormats.FILE_LIST_FORMAT))
 		{
-			DragManager.acceptDragDrop(this);
+			NativeDragManager.acceptDragDrop(this);
 		}
 	}
 	
 	private function handleNativeDragDrop(event:NativeDragEvent):void
 	{
-		for each (file in event.clipboard.dataForFormat(ClipboardFormats.FILE_LIST_FORMAT))
+		for each (file in event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT))
 		{
 			openFile();
 		}
