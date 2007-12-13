@@ -1,4 +1,8 @@
 #labels Featured
+== 13 December 2007 0.3 beta 2 ==
+ * Asynchronous analysis fixed. 
+ * Updated to use Adobe AIR Beta 3.
+
 == 4 December 2007 0.3 beta 1 ==
  * File  checksum calculated by SHA256 rather than SHA1. This is not linked to security, but only to the update to the version used framework.
  * Reading file using char set us-ascii rather than utf-8. Faster and according to the standard.
