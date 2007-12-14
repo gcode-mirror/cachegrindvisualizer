@@ -16,7 +16,7 @@ package develar.cachegrindVisualizer.parser
 		/**
 		 * Сколько байт данных обрабатывать за одно чтение
 		 */
-		protected static const PORTION_LENGTH:uint = 5 * 1024 * 1024; 
+		protected static const PORTION_LENGTH:uint = 25 * 1024 * 1024; 
 		/**
 		 * Длина строки для расчета контрольной суммы (одна с начала, другая с середины)
 		 */
@@ -69,6 +69,7 @@ package develar.cachegrindVisualizer.parser
 		{
 			if (_complete && cursor < 5)
 			{
+				data = null;
 				fileStream.close();
 				return true;
 			}

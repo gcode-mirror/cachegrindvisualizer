@@ -1,6 +1,8 @@
 package develar.cachegrindVisualizer.parser
 {
 	import develar.cachegrindVisualizer.controls.tree.TreeItem;
+	import develar.formatters.Formatter;
+	import develar.utils.SqlUtil;
 	
 	import flash.data.SQLConnection;
 	import flash.data.SQLMode;
@@ -8,10 +10,12 @@ package develar.cachegrindVisualizer.parser
 	import flash.data.SQLTransactionLockType;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import flash.events.SQLErrorEvent;
 	import flash.events.SQLEvent;
 	import flash.filesystem.File;
+	import flash.system.System;
 	
-	import develar.utils.SqlUtil;
+	import mx.controls.Alert;
 	
 	public class DatabaseOpener extends EventDispatcher
 	{
@@ -28,14 +32,24 @@ package develar.cachegrindVisualizer.parser
 		
 		private var cursor:Cursor;
 		
+		private var timeBegin:Number;
+		
 		public function DatabaseOpener(file:File, sqlConnection:SQLConnection):void
 		{
 			this.sqlConnection = sqlConnection;
 			
+			mainTreeItem.id = MAIN_FUNCTION_ID;
+			mainTreeItem.name = MAIN_FUNCTION_NAME;
+			mainTreeItem.isBranch = true;
+			mainTreeItem.path = MAIN_FUNCTION_PATH;
+			
 			fileReader = new FileReader(file);
 			_db = File.applicationStorageDirectory.resolvePath(fileReader.checksum + '.db');
-			//if (dbFile.exists)
-			if (false)
+			
+			sqlConnection.addEventListener(SQLErrorEvent.ERROR, handleError, false, 0, true);
+		
+			if (_db.exists)
+			//if (false)
 			{
 				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenExistDb);
 				sqlConnection.openAsync(db, SQLMode.READ);
@@ -45,18 +59,20 @@ package develar.cachegrindVisualizer.parser
 				File.applicationDirectory.resolvePath(INITIAL_DB_FILE_NAME).copyTo(db, true);
 							
 				sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenDb);
-				sqlConnection.openAsync(db, SQLMode.UPDATE, null, false, 4096);
+				sqlConnection.openAsync(db, SQLMode.UPDATE);
 				
 				cursor = new Cursor();
+				cursor.mainTreeItem = mainTreeItem;
 				cursor.insertStatement.sqlConnection = sqlConnection;
 				
 				fileReader.read();
 			}
 		}
 		
+		private var _mainTreeItem:TreeItem = new TreeItem();
 		public function get mainTreeItem():TreeItem 
 		{
-			return cursor.mainTreeItem;
+			return _mainTreeItem;
 		}
 		
 		private var _db:File;
@@ -95,7 +111,8 @@ package develar.cachegrindVisualizer.parser
 		private function handleBeginTransaction(event:SQLEvent):void
 		{
 			sqlConnection.removeEventListener(SQLEvent.BEGIN, handleBeginTransaction);			
-						
+			
+			timeBegin = new Date().time;	
 			parse();
 		}
 		
@@ -110,6 +127,8 @@ package develar.cachegrindVisualizer.parser
 		{
 			if (fileReader.complete)
 			{
+				var timeEnd:Number = new Date().time;
+				trace('Затрачено на анализ: ' + ((timeEnd - timeBegin) / 1000) + '. Память: ' + Formatter.dataSize(System.totalMemory));
 				SqlUtil.execute('create index tree_path on tree (path)', sqlConnection);
 				SqlUtil.execute('create unique index tree_id on tree (id)', sqlConnection);
 				
@@ -126,7 +145,14 @@ package develar.cachegrindVisualizer.parser
 		{
 			sqlConnection.removeEventListener(SQLEvent.COMMIT, handleCommit);
 			
+			var timeEnd:Number = new Date().time;
+			trace('Затрачено на анализ и создание индекса: ' + ((timeEnd - timeBegin) / 1000) + '. Память: ' + Formatter.dataSize(System.totalMemory));
 			dispatchEvent(new Event(Event.COMPLETE));
+		}
+		
+		private function handleError(event:SQLErrorEvent):void
+		{
+			 Alert.show(event.error.toString());
 		}
 	}
 }
