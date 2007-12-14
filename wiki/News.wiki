@@ -1,5 +1,5 @@
 #labels Featured
-== 14 December 2007 0.3 beta 2 ==
+== 14 December 2007 0.3 beta 3 ==
  * http://www.xdebug.org/archives/xdebug-dev/1185.html
 
 == 13 December 2007 0.3 beta 2 ==
