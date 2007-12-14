@@ -9,7 +9,7 @@ package develar.cachegrindVisualizer.parser
 		/**
 		 * Курс преобразования стоимости в милисекунды
 		 */	
-		private static const TIME_UNIT_IN_MS:uint = 10000;
+		private static const TIME_UNIT_IN_MS:uint = 1000;
 		
 		private var fileReader:FileReader;
 		private var cursor:Cursor;	
