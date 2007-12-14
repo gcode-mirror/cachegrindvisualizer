@@ -1,4 +1,7 @@
 #labels Featured
+== 14 December 2007 0.3 beta 2 ==
+ * http://www.xdebug.org/archives/xdebug-dev/1185.html
+
 == 13 December 2007 0.3 beta 2 ==
  * Asynchronous analysis fixed. 
  * Updated to use Adobe AIR Beta 3.
