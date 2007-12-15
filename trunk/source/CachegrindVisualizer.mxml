@@ -10,6 +10,8 @@
 		[ResourceBundle('CachegrindVisualizer')]
 	</mx:Metadata>
 	
+	<mx:Style source="../../style.css"/>
+	<mx:Style source="../../../framework/style.css"/>
 	<mx:Style source="../../../framework/style.css"/>
 	
 	<mx:ApplicationControlBar width="100%">
@@ -24,7 +26,6 @@
 	<mx:Script><![CDATA[
 	
 	[Bindable]
-	private var locales:Array = new Array({id: 'en_US', label: 'English'}, {id: 'ru', label: 'Russian'});
 		
 	import flash.filesystem.File;
 	import flash.system.System;
@@ -41,6 +42,8 @@
 	import develar.cachegrindVisualizer.net.PersistenceSession;
 	
 	public const FILE_TYPE:String = 'cg';
+	
+	private var locales:Array = new Array({id: 'en_US', label: 'English'}, {id: 'ru', label: 'Russian'});
 	
 	private var file:File;
 	private var fileFilters:Array;
