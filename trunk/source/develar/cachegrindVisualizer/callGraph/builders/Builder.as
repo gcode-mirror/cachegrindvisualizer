@@ -213,6 +213,8 @@ package develar.cachegrindVisualizer.callGraph.builders
 				
 				fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
 				fileStream.close();
+				
+				selectEdgeStatement.sqlConnection.commit();
 			}
 		}		
 		

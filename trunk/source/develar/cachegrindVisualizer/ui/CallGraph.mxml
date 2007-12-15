@@ -53,14 +53,13 @@
 	import develar.cachegrindVisualizer.controls.tree.TreeItem;
 	
 	private var configurationManager:ConfigurationManager;
+	private var file:File;
 	
 	private var _builder:Builder = new Builder();
 	public function get builder():Builder
 	{
 		return _builder;
 	}
-		
-	private var file:File;
 	
 	private function handleCreationComplete():void
 	{

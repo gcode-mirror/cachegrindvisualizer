@@ -14,7 +14,7 @@
 	
 	<mx:ApplicationControlBar width="100%">
 		<mx:Button label="{resourceManager.getString('Shared', 'open')}" click="browse()"/>
-		<mx:Button id="b_refresh" label="{resourceManager.getString('Shared', 'refresh')}" enabled="{tabNavigator.selectedChild != null}" click="Tab(tabNavigator.selectedChild).refresh()"/>
+		<mx:Button id="b_refresh" label="{resourceManager.getString('Shared', 'refresh')}" enabled="{tabNavigator.selectedIndex > 0}" click="Tab(tabNavigator.selectedChild).refresh()"/>
 		<mx:Spacer width="100%"/>
 		<!--<mx:CheckBox id="cb_automaticallyBuildGraph" label="{resourceManager.getString('CachegrindVisualizer', 'automaticallyBuildGraph')}" click="handleCBAutomaticallyBuildGraphClick(event)"/>-->
 		<develar:LocaleComboBox dataProvider="{locales}"/>
@@ -123,10 +123,17 @@
 		tab.file = file;
 		file = null;
 		tabNavigator.addChild(tab);
+		tabNavigator.validateNow();
+		
+		//tabNavigator.selectedChild = null;
 		tabNavigator.selectedChild = tab;
+		tabNavigator.selectedIndex = tabNavigator.selectedIndex;
+		tabNavigator.validateNow();
 		
 		// при добавлении первой вкладки связывание не срабатывает
-		b_refresh.enabled = true;
+		//b_refresh.enabled = true;
+		/*b_refresh.invalidateProperties();
+		b_refresh.validateProperties();*/
 	}
 	
 	private function handleTabChange():void
