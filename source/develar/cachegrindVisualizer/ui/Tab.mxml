@@ -9,7 +9,6 @@
 	</mx:HDividedBox>
 	
 	<mx:Script><![CDATA[
-		import develar.cachegrindVisualizer.parser.DatabaseOpener;
 		
 	import flash.filesystem.File;	
 	import flash.system.System;
@@ -22,11 +21,8 @@
 	import develar.formatters.Formatter;
 	
 	import develar.cachegrindVisualizer.parser.Parser;
-	import develar.cachegrindVisualizer.parser.AParser;
 	import develar.cachegrindVisualizer.controls.tree.TreeDataDescriptor;
 	import develar.cachegrindVisualizer.controls.tree.TreeItem;
-	
-	private static const PROGRESS_BAR_THRESHOLD:uint = 10 * 1024 * 1024;
 	
 	[Embed(source='../../../../assets/constructor.png')]
 	private static const constructorIcon:Class;
@@ -60,22 +56,29 @@
 	
 	public function refresh():void
 	{
+		if (sqlConnection.connected)
+		{
+			sqlConnection.close();
+		}
+		
 		label = file.name.replace('cachegrind.out.', '');
 		
-		var databaseOpener:DatabaseOpener = new DatabaseOpener(file, sqlConnection);
-		databaseOpener.addEventListener(Event.COMPLETE, handleParserComplete);
-	}
-	
-	protected function handleParserComplete(event:Event):void
-	{
-		tree.dataDescriptor = new TreeDataDescriptor(event.target.db);					
-		tree.dataProvider = event.target.mainTreeItem;
+		var parser:Parser = new Parser(file, sqlConnection);
+		
+		sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
+		sqlConnection.openAsync(parser.db, SQLMode.READ);
+
+		tree.dataDescriptor = new TreeDataDescriptor(parser.db);					
+		tree.dataProvider = parser.mainTreeItem;
 		tree.validateNow();
 		tree.selectedItem = tree.firstVisibleItem;
 		tree.expandItem(tree.firstVisibleItem, true);
 		
 		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';
-		
+	}
+	
+	private function handleOpenSqlConnection(event:SQLEvent):void
+	{
 		callGraph.build();
 	}
 	
