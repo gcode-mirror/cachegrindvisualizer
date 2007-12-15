@@ -1,4 +1,12 @@
 #labels Featured
+== 15 December 2007 0.3 ==
+ * Refusal of the asynchronous analysis. Synchronous. More slowly in 5 times it not same. AIR sucks.
+ * Now it is possible to specify graph title.
+ * Display current loaded configuration name.
+ * The loaded configuration is used and at next start of the program.
+ * fixed: minNodeCost transformation to unsigned integer at use mouse wheel.
+ * fixed: "Refresh" button.
+
 == 14 December 2007 0.3 beta 3 ==
  * http://www.xdebug.org/archives/xdebug-dev/1185.html
 
