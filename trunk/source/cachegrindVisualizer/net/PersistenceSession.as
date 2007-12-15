@@ -1,16 +1,12 @@
-/**
- * @author Vladimir Krivosheev
- * @version $Id: PersistenceSession.as 250 2007-11-20 18:03:18Z develar $
- */
-package develar.cachegrindVisualizer.net
+package cachegrindVisualizer.net
 {
 	import develar.net.PersistenceSession;
 	
 	public class PersistenceSession extends develar.net.PersistenceSession
 	{
-		public static function get instance():develar.cachegrindVisualizer.net.PersistenceSession
+		public static function get instance():cachegrindVisualizer.net.PersistenceSession
 		{
-			return develar.cachegrindVisualizer.net.PersistenceSession(develar.net.PersistenceSession.instance);
+			return cachegrindVisualizer.net.PersistenceSession(develar.net.PersistenceSession.instance);
 		}
 		
 		public function get callGraphConfigurationName():String

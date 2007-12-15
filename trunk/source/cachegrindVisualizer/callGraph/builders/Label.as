@@ -1,4 +1,4 @@
-package develar.cachegrindVisualizer.callGraph.builders
+package cachegrindVisualizer.callGraph.builders
 {
 	import mx.formatters.NumberBaseRoundType;
 	import mx.resources.ResourceManager;

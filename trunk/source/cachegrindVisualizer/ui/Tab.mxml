@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" xmlns="develar.cachegrindVisualizer.ui.*" width="100%" height="100%" creationComplete="handleCreationComplete()">
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" xmlns="cachegrindVisualizer.ui.*" width="100%" height="100%" creationComplete="handleCreationComplete()">
 	
 	<mx:HDividedBox width="100%" height="100%">
 		<mx:Tree id="tree" labelField="name" wordWrap="true" variableRowHeight="true" width="30%" height="100%" iconFunction="selectIcon" itemClick="handleItemClick(event)"/>
@@ -20,20 +20,20 @@
 	
 	import develar.formatters.Formatter;
 	
-	import develar.cachegrindVisualizer.parser.Parser;
-	import develar.cachegrindVisualizer.controls.tree.TreeDataDescriptor;
-	import develar.cachegrindVisualizer.controls.tree.TreeItem;
+	import cachegrindVisualizer.parser.Parser;
+	import cachegrindVisualizer.controls.tree.TreeDataDescriptor;
+	import cachegrindVisualizer.controls.tree.TreeItem;
 	
-	[Embed(source='../../../../assets/constructor.png')]
+	[Embed(source='../../../assets/constructor.png')]
 	private static const constructorIcon:Class;
-	[Embed(source='../../../../assets/destructor.png')]
+	[Embed(source='../../../assets/destructor.png')]
 	private static var destructorIcon:Class;
 	
-	[Embed(source='../../../../assets/method.png')]
+	[Embed(source='../../../assets/method.png')]
 	private static var methodIcon:Class;	
-	[Embed(source='../../../../assets/function.png')]
+	[Embed(source='../../../assets/function.png')]
 	private static var functionIcon:Class;	
-	[Embed(source='../../../../assets/file.png')]
+	[Embed(source='../../../assets/file.png')]
 	private static var fileIcon:Class;
 	
 	protected var sqlConnection:SQLConnection = new SQLConnection();
@@ -159,7 +159,7 @@
 	
 	private function handleItemClick(event:ListEvent):void
 	{
-		if (tree.selectedItem.children != null)
+		if (TreeItem(tree.selectedItem).isBranch)
 		{
 			callGraph.build();
 		}		

@@ -1,4 +1,4 @@
-package develar.cachegrindVisualizer.controls.tree
+package cachegrindVisualizer.controls.tree
 {
 	import mx.collections.ArrayCollection;
 	

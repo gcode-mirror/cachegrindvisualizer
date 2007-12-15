@@ -1,14 +1,10 @@
-package develar.cachegrindVisualizer.parser
+package cachegrindVisualizer.parser
 {	
 	import develar.encryption.Sha256;
 	
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
-	
-	import mx.controls.ProgressBar;
-	import mx.controls.ProgressBarMode;
-	import mx.managers.PopUpManager;
 	
 	public class FileReader
 	{

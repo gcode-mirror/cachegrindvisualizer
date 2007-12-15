@@ -3,29 +3,26 @@
 	@author Vladimir Krivosheev
 	@version $Id$
 -->
-<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()" invoke="handleInvoke(event)">
+<develar:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()" invoke="handleInvoke(event)">
 	
 	<mx:Metadata>
 		[ResourceBundle('Shared')]
 		[ResourceBundle('CachegrindVisualizer')]
 	</mx:Metadata>
 	
-	<mx:Style source="../../style.css"/>
 	<mx:Style source="../../../framework/style.css"/>
 	<mx:Style source="../../../framework/style.css"/>
 	
 	<mx:ApplicationControlBar width="100%">
 		<mx:Button label="{resourceManager.getString('Shared', 'open')}" click="browse()"/>
-		<mx:Button id="b_refresh" label="{resourceManager.getString('Shared', 'refresh')}" enabled="{tabNavigator.selectedIndex > 0}" click="Tab(tabNavigator.selectedChild).refresh()"/>
+		<mx:Button id="b_refresh" label="{resourceManager.getString('Shared', 'refresh')}" enabled="false" click="Tab(tabNavigator.selectedChild).refresh()"/>
 		<mx:Spacer width="100%"/>
 		<!--<mx:CheckBox id="cb_automaticallyBuildGraph" label="{resourceManager.getString('CachegrindVisualizer', 'automaticallyBuildGraph')}" click="handleCBAutomaticallyBuildGraphClick(event)"/>-->
 		<develar:LocaleComboBox dataProvider="{locales}"/>
 	</mx:ApplicationControlBar>
-	<develar:TabNavigator id="tabNavigator" width="100%" height="100%" change="handleTabChange()"/>
+	<develar:TabNavigator id="tabNavigator" width="100%" height="100%" change="handleTabChange()" childRemove="handleTabRemove()"/>
 	
 	<mx:Script><![CDATA[
-	
-	[Bindable]
 		
 	import flash.filesystem.File;
 	import flash.system.System;
@@ -38,11 +35,12 @@
 	import develar.formatters.Formatter;
 	import develar.core.Singleton;
 	
-	import develar.cachegrindVisualizer.ui.Tab;
-	import develar.cachegrindVisualizer.net.PersistenceSession;
+	import cachegrindVisualizer.ui.Tab;
+	import cachegrindVisualizer.net.PersistenceSession;
 	
 	public const FILE_TYPE:String = 'cg';
 	
+	[Bindable]
 	private var locales:Array = new Array({id: 'en_US', label: 'English'}, {id: 'ru', label: 'Russian'});
 	
 	private var file:File;
@@ -58,9 +56,6 @@
 		//cb_automaticallyBuildGraph.selected = PersistenceSession.instance.automaticallyBuildGraph;
 		nativeWindow.maximize();
 		nativeWindow.visible = true;
-		
-		var n1:Number = 0.8;
-		var n2:uint = Math.round(n1);
 		
 		addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, handleNativeDragEnter);
 		addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
@@ -126,17 +121,9 @@
 		tab.file = file;
 		file = null;
 		tabNavigator.addChild(tab);
-		tabNavigator.validateNow();
-		
-		//tabNavigator.selectedChild = null;
 		tabNavigator.selectedChild = tab;
-		tabNavigator.selectedIndex = tabNavigator.selectedIndex;
-		tabNavigator.validateNow();
 		
-		// при добавлении первой вкладки связывание не срабатывает
-		//b_refresh.enabled = true;
-		/*b_refresh.invalidateProperties();
-		b_refresh.validateProperties();*/
+		b_refresh.enabled = true;
 	}
 	
 	private function handleTabChange():void
@@ -162,6 +149,11 @@
 		}
 	}
 	
+	private function handleTabRemove():void
+	{
+		b_refresh.enabled = tabNavigator.numChildren > 1;
+	}
+	
 	]]></mx:Script>	
 	
-</mx:WindowedApplication>
+</develar:WindowedApplication>
