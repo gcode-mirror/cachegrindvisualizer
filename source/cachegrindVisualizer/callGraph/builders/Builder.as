@@ -1,6 +1,6 @@
-package develar.cachegrindVisualizer.callGraph.builders
+package cachegrindVisualizer.callGraph.builders
 {
-	import develar.cachegrindVisualizer.controls.tree.TreeItem;
+	import cachegrindVisualizer.controls.tree.TreeItem;
 	
 	import flash.data.SQLConnection;
 	import flash.data.SQLResult;
@@ -13,29 +13,28 @@ package develar.cachegrindVisualizer.callGraph.builders
 	
 	public class Builder
 	{		
-		public static const RANK_DIRECTION_TB:uint = 0;
-		public static const RANK_DIRECTION_LR:uint = 1;
-		public static const RANK_DIRECTION_BT:uint = 2;
-		public static const RANK_DIRECTION_RL:uint = 3;
+		private static const PREFETCH:uint = 5000;
+		private static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from main.tree where path like :path || \'%\' group by name having max(inclusiveTime) / :onePercentage >= :cost';
 		
-		protected static const PREFETCH:uint = 5000;
-		protected static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from main.tree where path like :path || \'%\' group by name having max(inclusiveTime) / :onePercentage >= :cost';
+		private var selectRootItemStatement:SQLStatement = new SQLStatement();
+		private var selectEdgeStatement:SQLStatement = new SQLStatement();
+		private var selectNodeStatement:SQLStatement = new SQLStatement();
 		
-		protected var selectEdgeStatement:SQLStatement = new SQLStatement();
-		protected var selectNodeStatement:SQLStatement = new SQLStatement();
-		protected var fileStream:FileStream = new FileStream();
-		
-		protected var rankDirections:Array = ['TB', 'LR', 'BT', 'RL'];
+		private var fileStream:FileStream = new FileStream();
 			
-		protected var onePercentage:Number;		
-		protected var color:Color = new Color();
+		private var label:Label = new Label();
+		private var color:Color = new Color();
 		
-		protected var treeItem:TreeItem;
-		protected var parentEdge:Edge;
-		protected var previousEdge:Edge;
+		private var onePercentage:Number;
 		
-		protected var edgesBuilt:Boolean;
-		protected var nodesBuilt:Boolean;
+		private var configuration:Configuration;
+		
+		private var treeItem:TreeItem;
+		private var parentEdge:Edge;
+		private var previousEdge:Edge;
+		
+		private var edgesBuilt:Boolean = true;
+		private var nodesBuilt:Boolean = true;
 		
 		public function Builder():void
 		{
@@ -44,74 +43,69 @@ package develar.cachegrindVisualizer.callGraph.builders
 			selectEdgeStatement.text = 'select path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage, exists (select 1 from main.tree where path = pt.path || \'.\' || pt.id) as isBranch from main.tree as pt where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
 			
 			selectNodeStatement.itemClass = Node;
-			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);			
+			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);
+			
+			selectRootItemStatement.itemClass = Edge;
+			selectRootItemStatement.text = 'select time, inclusiveTime from tree where path = :path and id = :id';
+			selectRootItemStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
 		}
 		
-		protected var _label:Label = new Label();
-		public function get label():Label
+		public function get complete():Boolean
 		{
-			return _label;
+			return edgesBuilt && nodesBuilt;
 		}
 		
-		protected var _minNodeCost:Number = 1;
-		public function set minNodeCost(value:Number):void
+		public function cancel():void
 		{
-			_minNodeCost = value;
-		}
-		
-		protected var _rankDirection:uint = 0;
-		public function set rankDirection(value:uint):void
-		{
-			_rankDirection = value;
-		}		
-		
-		protected var _blackAndWhite:Boolean = false;
-		public function set blackAndWhite(value:Boolean):void
-		{
-			_blackAndWhite = value;
+			selectRootItemStatement.cancel();
+			selectEdgeStatement.cancel();
+			selectNodeStatement.cancel();
+				
+			fileStream.close();
 		}
 		
 		public function set sqlConnection(value:SQLConnection):void
 		{
 			selectEdgeStatement.sqlConnection = value;
 			selectNodeStatement.sqlConnection = value;
+			selectRootItemStatement.sqlConnection = value;
 		}
 		
-		public function build(treeItem:TreeItem, file:File):void
+		public function build(treeItem:TreeItem, file:File, configuration:Configuration):void
 		{	
+			this.treeItem = treeItem;
+			this.configuration = configuration;
+			label.type = configuration.labelType;
+			
 			edgesBuilt = false;
 			nodesBuilt = false;
-				
-			this.treeItem = treeItem;
-			fileStream.openAsync(file, FileMode.WRITE);
-							
-			var header:String = 'digraph { rankdir="' + rankDirections[_rankDirection] + '";\nedge [labelfontsize=12];\n';		
-			if (!_blackAndWhite)
+			
+			fileStream.openAsync(file, FileMode.WRITE);							
+			var header:String = 'digraph { rankdir="' + configuration.rankDirection + '";\nedge [labelfontsize=12];\n';		
+			if (configuration.title != null)
+			{
+				header += 'label="' + configuration.title + '" fontsize=22 labelloc="' + configuration.titleLocation + '"\n';
+			}
+			if (!configuration.blackAndWhite)
 			{
 				header += 'node [style=filled];\n';
-			}			
+			}		
 			header += '\n';
 			fileStream.writeUTFBytes(header);
 			
-			selectEdgeStatement.sqlConnection.begin();
 			selectRootItem();			
 		}
 		
-		protected function selectRootItem():void
-		{
-			var selectStatement:SQLStatement = new SQLStatement();
-			selectStatement.itemClass = Edge;			
-			selectStatement.sqlConnection = selectEdgeStatement.sqlConnection;
-			selectStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
-			selectStatement.text = 'select time, inclusiveTime from tree where path = :path and id = :id';
-			selectStatement.parameters[':path'] = treeItem.path;
-			selectStatement.parameters[':id'] = treeItem.id;
-			selectStatement.execute();
+		private function selectRootItem():void
+		{			
+			selectRootItemStatement.parameters[':path'] = treeItem.path;
+			selectRootItemStatement.parameters[':id'] = treeItem.id;
+			selectRootItemStatement.execute();
 		}
 		
-		protected function handleSelectRootItem(event:SQLEvent):void
+		private function handleSelectRootItem(event:SQLEvent):void
 		{
-			previousEdge = event.target.getResult().data[0];
+			previousEdge = selectRootItemStatement.getResult().data[0];
 			previousEdge.path = treeItem.path;
 			previousEdge.name = treeItem.name;
 			previousEdge.inclusivePercentage = 100;
@@ -120,7 +114,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 			previousEdge.arrowLabel = previousEdge.time > 0 ? label.arrow(previousEdge, onePercentage) : '';
 
 			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;
-			selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = _minNodeCost;
+			selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost;
 			selectNodeStatement.parameters[':path'] = selectEdgeStatement.parameters[':path'] = treeItem.path == '' ? treeItem.id : (treeItem.path + '.' + treeItem.id);
 						
 			selectEdgeStatement.execute(PREFETCH);
@@ -129,7 +123,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 			selectNodeStatement.execute(PREFETCH);
 		}
 		
-		protected function handleSelectEdge(event:SQLEvent):void
+		private function handleSelectEdge(event:SQLEvent):void
 		{
 			var edges:String = '';
 			var sqlResult:SQLResult = selectEdgeStatement.getResult();
@@ -153,7 +147,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 					edges += ', headlabel="' + edge.arrowLabel + '"';
 				}
 				
-				if (!_blackAndWhite)
+				if (!configuration.blackAndWhite)
 				{
 					edges += ', color="' + color.edge(edge) + '"';
 				}
@@ -166,6 +160,7 @@ package develar.cachegrindVisualizer.callGraph.builders
 			fileStream.writeUTFBytes(edges);
 			if (sqlResult.complete)
 			{	
+				parentEdge = previousEdge = null;
 				edgesBuilt = true;
 				checkComplete();
 			}
@@ -175,14 +170,14 @@ package develar.cachegrindVisualizer.callGraph.builders
 			}
 		}
 		
-		protected function handleSelectNode(event:SQLEvent):void
+		private function handleSelectNode(event:SQLEvent):void
 		{
 			var nodes:String = '\n';
 			var sqlResult:SQLResult = selectNodeStatement.getResult();
 			for each (var node:Node in sqlResult.data)
 			{
 				nodes += '"' + node.name + '" [label="' + label.node(node) + '"';
-				if (!_blackAndWhite)
+				if (!configuration.blackAndWhite)
 				{
 					nodes += ', color="' + color.node(node) + '"';
 				}
@@ -201,24 +196,20 @@ package develar.cachegrindVisualizer.callGraph.builders
 			}
 		}
 		
-		protected function checkComplete():void
+		private function checkComplete():void
 		{
-			if (edgesBuilt && nodesBuilt)
+			if (complete)
 			{
-				parentEdge = null;
-				parentEdge = null;
 				treeItem = null;
 				
 				fileStream.writeUTFBytes('}');
 				
 				fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
 				fileStream.close();
-				
-				selectEdgeStatement.sqlConnection.commit();
 			}
 		}		
 		
-		protected function handleCloseFileStream(event:Event):void
+		private function handleCloseFileStream(event:Event):void
 		{
 			
 		}

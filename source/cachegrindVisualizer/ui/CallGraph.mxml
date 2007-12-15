@@ -5,10 +5,21 @@
 		[ResourceBundle('CallGraph')]
 	</mx:Metadata>
 	
-	<mx:Panel title="{resourceManager.getString('CallGraph', 'configuration')}" width="100%">
-		<mx:Form>
+	<mx:Panel id="panel" title="{resourceManager.getString('CallGraph', 'configuration')}" width="100%">
+		<mx:Form width="100%">
+			<mx:FormItem label="{resourceManager.getString('CallGraph', 'title')}" width="100%">
+				<mx:HBox width="100%">
+					<develar:TextInput id="title" width="100%" change="handleChangeWithDelay(event)"/>
+					<mx:ComboBox id="titleLocation" change="handleChange(event)">
+						<mx:Array>
+							<mx:Object data="{Configuration.TITLE_LOCATION_TOP}" label="{resourceManager.getString('CallGraph', 'top')}"/>
+							<mx:Object data="{Configuration.TITLE_LOCATION_BOTTOM}" label="{resourceManager.getString('CallGraph', 'bottom')}"/>
+						</mx:Array>
+					</mx:ComboBox>					
+				</mx:HBox>				
+			</mx:FormItem>
 			<mx:FormItem label="{resourceManager.getString('CallGraph', 'minNodeCost')}">
-				<develar:NumericStepper id="minNodeCost" maximum="99" maxChars="4" stepSize="0.01" change="handleChange(event)"/>
+				<develar:NumericStepper id="minNodeCost" maximum="99" maxChars="4" stepSize="0.01" change="handleChangeWithDelay(event)"/>
 			</mx:FormItem>
 			<mx:FormItem label="{resourceManager.getString('CallGraph', 'labelType')}">
 				<mx:ComboBox id="labelType" change="handleChange(event)">
@@ -23,16 +34,16 @@
 			<mx:FormItem label="{resourceManager.getString('CallGraph', 'rankDirection')}">
 				<mx:ComboBox id="rankDirection" change="handleChange(event)">
 					<mx:Array>
-						<mx:Object data="{Builder.RANK_DIRECTION_TB}" label="{resourceManager.getString('CallGraph', 'rankDirectionTB')}"/>
-						<mx:Object data="{Builder.RANK_DIRECTION_BT}" label="{resourceManager.getString('CallGraph', 'rankDirectionBT')}"/>
-						<mx:Object data="{Builder.RANK_DIRECTION_LR}" label="{resourceManager.getString('CallGraph', 'rankDirectionLR')}"/>
-						<mx:Object data="{Builder.RANK_DIRECTION_RL}" label="{resourceManager.getString('CallGraph', 'rankDirectionRL')}"/>
+						<mx:Object data="{Configuration.RANK_DIRECTION_TB}" label="{resourceManager.getString('CallGraph', 'rankDirectionTB')}"/>
+						<mx:Object data="{Configuration.RANK_DIRECTION_BT}" label="{resourceManager.getString('CallGraph', 'rankDirectionBT')}"/>
+						<mx:Object data="{Configuration.RANK_DIRECTION_LR}" label="{resourceManager.getString('CallGraph', 'rankDirectionLR')}"/>
+						<mx:Object data="{Configuration.RANK_DIRECTION_RL}" label="{resourceManager.getString('CallGraph', 'rankDirectionRL')}"/>
 					</mx:Array>
 				</mx:ComboBox>
 			</mx:FormItem>
 			<mx:FormItem>
 				<mx:CheckBox id="blackAndWhite" label="{resourceManager.getString('CallGraph', 'blackAndWhite')}" change="handleChange(event)"/>
-			</mx:FormItem>
+			</mx:FormItem>			
 		</mx:Form>
 		
 		<mx:ControlBar width="100%">
@@ -41,16 +52,19 @@
 		</mx:ControlBar>
 	</mx:Panel>
 	
-	<mx:Script><![CDATA[
+	<mx:Script><![CDATA[		
 	
 	import flash.filesystem.File;
 	
-	import mx.formatters.DateFormatter;
+	//import mx.formatters.DateFormatter;
 	
-	import develar.cachegrindVisualizer.callGraph.builders.Builder;
-	import develar.cachegrindVisualizer.callGraph.builders.Label;
-	import develar.cachegrindVisualizer.callGraph.managers.ConfigurationManager;
-	import develar.cachegrindVisualizer.controls.tree.TreeItem;
+	import develar.controls.NumericStepper;
+	
+	import cachegrindVisualizer.callGraph.builders.Builder;
+	import cachegrindVisualizer.callGraph.builders.Label;
+	import cachegrindVisualizer.callGraph.managers.ConfigurationManager;
+	import cachegrindVisualizer.controls.tree.TreeItem;
+	import cachegrindVisualizer.callGraph.builders.Configuration;
 	
 	private var configurationManager:ConfigurationManager;
 	private var file:File;
@@ -70,6 +84,7 @@
 	{
 		labelType.text = labelType.selectedItem.label;
 		rankDirection.text = rankDirection.selectedItem.label;
+		titleLocation.text = titleLocation.selectedItem.label;
 		build();
 	}
 	
@@ -87,36 +102,51 @@
 			file = new File(filePath + '.dot');
 		}
 		
-		builder.build(TreeItem(Tab(parentDocument).tree.selectedItem), file);
-		
-		var dateFormatter:DateFormatter = new DateFormatter();
-		dateFormatter.formatString = 'J:NN:SS';			
-		parentApplication.status = dateFormatter.format(new Date()) + ' ' + resourceManager.getString('CallGraph', 'graphBuilt');
+		builder.build(TreeItem(Tab(parentDocument).tree.selectedItem), file, configurationManager.configuration);
 	}
 	
 	private function handleChange(event:Event):void
 	{
 		if (event.target is ComboBox)
 		{
-			if (event.target == rankDirection)
-			{
-				builder.rankDirection = event.target.selectedItem.data;
-			}
-			else
-			{
-				builder.label.type = event.target.selectedItem.data;
-			}
-		}	
+			configurationManager.configuration[event.target.id] = event.target.selectedItem.data;
+		}
+		else if (event.target is NumericStepper)
+		{
+			configurationManager.configuration[event.target.id] = event.target.value;
+		}
 		else if (event.target is CheckBox)
 		{
-			builder.blackAndWhite = event.target.selected;
+			configurationManager.configuration[event.target.id] = event.target.selected;
 		}
 		else
 		{
-			builder.minNodeCost = minNodeCost.value;
+			configurationManager.configuration[event.target.id] = event.target.text;
 		}
 		
+		builder.cancel();	
 		build();
+	}
+	
+	private function handleChangeWithDelay(event:Event):void
+	{		
+		var timer:Timer;
+		var timerHandler:Function;
+		if (event.target is NumericStepper)
+		{
+			timer = new Timer(4000, 1);
+			var value:Number = event.target.value;
+			timerHandler = function (timerEvent:TimerEvent):void { if (value == event.target.value) { handleChange(event); }};
+		}
+		else
+		{
+			timer = new Timer(2000, 1);
+			var text:String = event.target.text;
+			timerHandler = function (timerEvent:TimerEvent):void { if (text == event.target.text) { handleChange(event); }};
+		}
+		
+		timer.addEventListener(TimerEvent.TIMER, timerHandler);
+		timer.start();
 	}
 	
 	]]></mx:Script>

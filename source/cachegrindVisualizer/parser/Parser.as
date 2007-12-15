@@ -1,6 +1,7 @@
-package develar.cachegrindVisualizer.parser
+package cachegrindVisualizer.parser
 {	
-	import develar.cachegrindVisualizer.controls.tree.TreeItem;
+	import cachegrindVisualizer.controls.tree.TreeItem;
+	
 	import develar.utils.SqlUtil;
 	
 	import flash.data.SQLConnection;
@@ -43,8 +44,8 @@ package develar.cachegrindVisualizer.parser
 			
 			fileReader = new FileReader(file);
 			_db = File.applicationStorageDirectory.resolvePath(fileReader.checksum + '.db');
-			//if (dbFile.exists)
-			if (false)
+			if (db.exists)
+			//if (false)
 			{				
 				openExistDb();			
 			}

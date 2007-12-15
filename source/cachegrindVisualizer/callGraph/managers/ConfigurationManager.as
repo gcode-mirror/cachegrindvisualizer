@@ -2,62 +2,49 @@
  * @author Vladimir Krivosheev
  * @version $Id: PersistenceSession.as 151 2007-11-19 15:41:34Z develar $
  */
-package develar.cachegrindVisualizer.callGraph.managers
+package cachegrindVisualizer.callGraph.managers
 {
-	import flash.events.Event;
-	import flash.net.URLRequest;
-	
-	import mx.core.Application;
+	import cachegrindVisualizer.callGraph.builders.Configuration;
+	import cachegrindVisualizer.net.PersistenceSession;
+	import cachegrindVisualizer.ui.CallGraph;
 	
 	import develar.filesystem.FileWrapper;
 	import develar.utils.Selector;
+	import develar.utils.ObjectUtil;
+	import develar.resources.ResourceManager;
 	
-	import develar.cachegrindVisualizer.ui.CallGraph;
-	import develar.cachegrindVisualizer.callGraph.builders.Builder;
-	import develar.cachegrindVisualizer.callGraph.builders.Label;
-	import develar.cachegrindVisualizer.net.PersistenceSession;
+	import flash.events.Event;
 	
 	public class ConfigurationManager
 	{
-		protected var fileWrapper:FileWrapper;
-		protected var callGraph:CallGraph;
+		private var fileWrapper:FileWrapper;
+		private var callGraph:CallGraph;
 		
-		protected var _object:Object;
-		public function get object():Object
+		private var _configuration:Configuration;
+		public function get configuration():Configuration
 		{
-			return _object;
+			return _configuration;
 		}
 		
-		public function ConfigurationManager(call_graph:CallGraph):void
+		public function ConfigurationManager(callGraph:CallGraph):void
 		{
-			callGraph = call_graph;
+			this.callGraph = callGraph;
 			
 			if (PersistenceSession.instance.callGraphConfigurationName == null)
 			{
-				PersistenceSession.instance.callGraphConfigurationName = 'default';
-			}
-			
-			fileWrapper = new FileWrapper('app-storage:/' + PersistenceSession.instance.callGraphConfigurationName);
-			if (fileWrapper.file.exists)
-			{
-				_object = fileWrapper.read();
+				_configuration = new Configuration();				
 			}
 			else
-			{
-				_object = {minNodeCost: 1, labelType: Label.TYPE_PERCENTAGE_AND_TIME, rankDirection: Builder.RANK_DIRECTION_TB, blackAndWhite: false};
-				fileWrapper.contents = _object;
+			{				
+				fileWrapper = new FileWrapper('app-storage:/' + PersistenceSession.instance.callGraphConfigurationName);
+				_configuration = ObjectUtil.typify(fileWrapper.read(), Configuration);
 			}
 			
 			apply();
 		}
 		
 		public function save():void
-		{
-			object.minNodeCost = callGraph.minNodeCost.value;
-			object.labelType = callGraph.labelType.selectedItem.data;
-			object.rankDirection = callGraph.rankDirection.selectedItem.data;
-			object.blackAndWhite = callGraph.blackAndWhite.selected;
-		
+		{		
 			fileWrapper = new FileWrapper('app-storage:/');
 			fileWrapper.file.addEventListener(Event.SELECT, handleSave);
 			fileWrapper.file.browseForSave('');
@@ -65,7 +52,11 @@ package develar.cachegrindVisualizer.callGraph.managers
 		
 		protected function handleSave(event:Event):void
 		{
-			fileWrapper.contents = _object;
+			fileWrapper.contents = configuration;
+			PersistenceSession.instance.callGraphConfigurationName = fileWrapper.name;
+			fileWrapper = null;
+			
+			setPanelTitle();
 		}
 		
 		public function load():void
@@ -77,22 +68,36 @@ package develar.cachegrindVisualizer.callGraph.managers
 		
 		protected function handleLoad(event:Event):void
 		{
-			_object = fileWrapper.read();
+			_configuration = ObjectUtil.typify(fileWrapper.read(), Configuration);
+			PersistenceSession.instance.callGraphConfigurationName = fileWrapper.name;
+			fileWrapper = null;
 			apply();
+			
 			callGraph.build();
 		}
 		
 		protected function apply():void
 		{
-			callGraph.minNodeCost.value = object.minNodeCost;
-			Selector.select(callGraph.labelType, object.labelType);
-			Selector.select(callGraph.rankDirection, object.rankDirection);
-			callGraph.blackAndWhite.selected = object.blackAndWhite;
+			setPanelTitle();
 			
-			callGraph.builder.minNodeCost = object.minNodeCost;
-			callGraph.builder.label.type = object.labelType;
-			callGraph.builder.rankDirection = object.rankDirection;
-			callGraph.builder.blackAndWhite = object.blackAndWhite;
+			callGraph.title.text = configuration.title;
+			Selector.select(callGraph.titleLocation, configuration.titleLocation);
+			
+			callGraph.minNodeCost.value = configuration.minNodeCost;			
+			
+			Selector.select(callGraph.labelType, configuration.labelType);
+			Selector.select(callGraph.rankDirection, configuration.rankDirection);
+			
+			callGraph.blackAndWhite.selected = configuration.blackAndWhite;
+		}
+		
+		protected function setPanelTitle():void
+		{
+			callGraph.panel.title = ResourceManager.instance.getString('CallGraph', 'configuration');
+			if (PersistenceSession.instance.callGraphConfigurationName != null)
+			{
+				callGraph.panel.title += ' (' + PersistenceSession.instance.callGraphConfigurationName + ')';
+			}
 		}
 	}
 }
