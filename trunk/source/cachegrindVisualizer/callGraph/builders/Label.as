@@ -40,9 +40,9 @@ package cachegrindVisualizer.callGraph.builders
 			return build(edge.inclusivePercentage, edge.inclusiveTime);
 		}
 		
-		public function arrow(edge:Edge, onePercentage:Number):String
+		public function head(edge:Edge):String
 		{			
-			return build(edge.time / onePercentage, edge.time);
+			return build(edge.percentage, edge.time);
 		}
 		
 		public function node(node:Node):String
