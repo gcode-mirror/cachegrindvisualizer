@@ -9,14 +9,14 @@ package cachegrindVisualizer.callGraph.managers
 	import cachegrindVisualizer.ui.CallGraph;
 	
 	import develar.filesystem.FileWrapper;
-	import develar.utils.Selector;
 	import develar.utils.ObjectUtil;
+	import develar.utils.Selector;
 	import develar.resources.ResourceManager;
 	
 	import flash.events.Event;
 	
 	public class ConfigurationManager
-	{
+	{		
 		private var fileWrapper:FileWrapper;
 		private var callGraph:CallGraph;
 		
@@ -32,15 +32,18 @@ package cachegrindVisualizer.callGraph.managers
 			
 			if (PersistenceSession.instance.callGraphConfigurationName == null)
 			{
-				_configuration = new Configuration();				
+				_configuration = new Configuration();
 			}
 			else
 			{				
 				fileWrapper = new FileWrapper('app-storage:/' + PersistenceSession.instance.callGraphConfigurationName);
 				_configuration = ObjectUtil.typify(fileWrapper.read(), Configuration);
+				fileWrapper = null;
 			}
 			
 			apply();
+			
+			ResourceManager.instance.addEventListener(Event.CHANGE, setPanelTitle); 
 		}
 		
 		public function save():void
@@ -50,7 +53,7 @@ package cachegrindVisualizer.callGraph.managers
 			fileWrapper.file.browseForSave('');
 		}
 		
-		protected function handleSave(event:Event):void
+		private function handleSave(event:Event):void
 		{
 			fileWrapper.contents = configuration;
 			PersistenceSession.instance.callGraphConfigurationName = fileWrapper.name;
@@ -66,7 +69,7 @@ package cachegrindVisualizer.callGraph.managers
 			fileWrapper.file.browseForOpen('');
 		}
 		
-		protected function handleLoad(event:Event):void
+		private function handleLoad(event:Event):void
 		{
 			_configuration = ObjectUtil.typify(fileWrapper.read(), Configuration);
 			PersistenceSession.instance.callGraphConfigurationName = fileWrapper.name;
@@ -76,7 +79,16 @@ package cachegrindVisualizer.callGraph.managers
 			callGraph.build();
 		}
 		
-		protected function apply():void
+		public function restoreDefaults():void
+		{
+			_configuration = new Configuration();
+			PersistenceSession.instance.callGraphConfigurationName = null;
+			
+			apply();
+			callGraph.build();	
+		}
+		
+		private function apply():void
 		{
 			setPanelTitle();
 			
@@ -91,7 +103,7 @@ package cachegrindVisualizer.callGraph.managers
 			callGraph.blackAndWhite.selected = configuration.blackAndWhite;
 		}
 		
-		protected function setPanelTitle():void
+		private function setPanelTitle(event:Event = null):void
 		{
 			callGraph.panel.title = ResourceManager.instance.getString('CallGraph', 'configuration');
 			if (PersistenceSession.instance.callGraphConfigurationName != null)
