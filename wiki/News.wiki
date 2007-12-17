@@ -1,4 +1,7 @@
 #labels Featured
+== 17 December 2007 0.3.1 ==
+ * Possibility restore default configuration.
+
 == 15 December 2007 0.3 ==
  * Refusal of the asynchronous analysis. Synchronous. More slowly in 5 times it not same. AIR sucks.
  * Now it is possible to specify graph title.
