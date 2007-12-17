@@ -9,6 +9,7 @@ package cachegrindVisualizer.net
 			return cachegrindVisualizer.net.PersistenceSession(develar.net.PersistenceSession.instance);
 		}
 		
+		[Bindable]
 		public function get callGraphConfigurationName():String
 		{
 			return sharedObject.data.callGraphConfigurationName;

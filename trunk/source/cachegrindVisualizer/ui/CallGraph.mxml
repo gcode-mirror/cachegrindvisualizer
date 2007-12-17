@@ -49,6 +49,8 @@
 		<mx:ControlBar width="100%">
 			<mx:Button label="{resourceManager.getString('CallGraph', 'loadConfiguration')}" click="configurationManager.load()"/>
 			<mx:Button label="{resourceManager.getString('CallGraph', 'saveConfiguration')}" click="configurationManager.save()"/>
+			<mx:Spacer/>
+			<mx:Button label="{resourceManager.getString('CallGraph', 'restoreDefaults')}" enabled="{PersistenceSession.instance.callGraphConfigurationName != null}" click="configurationManager.restoreDefaults()"/>
 		</mx:ControlBar>
 	</mx:Panel>
 	
@@ -56,10 +58,9 @@
 	
 	import flash.filesystem.File;
 	
-	//import mx.formatters.DateFormatter;
-	
 	import develar.controls.NumericStepper;
 	
+	import cachegrindVisualizer.net.PersistenceSession;
 	import cachegrindVisualizer.callGraph.builders.Builder;
 	import cachegrindVisualizer.callGraph.builders.Label;
 	import cachegrindVisualizer.callGraph.managers.ConfigurationManager;
