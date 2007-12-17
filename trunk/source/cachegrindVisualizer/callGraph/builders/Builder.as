@@ -32,6 +32,7 @@ package cachegrindVisualizer.callGraph.builders
 		private var treeItem:TreeItem;
 		private var parentEdge:Edge;
 		private var previousEdge:Edge;
+		private var parents:Object;
 		
 		private var edgesBuilt:Boolean = true;
 		private var nodesBuilt:Boolean = true;
@@ -40,7 +41,7 @@ package cachegrindVisualizer.callGraph.builders
 		{
 			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
-			selectEdgeStatement.text = 'select path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage, exists (select 1 from main.tree where path = pt.path || \'.\' || pt.id) as isBranch from main.tree as pt where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
+			selectEdgeStatement.text = 'select id, path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage, exists (select 1 from main.tree where path = pt.path || \'.\' || pt.id) as isBranch from main.tree as pt where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
 			
 			selectNodeStatement.itemClass = Node;
 			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);
@@ -106,6 +107,7 @@ package cachegrindVisualizer.callGraph.builders
 		private function handleSelectRootItem(event:SQLEvent):void
 		{
 			previousEdge = selectRootItemStatement.getResult().data[0];
+			previousEdge.id = treeItem.id;
 			previousEdge.path = treeItem.path;
 			previousEdge.name = treeItem.name;
 			previousEdge.inclusivePercentage = 100;
@@ -116,7 +118,9 @@ package cachegrindVisualizer.callGraph.builders
 			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;
 			selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost;
 			selectNodeStatement.parameters[':path'] = selectEdgeStatement.parameters[':path'] = treeItem.path == '' ? treeItem.id : (treeItem.path + '.' + treeItem.id);
-						
+				
+			parents = new Object();
+			parents[selectNodeStatement.parameters[':path']] = previousEdge;	
 			selectEdgeStatement.execute(PREFETCH);
 			
 			selectNodeStatement.text = SELECT_NODE_SQL + " union select '" + previousEdge.name + "', " + previousEdge.inclusiveTime + ", " + previousEdge.percentage + ", 100";			
@@ -131,7 +135,12 @@ package cachegrindVisualizer.callGraph.builders
 			{
 				if (edge.path.length != previousEdge.path.length) // сравнение длины, оно как число, быстрее чем строки
 				{
-					parentEdge = previousEdge;
+					if (parentEdge != null)
+					{
+						delete parents[parentEdge.path];
+					}			
+					
+					parentEdge = parents[edge.path];
 				}
 				
 				edges += '"' + parentEdge.name + '" -> "' + edge.name + '" [label="' + label.edge(edge) + '"';
@@ -140,11 +149,13 @@ package cachegrindVisualizer.callGraph.builders
 					edges += ', taillabel="' + parentEdge.arrowLabel + '"';
 				}
 				
-				// если элемент не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
+				// если узел не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
 				if (edge.isBranch && edge.time > 0)
 				{
 					edge.arrowLabel = label.arrow(edge, onePercentage);
 					edges += ', headlabel="' + edge.arrowLabel + '"';
+					
+					parents[edge.path + '.' + edge.id] = edge;
 				}
 				
 				if (!configuration.blackAndWhite)
