@@ -1,4 +1,8 @@
 #labels Featured
+== 17 December 2007 0.3.2 ==
+ * fixed critical error: hierarchy in a builder was incorrectly defined (thanks Wicked).
+ * remove redundant taillabel.
+
 == 17 December 2007 0.3.1 ==
  * Possibility restore default configuration.
 
