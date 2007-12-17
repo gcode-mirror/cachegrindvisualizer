@@ -25,8 +25,6 @@ package cachegrindVisualizer.callGraph.builders
 		private var label:Label = new Label();
 		private var color:Color = new Color();
 		
-		private var onePercentage:Number;
-		
 		private var configuration:Configuration;
 		
 		private var treeItem:TreeItem;
@@ -41,7 +39,7 @@ package cachegrindVisualizer.callGraph.builders
 		{
 			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
-			selectEdgeStatement.text = 'select id, path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage, exists (select 1 from main.tree where path = pt.path || \'.\' || pt.id) as isBranch from main.tree as pt where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
+			selectEdgeStatement.text = 'select id, path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from main.tree as pt where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
 			
 			selectNodeStatement.itemClass = Node;
 			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);
@@ -111,9 +109,8 @@ package cachegrindVisualizer.callGraph.builders
 			previousEdge.path = treeItem.path;
 			previousEdge.name = treeItem.name;
 			previousEdge.inclusivePercentage = 100;
-			onePercentage = previousEdge.inclusiveTime / 100;
+			var onePercentage:Number = previousEdge.inclusiveTime / 100;
 			previousEdge.percentage = previousEdge.time / onePercentage;
-			previousEdge.arrowLabel = previousEdge.time > 0 ? label.arrow(previousEdge, onePercentage) : '';
 
 			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;
 			selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost;
@@ -144,16 +141,11 @@ package cachegrindVisualizer.callGraph.builders
 				}
 				
 				edges += '"' + parentEdge.name + '" -> "' + edge.name + '" [label="' + label.edge(edge) + '"';
-				if (parentEdge.arrowLabel != '')
-				{						
-					edges += ', taillabel="' + parentEdge.arrowLabel + '"';
-				}
-				
-				// если узел не имеет детей, то смысла в метке острия стрелки нет - она всегда будет равна метке ребра
-				if (edge.isBranch && edge.time > 0)
+
+				// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
+				if (edge.time > 0 && edge.time != edge.inclusivePercentage)
 				{
-					edge.arrowLabel = label.arrow(edge, onePercentage);
-					edges += ', headlabel="' + edge.arrowLabel + '"';
+					edges += ', headlabel="' + label.head(edge) + '"';
 					
 					parents[edge.path + '.' + edge.id] = edge;
 				}

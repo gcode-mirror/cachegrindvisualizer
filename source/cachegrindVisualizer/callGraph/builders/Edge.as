@@ -12,9 +12,5 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public var percentage:Number;
 		public var inclusivePercentage:Number;
-		
-		public var arrowLabel:String = '';
-		
-		public var isBranch:Boolean;
 	}
 }
