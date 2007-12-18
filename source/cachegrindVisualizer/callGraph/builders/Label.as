@@ -1,9 +1,8 @@
 package cachegrindVisualizer.callGraph.builders
 {
-	import mx.formatters.NumberBaseRoundType;
-	import mx.resources.ResourceManager;
-	
 	import develar.formatters.NumberFormatter;
+	
+	import mx.formatters.NumberBaseRoundType;
 	
 	public class Label
 	{
@@ -11,6 +10,8 @@ package cachegrindVisualizer.callGraph.builders
 		public static const TYPE_TIME:uint = 1;
 		public static const TYPE_PERCENTAGE_AND_TIME:uint = 2;
 		public static const TYPE_TIME_AND_PERCENTAGE:uint = 3;
+		
+		public static const TYPE_NO:uint = 4;
 		
 		protected const PERCENTAGE_PRECISION:uint = 2;
 		
@@ -47,29 +48,27 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public function node(node:Node):String
 		{
-			return build(node.inclusivePercentage, node.inclusiveTime, node.name);
+			var label:String = node.name.replace(/\\/g, '\\\\') + '\\n';
+			if (type != TYPE_NO)
+			{
+				label = build(node.inclusivePercentage, node.inclusiveTime, label);
+			}
+			return label;
 		}
 		
-		protected function build(percentage:Number, time:uint, nodeName:String = null):String
-		{
-			var label:String = '';		
-			if (nodeName != null)
-			{
-				// Graphviz воспринимает \ как управляющий символ, поэтому его необходимо экранировать
-				label = nodeName.replace(/\\/g, '\\\\') + '\\n';
-			}
-			
+		protected function build(percentage:Number, time:uint, label:String = ''):String
+		{			
 			switch (_type)
 			{
 				case TYPE_PERCENTAGE_AND_TIME:
 				{
-					label += percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ' ' + ResourceManager.getInstance().getString('CachegrindVisualizer', 'timeUnit') + ')';
+					label += percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ')';
 				}
 				break;
 				
 				case TYPE_TIME_AND_PERCENTAGE:
 				{
-					label += timeFormatter.format(time) + ' ' + ResourceManager.getInstance().getString('CachegrindVisualizer', 'timeUnit') + ' (' + percentageFormatter.format(percentage) + ' %)';
+					label += timeFormatter.format(time) + ' (' + percentageFormatter.format(percentage) + ' %)';
 				}
 				break;
 				
@@ -81,7 +80,7 @@ package cachegrindVisualizer.callGraph.builders
 					
 				case TYPE_TIME:
 				{
-					label += timeFormatter.format(time) + ' ' + ResourceManager.getInstance().getString('CachegrindVisualizer', 'timeUnit');
+					label += timeFormatter.format(time);
 				}
 				break;
 					

@@ -105,7 +105,8 @@ package cachegrindVisualizer.parser
 			
 			//fileReader = null;
 			SqlUtil.execute('create index tree_path on tree (path)', sqlConnection);
-			SqlUtil.execute('create unique index tree_id on tree (id)', sqlConnection);
+			SqlUtil.execute('create index tree_name on tree (name)', sqlConnection);
+			SqlUtil.execute('create unique index tree_id on tree (id)', sqlConnection);			
 			
 			trace('Затрачено на анализ и построение индекса: ' + ((new Date().time - timeBegin) / 1000));
 			
