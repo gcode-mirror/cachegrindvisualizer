@@ -6,12 +6,14 @@ package cachegrindVisualizer.callGraph.builders
 	import flash.data.SQLResult;
 	import flash.data.SQLStatement;
 	import flash.events.Event;
+	import flash.events.EventDispatcher;
+	import flash.events.ProgressEvent;
 	import flash.events.SQLEvent;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	
-	public class Builder
+	public class Builder extends EventDispatcher
 	{		
 		private static const PREFETCH:uint = 5000;
 		private static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from main.tree where path like :path || \'%\' group by name having max(inclusiveTime) / :onePercentage >= :cost';
@@ -28,18 +30,19 @@ package cachegrindVisualizer.callGraph.builders
 		private var configuration:Configuration;
 		
 		private var treeItem:TreeItem;
-		private var parentEdge:Edge;
 		private var previousEdge:Edge;
 		private var parents:Object;
 		
 		private var edgesBuilt:Boolean = true;
 		private var nodesBuilt:Boolean = true;
 		
+		private var progress:Number;
+		
 		public function Builder():void
 		{
 			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
-			selectEdgeStatement.text = 'select id, path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from main.tree as pt where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
+			selectEdgeStatement.text = 'select id, path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from main.tree where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
 			
 			selectNodeStatement.itemClass = Node;
 			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);
@@ -47,6 +50,8 @@ package cachegrindVisualizer.callGraph.builders
 			selectRootItemStatement.itemClass = Edge;
 			selectRootItemStatement.text = 'select time, inclusiveTime from tree where path = :path and id = :id';
 			selectRootItemStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
+			
+			fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
 		}
 		
 		public function get complete():Boolean
@@ -61,6 +66,9 @@ package cachegrindVisualizer.callGraph.builders
 			selectNodeStatement.cancel();
 				
 			fileStream.close();
+			
+			progress = 0;
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 		}
 		
 		public function set sqlConnection(value:SQLConnection):void
@@ -71,7 +79,7 @@ package cachegrindVisualizer.callGraph.builders
 		}
 		
 		public function build(treeItem:TreeItem, file:File, configuration:Configuration):void
-		{	
+		{
 			this.treeItem = treeItem;
 			this.configuration = configuration;
 			label.type = configuration.labelType;
@@ -104,6 +112,9 @@ package cachegrindVisualizer.callGraph.builders
 		
 		private function handleSelectRootItem(event:SQLEvent):void
 		{
+			progress = 10;
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
+			
 			previousEdge = selectRootItemStatement.getResult().data[0];
 			previousEdge.id = treeItem.id;
 			previousEdge.path = treeItem.path;
@@ -117,7 +128,7 @@ package cachegrindVisualizer.callGraph.builders
 			selectNodeStatement.parameters[':path'] = selectEdgeStatement.parameters[':path'] = treeItem.path == '' ? treeItem.id : (treeItem.path + '.' + treeItem.id);
 				
 			parents = new Object();
-			parents[selectNodeStatement.parameters[':path']] = previousEdge;	
+			parents[selectNodeStatement.parameters[':path']] = previousEdge.name;	
 			selectEdgeStatement.execute(PREFETCH);
 			
 			selectNodeStatement.text = SELECT_NODE_SQL + " union select '" + previousEdge.name + "', " + previousEdge.inclusiveTime + ", " + previousEdge.percentage + ", 100";			
@@ -129,30 +140,27 @@ package cachegrindVisualizer.callGraph.builders
 			var edges:String = '';
 			var sqlResult:SQLResult = selectEdgeStatement.getResult();
 			for each (var edge:Edge in sqlResult.data)
-			{
-				if (edge.path.length != previousEdge.path.length) // сравнение длины, оно как число, быстрее чем строки
+			{				
+				edges += '"' + parents[edge.path] + '" -> "' + edge.name + '" [';
+				if (label.type != Label.TYPE_NO)
 				{
-					if (parentEdge != null)
-					{
-						delete parents[parentEdge.path];
-					}			
-					
-					parentEdge = parents[edge.path];
+					edges += 'label="' + label.edge(edge) + '"';
 				}
-				
-				edges += '"' + parentEdge.name + '" -> "' + edge.name + '" [label="' + label.edge(edge) + '"';
 
 				// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
-				if (edge.time > 0 && edge.time != edge.inclusivePercentage)
+				if (edge.time > 0 && edge.time != edge.inclusiveTime)
 				{
-					edges += ', headlabel="' + label.head(edge) + '"';
+					if (label.type != Label.TYPE_NO)
+					{
+						edges += ' headlabel="' + label.head(edge) + '"';
+					}
 					
-					parents[edge.path + '.' + edge.id] = edge;
+					parents[edge.path + '.' + edge.id] = edge.name;
 				}
 				
 				if (!configuration.blackAndWhite)
 				{
-					edges += ', color="' + color.edge(edge) + '"';
+					edges += ' color="' + color.edge(edge) + '"';
 				}
 				
 				edges += '];\n';
@@ -163,7 +171,9 @@ package cachegrindVisualizer.callGraph.builders
 			fileStream.writeUTFBytes(edges);
 			if (sqlResult.complete)
 			{	
-				parentEdge = previousEdge = null;
+				progress += 50;
+				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
+				parents = previousEdge = null;
 				edgesBuilt = true;
 				checkComplete();
 			}
@@ -190,11 +200,14 @@ package cachegrindVisualizer.callGraph.builders
 			fileStream.writeUTFBytes(nodes);
 			if (sqlResult.complete)
 			{
+				progress += 40;
+				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
+				
 				nodesBuilt = true;
 				checkComplete();
 			}
 			else
-			{
+			{				
 				selectNodeStatement.next(PREFETCH);
 			}
 		}
@@ -205,16 +218,15 @@ package cachegrindVisualizer.callGraph.builders
 			{
 				treeItem = null;
 				
-				fileStream.writeUTFBytes('}');
+				fileStream.writeUTFBytes('}');				
 				
-				fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
 				fileStream.close();
 			}
 		}		
 		
 		private function handleCloseFileStream(event:Event):void
 		{
-			
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 	}
 }

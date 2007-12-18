@@ -59,6 +59,7 @@
 		if (sqlConnection.connected)
 		{
 			sqlConnection.close();
+			callGraph.builder.cancel();
 		}
 		
 		label = file.name.replace('cachegrind.out.', '');
@@ -79,6 +80,7 @@
 	
 	private function handleOpenSqlConnection(event:SQLEvent):void
 	{
+		sqlConnection.removeEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
 		callGraph.build();
 	}
 	

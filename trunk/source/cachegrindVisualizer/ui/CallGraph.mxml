@@ -28,6 +28,7 @@
 						<mx:Object data="{Label.TYPE_TIME_AND_PERCENTAGE}" label="{resourceManager.getString('CallGraph', 'labelTypeTimeAndPercentage')}"/>
 						<mx:Object data="{Label.TYPE_PERCENTAGE}" label="{resourceManager.getString('CallGraph', 'labelTypePercentage')}"/>
 						<mx:Object data="{Label.TYPE_TIME}" label="{resourceManager.getString('CallGraph', 'labelTypeTime')}"/>
+						<mx:Object data="{Label.TYPE_NO}" label="{resourceManager.getString('CallGraph', 'labelTypeNo')}"/>
 					</mx:Array>
 				</mx:ComboBox>
 			</mx:FormItem>
@@ -53,6 +54,8 @@
 			<mx:Button label="{resourceManager.getString('CallGraph', 'restoreDefaults')}" enabled="{PersistenceSession.instance.callGraphConfigurationName != null}" click="configurationManager.restoreDefaults()"/>
 		</mx:ControlBar>
 	</mx:Panel>
+	<mx:Spacer/>
+	<mx:ProgressBar width="100%" source="{builder}" labelPlacement="center"/>
 	
 	<mx:Script><![CDATA[		
 	
@@ -131,17 +134,15 @@
 	
 	private function handleChangeWithDelay(event:Event):void
 	{		
-		var timer:Timer;
+		var timer:Timer = new Timer(2000, 1);
 		var timerHandler:Function;
 		if (event.target is NumericStepper)
 		{
-			timer = new Timer(4000, 1);
 			var value:Number = event.target.value;
 			timerHandler = function (timerEvent:TimerEvent):void { if (value == event.target.value) { handleChange(event); }};
 		}
 		else
 		{
-			timer = new Timer(2000, 1);
 			var text:String = event.target.text;
 			timerHandler = function (timerEvent:TimerEvent):void { if (text == event.target.text) { handleChange(event); }};
 		}

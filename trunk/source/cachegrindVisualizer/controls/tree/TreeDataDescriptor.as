@@ -20,7 +20,7 @@ package cachegrindVisualizer.controls.tree
 								
 			selectStatement.itemClass = TreeItem;
 			selectStatement.sqlConnection = sqlConnection;
-			selectStatement.text = 'select id, name, fileName, path, exists (select 1 from tree where path = pt.path || \'.\' || pt.id) as isBranch from tree as pt where path = :path order by id desc';
+			selectStatement.text = 'select id, name, fileName, path, (time != inclusiveTime) as isBranch from main.tree where path = :path order by id desc';
 		}
 		
 		override public function hasChildren(node:Object, model:Object = null):Boolean
