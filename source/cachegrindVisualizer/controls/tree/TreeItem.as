@@ -4,8 +4,10 @@ package cachegrindVisualizer.controls.tree
 	
 	public class TreeItem
 	{
-		public var id:uint;
-		public var path:String;
+		public var left:int;
+		public var right:int;
+		public var level:uint;
+		
 		public var isBranch:Boolean;
 		
 		public var name:String;		

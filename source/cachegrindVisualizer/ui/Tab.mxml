@@ -87,7 +87,7 @@
 	private function selectIcon(item:TreeItem):Class
 	{
 		var parts:Array;
-		if (item.id == Parser.MAIN_FUNCTION_ID)
+		if (item.level == Parser.MAIN_FUNCTION_LEVEL)
 		{
 			return fileIcon;
 		}

@@ -1,8 +1,8 @@
 package cachegrindVisualizer.controls.tree
 {
 	import flash.data.SQLConnection;
-	import flash.data.SQLStatement;
 	import flash.data.SQLMode;
+	import flash.data.SQLStatement;
 	import flash.filesystem.File;
 	
 	import mx.collections.ArrayCollection;
@@ -20,7 +20,7 @@ package cachegrindVisualizer.controls.tree
 								
 			selectStatement.itemClass = TreeItem;
 			selectStatement.sqlConnection = sqlConnection;
-			selectStatement.text = 'select id, name, fileName, path, (time != inclusiveTime) as isBranch from main.tree where path = :path order by id desc';
+			selectStatement.text = 'select left, right, level, name, fileName, (time != inclusiveTime) as isBranch from tree where left > :left and right < :right and level = :level order by left';
 		}
 		
 		override public function hasChildren(node:Object, model:Object = null):Boolean
@@ -35,9 +35,12 @@ package cachegrindVisualizer.controls.tree
 		
 		override public function getChildren(node:Object, model:Object=null):ICollectionView
 		{
+			var item:TreeItem = TreeItem(node);
 			if (node.children == null)
 			{
-				selectStatement.parameters[':path'] = node.path == '' ? node.id : (node.path + '.' + node.id);
+				selectStatement.parameters[':left'] = item.left;
+				selectStatement.parameters[':right'] = item.right;
+				selectStatement.parameters[':level'] = item.level + 1;
 				selectStatement.execute();
 				node.children = new ArrayCollection(selectStatement.getResult().data);
 			}
