@@ -16,7 +16,7 @@ package cachegrindVisualizer.callGraph.builders
 			var width:Number;		
 			if (edge.percentage < MIN_PERCENTAGE)
 			{
-				width = MIN_PERCENTAGE_FALLBACK_LINE_WIDTH;
+				return '';
 			}
 			else if (edge.percentage < MAX_PERCENTAGE)
 			{
@@ -26,7 +26,7 @@ package cachegrindVisualizer.callGraph.builders
 			{
 				width = MAX_PERCENTAGE_FALLBACK_LINE_WIDTH;
 			}
-			return 'style="setlinewidth(' + width + ')" arrowsize=' + (width / ARROW_SIZE_COEFFICIENT);
+			return 'style="setlinewidth(' + width.toFixed(2) + ')" arrowsize=' + (width / ARROW_SIZE_COEFFICIENT).toFixed(2);
 		}
 	}
 }

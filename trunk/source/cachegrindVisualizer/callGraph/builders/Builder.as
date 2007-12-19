@@ -16,7 +16,6 @@ package cachegrindVisualizer.callGraph.builders
 	public class Builder extends EventDispatcher
 	{	
 		private static const PREFETCH:uint = 5000;
-		private static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from main.tree where path like :path || \'%\' group by name having max(inclusiveTime) / :onePercentage >= :cost';
 		
 		private var selectRootItemStatement:SQLStatement = new SQLStatement();
 		private var selectEdgeStatement:SQLStatement = new SQLStatement();
@@ -30,8 +29,9 @@ package cachegrindVisualizer.callGraph.builders
 		private var configuration:Configuration;
 		
 		private var treeItem:TreeItem;
+		
 		private var previousEdge:Edge;
-		private var parents:Object;
+		private var parentsNames:Object;
 		
 		private var edgesBuilt:Boolean = true;
 		private var nodesBuilt:Boolean = true;
@@ -42,13 +42,12 @@ package cachegrindVisualizer.callGraph.builders
 		{
 			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
-			selectEdgeStatement.text = 'select id, path, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from main.tree where path like :path || \'%\' and inclusivePercentage >= :cost order by path, id desc';
 			
 			selectNodeStatement.itemClass = Node;
 			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);
 			
 			selectRootItemStatement.itemClass = Edge;
-			selectRootItemStatement.text = 'select time, inclusiveTime from tree where path = :path and id = :id';
+			selectRootItemStatement.text = 'select time, inclusiveTime from tree where left = :left and right = :right';
 			selectRootItemStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
 			
 			fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
@@ -84,6 +83,7 @@ package cachegrindVisualizer.callGraph.builders
 			this.configuration = configuration;
 			label.type = configuration.labelType;
 			
+			parentsNames = new Object();
 			edgesBuilt = false;
 			nodesBuilt = false;
 			
@@ -96,7 +96,7 @@ package cachegrindVisualizer.callGraph.builders
 			header += 'node [shape=box';
 			if (!configuration.blackAndWhite)
 			{
-				header += ', style=filled';
+				header += ' style=filled';
 			}		
 			header += '];\n';
 			fileStream.writeUTFBytes(header);
@@ -106,8 +106,8 @@ package cachegrindVisualizer.callGraph.builders
 		
 		private function selectRootItem():void
 		{			
-			selectRootItemStatement.parameters[':path'] = treeItem.path;
-			selectRootItemStatement.parameters[':id'] = treeItem.id;
+			selectRootItemStatement.parameters[':left'] = treeItem.left;
+			selectRootItemStatement.parameters[':right'] = treeItem.right;
 			selectRootItemStatement.execute();
 		}
 		
@@ -117,22 +117,32 @@ package cachegrindVisualizer.callGraph.builders
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 			
 			previousEdge = selectRootItemStatement.getResult().data[0];
-			previousEdge.id = treeItem.id;
-			previousEdge.path = treeItem.path;
 			previousEdge.name = treeItem.name;
-			previousEdge.inclusivePercentage = 100;
 			var onePercentage:Number = previousEdge.inclusiveTime / 100;
-			previousEdge.percentage = previousEdge.time / onePercentage;
+			previousEdge.percentage = previousEdge.time / onePercentage;			
+			
+			// необходимо, так в случае нулевого minNodeCost параметр cost нам не нужен, но он будет оставаться и без очистки будет ошибка несовпадения установленных и существующих параметров
+			selectEdgeStatement.clearParameters();
+			selectNodeStatement.clearParameters();
 
-			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;
-			selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost;
-			selectNodeStatement.parameters[':path'] = selectEdgeStatement.parameters[':path'] = treeItem.path == '' ? treeItem.id : (treeItem.path + '.' + treeItem.id);
-				
-			parents = new Object();
-			parents[selectNodeStatement.parameters[':path']] = previousEdge.name;	
+			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;			
+			selectNodeStatement.parameters[':left'] = selectEdgeStatement.parameters[':left'] = treeItem.left;
+			selectNodeStatement.parameters[':right'] = selectEdgeStatement.parameters[':right'] = treeItem.right;
+			
+			treeItem = null;
+			
+			selectEdgeStatement.text = 'select level, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from tree where left > :left and right < :right';
+			selectNodeStatement.text = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree where left > :left and right < :right group by name';
+			if (configuration.minNodeCost > 0)
+			{
+				selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost * onePercentage;				
+				selectEdgeStatement.text += ' and inclusiveTime >= :cost';
+				selectNodeStatement.text += ' having max(inclusiveTime) >= :cost';
+			}
+			
 			selectEdgeStatement.execute(PREFETCH);
 			
-			selectNodeStatement.text = SELECT_NODE_SQL + " union select '" + previousEdge.name + "', " + previousEdge.inclusiveTime + ", " + previousEdge.percentage + ", 100";			
+			selectNodeStatement.text += " union select '" + previousEdge.name + "', " + previousEdge.inclusiveTime + ", " + previousEdge.percentage + ", 100";			
 			selectNodeStatement.execute(PREFETCH);
 		}
 		
@@ -141,29 +151,26 @@ package cachegrindVisualizer.callGraph.builders
 			var edges:String = '';
 			var sqlResult:SQLResult = selectEdgeStatement.getResult();
 			for each (var edge:Edge in sqlResult.data)
-			{				
-				edges += '"' + parents[edge.path] + '" -> "' + edge.name + '" [' + EdgeSize.getSize(edge);
+			{
+				if (edge.level > previousEdge.level)
+				{
+					parentsNames[edge.level] = previousEdge.name;
+				}				
+						
+				edges += '"' + parentsNames[edge.level] + '" -> "' + edge.name + '" [' + EdgeSize.getSize(edge);
 				if (label.type != Label.TYPE_NO)
 				{
 					edges += ' label="' + label.edge(edge) + '"';
 				}
-
 				// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
-				if (edge.time > 0 && edge.time != edge.inclusiveTime)
+				if (label.type != Label.TYPE_NO && edge.time > 0 && edge.time != edge.inclusiveTime)
 				{
-					if (label.type != Label.TYPE_NO)
-					{
-						edges += ' headlabel="' + label.head(edge) + '"';
-					}
-					
-					parents[edge.path + '.' + edge.id] = edge.name;
-				}
-				
+					edges += ' headlabel="' + label.head(edge) + '"';
+				}				
 				if (!configuration.blackAndWhite)
 				{
 					edges += ' color="' + color.edge(edge) + '"';
-				}
-				
+				}								
 				edges += '];\n';
 				
 				previousEdge = edge;
@@ -172,9 +179,9 @@ package cachegrindVisualizer.callGraph.builders
 			fileStream.writeUTFBytes(edges);
 			if (sqlResult.complete)
 			{	
+				parentsNames = previousEdge = null;
 				progress += 50;
 				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
-				parents = previousEdge = null;
 				edgesBuilt = true;
 				checkComplete();
 			}
@@ -193,7 +200,7 @@ package cachegrindVisualizer.callGraph.builders
 				nodes += '"' + node.name + '" [' + label.node(node);
 				if (!configuration.blackAndWhite)
 				{
-					nodes += ', color="' + color.node(node) + '"';
+					nodes += ' color="' + color.node(node) + '"';
 				}
 				nodes += '];\n';
 			}		
@@ -217,10 +224,7 @@ package cachegrindVisualizer.callGraph.builders
 		{
 			if (complete)
 			{
-				treeItem = null;
-				
-				fileStream.writeUTFBytes('}');				
-				
+				fileStream.writeUTFBytes('}');
 				fileStream.close();
 			}
 		}		
