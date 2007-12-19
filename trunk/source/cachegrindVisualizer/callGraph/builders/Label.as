@@ -13,12 +13,15 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public static const TYPE_NO:uint = 4;
 		
-		protected const PERCENTAGE_PRECISION:uint = 2;
+		private static const INCLUDE_FUNCTIONS:Object = {'include': null, 'include_once': null, 'require': null, 'require_once': null};
+		private static const MAX_INCLUDE_FILE_PATH_LENGTH:uint = 20;
+			
+		private static const PERCENTAGE_PRECISION:uint = 2;
 		
-		protected var percentageFormatter:NumberFormatter = new NumberFormatter();
-		protected var timeFormatter:NumberFormatter = new NumberFormatter();
+		private var percentageFormatter:NumberFormatter = new NumberFormatter();
+		private var timeFormatter:NumberFormatter = new NumberFormatter();
 		
-		protected var _type:uint = 2;
+		private var _type:uint = 2;
 		public function get type():uint
 		{
 			return _type;
@@ -48,39 +51,74 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public function node(node:Node):String
 		{
-			var label:String = node.name.replace(/\\/g, '\\\\') + '\\n';
+			var label:String = 'label="';			
+			var parts:Array = node.name.split('::', 2);;
+			if (parts.length == 2 && parts[0] in INCLUDE_FUNCTIONS)
+			{
+				if (parts[1].length > MAX_INCLUDE_FILE_PATH_LENGTH)
+				{
+					var path:String = parts[1];					
+					var fileName:String = '';
+					var char:String;
+					for (var i:uint = path.length - 1; i > 1; i--)
+					{
+						char = path.charAt(i);
+						if (char == '/' || char == '\\')
+						{
+							break;
+						}
+						else
+						{
+							fileName = char + fileName;
+						}
+					}
+					path = path.substr(0, i);
+					var length:Number = (path.length / 2) - ((path.length - MAX_INCLUDE_FILE_PATH_LENGTH) / 2);
+					path = path.substr(0, length) + '…' + path.substr(-length);
+					label += parts[0] + '::' + (path + char).replace(/\\/g, '\\\\') + fileName;
+				}
+				else
+				{
+					label += node.name.replace(/\\/g, '\\\\');
+				}				
+			}
+			else
+			{
+				label += node.name;
+			}	
+			
 			if (type != TYPE_NO)
 			{
-				label = build(node.inclusivePercentage, node.inclusiveTime, label);
+				label += '\\n' + build(node.inclusivePercentage, node.inclusiveTime);
 			}
-			return label;
+			return label + '"';
 		}
 		
-		protected function build(percentage:Number, time:uint, label:String = ''):String
+		protected function build(percentage:Number, time:uint):String
 		{			
 			switch (_type)
 			{
 				case TYPE_PERCENTAGE_AND_TIME:
 				{
-					label += percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ')';
+					return percentageFormatter.format(percentage) + ' % (' + timeFormatter.format(time) + ')';
 				}
 				break;
 				
 				case TYPE_TIME_AND_PERCENTAGE:
 				{
-					label += timeFormatter.format(time) + ' (' + percentageFormatter.format(percentage) + ' %)';
+					return timeFormatter.format(time) + ' (' + percentageFormatter.format(percentage) + ' %)';
 				}
 				break;
 				
 				case TYPE_PERCENTAGE:
 				{
-					label += percentageFormatter.format(percentage) + ' %';
+					return percentageFormatter.format(percentage) + ' %';
 				}
 				break;
 					
 				case TYPE_TIME:
 				{
-					label += timeFormatter.format(time);
+					return timeFormatter.format(time);
 				}
 				break;
 					
@@ -90,8 +128,6 @@ package cachegrindVisualizer.callGraph.builders
 				}	
 				break;				
 			}
-				
-			return label;
 		}
 	}
 }

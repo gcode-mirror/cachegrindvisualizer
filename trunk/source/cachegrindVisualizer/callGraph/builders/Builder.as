@@ -14,7 +14,7 @@ package cachegrindVisualizer.callGraph.builders
 	import flash.filesystem.FileStream;
 	
 	public class Builder extends EventDispatcher
-	{		
+	{	
 		private static const PREFETCH:uint = 5000;
 		private static const SELECT_NODE_SQL:String = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from main.tree where path like :path || \'%\' group by name having max(inclusiveTime) / :onePercentage >= :cost';
 		
@@ -93,11 +93,12 @@ package cachegrindVisualizer.callGraph.builders
 			{
 				header += 'label="' + configuration.title + '" fontsize=22 labelloc="' + configuration.titleLocation + '"\n';
 			}
+			header += 'node [shape=box';
 			if (!configuration.blackAndWhite)
 			{
-				header += 'node [style=filled];\n';
+				header += ', style=filled';
 			}		
-			header += '\n';
+			header += '];\n';
 			fileStream.writeUTFBytes(header);
 			
 			selectRootItem();			
@@ -141,10 +142,10 @@ package cachegrindVisualizer.callGraph.builders
 			var sqlResult:SQLResult = selectEdgeStatement.getResult();
 			for each (var edge:Edge in sqlResult.data)
 			{				
-				edges += '"' + parents[edge.path] + '" -> "' + edge.name + '" [';
+				edges += '"' + parents[edge.path] + '" -> "' + edge.name + '" [' + EdgeSize.getSize(edge);
 				if (label.type != Label.TYPE_NO)
 				{
-					edges += 'label="' + label.edge(edge) + '"';
+					edges += ' label="' + label.edge(edge) + '"';
 				}
 
 				// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
@@ -189,7 +190,7 @@ package cachegrindVisualizer.callGraph.builders
 			var sqlResult:SQLResult = selectNodeStatement.getResult();
 			for each (var node:Node in sqlResult.data)
 			{
-				nodes += '"' + node.name + '" [label="' + label.node(node) + '"';
+				nodes += '"' + node.name + '" [' + label.node(node);
 				if (!configuration.blackAndWhite)
 				{
 					nodes += ', color="' + color.node(node) + '"';
