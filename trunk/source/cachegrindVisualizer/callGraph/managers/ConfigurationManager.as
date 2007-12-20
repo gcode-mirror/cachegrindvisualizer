@@ -101,6 +101,7 @@ package cachegrindVisualizer.callGraph.managers
 			Selector.select(callGraph.rankDirection, configuration.rankDirection);
 			
 			callGraph.blackAndWhite.selected = configuration.blackAndWhite;
+			callGraph.hideLibraryFunctions.selected = configuration.hideLibraryFunctions;
 		}
 		
 		private function setPanelTitle(event:Event = null):void

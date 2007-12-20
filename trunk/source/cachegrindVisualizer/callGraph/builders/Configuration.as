@@ -19,5 +19,7 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public var rankDirection:String = RANK_DIRECTION_TB;
 		public var labelType:uint = Label.TYPE_PERCENTAGE_AND_TIME;
+		
+		public var hideLibraryFunctions:Boolean = false;
 	}
 }

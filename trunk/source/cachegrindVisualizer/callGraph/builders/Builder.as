@@ -139,6 +139,19 @@ package cachegrindVisualizer.callGraph.builders
 				selectEdgeStatement.text += ' and inclusiveTime >= :cost';
 				selectNodeStatement.text += ' having max(inclusiveTime) >= :cost';
 			}
+			if (configuration.hideLibraryFunctions)
+			{
+				if (configuration.minNodeCost == 0)
+				{
+					selectNodeStatement.text += ' having';
+				}
+				else
+				{
+					selectNodeStatement.text += ' and';
+				}
+				selectEdgeStatement.text += ' and fileName is not null'
+				selectNodeStatement.text += ' max(fileName) is not null';
+			}
 			
 			selectEdgeStatement.execute(PREFETCH);
 			

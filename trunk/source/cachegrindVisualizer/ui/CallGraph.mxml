@@ -44,6 +44,9 @@
 			</mx:FormItem>
 			<mx:FormItem>
 				<mx:CheckBox id="blackAndWhite" label="{resourceManager.getString('CallGraph', 'blackAndWhite')}" change="handleChange(event)"/>
+			</mx:FormItem>
+			<mx:FormItem>
+				<mx:CheckBox id="hideLibraryFunctions" label="{resourceManager.getString('CallGraph', 'hideLibraryFunctions')}" change="handleChange(event)"/>
 			</mx:FormItem>			
 		</mx:Form>
 		
