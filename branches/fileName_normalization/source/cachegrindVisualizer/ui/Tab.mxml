@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" xmlns="cachegrindVisualizer.ui.*" width="100%" height="100%" creationComplete="handleCreationComplete()">
+	
+	<mx:HDividedBox width="100%" height="100%">
+		<mx:Tree id="tree" labelField="name" labelFunction="treeLabelFunction" wordWrap="true" variableRowHeight="true" width="30%" height="100%" iconFunction="selectIcon" itemClick="handleItemClick(event)"/>
+		<mx:TabNavigator width="70%" height="100%">
+			<CallGraph id="callGraph" styleName="nestedTab"/>
+		</mx:TabNavigator>
+	</mx:HDividedBox>
+	
+	<mx:Script><![CDATA[
+		import cachegrindVisualizer.callGraph.builders.Builder;
+		
+	import flash.filesystem.File;	
+	import flash.system.System;
+	
+	import mx.events.ListEvent;
+	import mx.events.FlexEvent;
+	import mx.controls.ProgressBar;		
+	import mx.managers.PopUpManager;
+	
+	import develar.formatters.Formatter;
+	
+	import cachegrindVisualizer.parser.Parser;
+	import cachegrindVisualizer.parser.ParserResult;
+	import cachegrindVisualizer.controls.tree.TreeDataDescriptor;
+	import cachegrindVisualizer.controls.tree.TreeItem;
+	
+	[Embed(source='../../../assets/constructor.png')]
+	private static const constructorIcon:Class;
+	[Embed(source='../../../assets/destructor.png')]
+	private static var destructorIcon:Class;
+	
+	[Embed(source='../../../assets/method.png')]
+	private static var methodIcon:Class;	
+	[Embed(source='../../../assets/function.png')]
+	private static var functionIcon:Class;	
+	[Embed(source='../../../assets/file.png')]
+	private static var fileIcon:Class;
+	
+	private var sqlConnection:SQLConnection = new SQLConnection();
+	
+	private var names:Object;
+	private var fileNames:Object;
+	
+	private var _file:File;
+	public function get file():File
+	{
+		return _file;
+	}
+	public function set file(value:File):void
+	{
+		_file = value;
+	}
+	
+	private function handleCreationComplete():void
+	{
+		refresh();
+	}
+	
+	public function refresh():void
+	{
+		if (sqlConnection.connected)
+		{
+			sqlConnection.close();
+			callGraph.builder.cancel();
+		}
+		
+		label = file.name.replace('cachegrind.out.', '');
+		
+		var parser:Parser = new Parser(sqlConnection);
+		var parserResult:ParserResult = parser.parse(file);
+		
+		names = parserResult.names;
+		fileNames = parserResult.fileNames;
+		
+		callGraph.builder = new Builder(sqlConnection, parserResult.names, parserResult.fileNames);
+		sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
+		sqlConnection.openAsync(parserResult.db, SQLMode.READ);
+
+		tree.dataDescriptor = new TreeDataDescriptor(parserResult.db);					
+		tree.dataProvider = parserResult.mainTreeItem;
+		tree.validateNow();
+		tree.selectedItem = tree.firstVisibleItem;
+		tree.expandItem(tree.firstVisibleItem, true);
+		
+		parentApplication.title = 'CachegrindVisualizer — ' + label + ' (' + tree.firstVisibleItem.fileName + ')';
+	}
+	
+	private function handleOpenSqlConnection(event:SQLEvent):void
+	{
+		sqlConnection.removeEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
+		callGraph.build();
+	}
+	
+	private function treeLabelFunction(item:TreeItem):String
+	{
+		return names[item.name];
+	}
+	
+	private function selectIcon(item:TreeItem):Class
+	{
+		if (item.level == 0)
+		{
+			return fileIcon;
+		}
+		else
+		{
+			var parts:Array;
+			var itemName:String = names[item.name];
+			// мы не храним имя файла для встроенных функций и классов PHP, оно всегда равно php:internal
+			if (item.fileName == 0)
+			{
+				// определяем, это функция или метод, предварительно убирая префикс php::
+				parts = itemName.slice(5).split('->', 2);
+				if (parts.length == 1)
+				{
+					return functionIcon;
+				}
+				else
+				{
+					// определяем, это обычный метод или конструтор (php::blitz->blitz будет иметь пиктограмму конструктора, а php::blitz->set пиктограмму метода)
+					if (parts[0] == parts[1])
+					{
+						return constructorIcon;					
+					}
+					else
+					{
+						return methodIcon;
+					}
+				}	
+			}
+			else if (itemName == '__autoload')
+			{
+				return functionIcon;
+			}
+		
+			parts = itemName.split('->', 2);
+			// конструкции include и require, а также статические методы
+			if (parts.length == 1)
+			{
+				parts = itemName.split('::', 2);
+				// в include и require имя без префикса php:: равно имени файла
+				if (parts[1] == fileNames[item.fileName])
+				{
+					return fileIcon;
+				}
+				else
+				{
+					return methodIcon;
+				}
+			}
+			else
+			{
+				switch (parts[1])
+				{
+					case '__construct':
+					{
+						return constructorIcon;
+					}
+					break;
+					
+					case '__destruct':
+					{
+						return destructorIcon;
+					}
+					break;
+					
+					default:
+					{
+						return methodIcon;
+					}
+				}
+			}
+		}
+		
+		throw new Error('Token icon is unknown');
+	}
+	
+	private function handleItemClick(event:ListEvent):void
+	{
+		if (TreeItem(tree.selectedItem).isBranch)
+		{
+			callGraph.build();
+		}		
+	}
+	
+	]]></mx:Script>
+	
+</mx:VBox>

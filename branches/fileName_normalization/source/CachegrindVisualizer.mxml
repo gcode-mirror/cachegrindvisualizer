@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	@author Vladimir Krivosheev
+	@version $Id$
+-->
+<develar:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()" invoke="handleInvoke(event)">
+	
+	<mx:Metadata>
+		[ResourceBundle('Shared')]
+		[ResourceBundle('CachegrindVisualizer')]
+	</mx:Metadata>
+	
+	<mx:Style source="../../../framework/style.css"/>
+	<mx:Style source="../../../framework/style.css"/>
+	
+	<mx:ApplicationControlBar width="100%">
+		<mx:Button label="{resourceManager.getString('Shared', 'open')}" click="browse()"/>
+		<mx:Button id="b_refresh" label="{resourceManager.getString('Shared', 'refresh')}" enabled="false" click="Tab(tabNavigator.selectedChild).refresh()"/>
+		<mx:Spacer width="100%"/>
+		<!--<mx:CheckBox id="cb_automaticallyBuildGraph" label="{resourceManager.getString('CachegrindVisualizer', 'automaticallyBuildGraph')}" click="handleCBAutomaticallyBuildGraphClick(event)"/>-->
+		<develar:LocaleComboBox dataProvider="{locales}"/>
+	</mx:ApplicationControlBar>
+	<develar:TabNavigator id="tabNavigator" width="100%" height="100%" change="handleTabChange()" childRemove="handleTabRemove()"/>
+	
+	<mx:Script><![CDATA[
+		
+	import flash.filesystem.File;
+	import flash.system.System;
+	import flash.events.NativeDragEvent;
+	import flash.desktop.ClipboardFormats;
+	import flash.desktop.NativeDragManager;
+	
+	import mx.events.IndexChangedEvent;
+	
+	import develar.formatters.Formatter;
+	import develar.core.Singleton;
+	
+	import cachegrindVisualizer.ui.Tab;
+	import cachegrindVisualizer.net.PersistenceSession;
+	
+	public const FILE_TYPE:String = 'cg';
+	
+	[Bindable]
+	private var locales:Array = new Array({id: 'en_US', label: 'English'}, {id: 'ru', label: 'Russian'});
+	
+	private var file:File;
+	private var fileFilters:Array;
+	
+	private function handlePreInitialize():void
+	{
+		Singleton.registerClass('develar.net::IPersistenceSession', PersistenceSession);
+	}
+
+	private function handleCreationComplete():void
+	{			
+		//cb_automaticallyBuildGraph.selected = PersistenceSession.instance.automaticallyBuildGraph;
+		nativeWindow.maximize();
+		nativeWindow.visible = true;
+		
+		addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, handleNativeDragEnter);
+		addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
+		
+		fileFilters = new Array(new FileFilter(resourceManager.getString('CachegrindVisualizer', 'cachegrindFiles'), '*.cg;cachegrind.out.*'), new FileFilter(resourceManager.getString('CachegrindVisualizer', 'allFiles'), '*'));
+	}
+	
+	private function handleNativeDragEnter(event:NativeDragEvent):void
+	{
+		if (event.clipboard.hasFormat(ClipboardFormats.FILE_LIST_FORMAT))
+		{
+			NativeDragManager.acceptDragDrop(this);
+		}
+	}
+	
+	private function handleNativeDragDrop(event:NativeDragEvent):void
+	{
+		for each (file in event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT))
+		{
+			openFile();
+		}
+	}
+
+	private function browse():void
+	{
+		file = new File();
+		file.addEventListener(FileListEvent.SELECT_MULTIPLE, handleSelectMultiple);
+		if (PersistenceSession.instance.profilerOutputDirectory != null)
+		{
+			file.nativePath = PersistenceSession.instance.profilerOutputDirectory;
+		}
+		
+		file.browseForOpenMultiple('', fileFilters);
+	}
+	
+	private function handleSelectMultiple(event:FileListEvent):void
+	{
+		for each (file in event.files)
+		{
+			openFile();
+		}
+	}
+	
+	private function openFile():void
+	{	
+		PersistenceSession.instance.profilerOutputDirectory = file.nativePath;
+		PersistenceSession.instance.flush();
+		
+		for each (var existTab:Tab in tabNavigator.getChildren())
+		{
+			if (existTab.file.name == file.name)
+			{
+				tabNavigator.selectedChild = existTab;
+				if (existTab.file.modificationDate.time != file.modificationDate.time)
+				{
+					existTab.refresh();
+				}
+				return;
+			}
+		}
+		
+		var tab:Tab = new Tab();		
+		tab.file = file;
+		file = null;
+		tabNavigator.addChild(tab);
+		tabNavigator.selectedChild = tab;
+		
+		b_refresh.enabled = true;
+	}
+	
+	private function handleTabChange():void
+	{
+		// в момент создания вкладки мы еще не произвели анализ и имя анализируемого программы нам неизвестно
+		if (Tab(tabNavigator.selectedChild).initialized)
+		{
+			title = 'CachegrindVisualizer — ' + tabNavigator.selectedChild.label + ' (' + Tab(tabNavigator.selectedChild).tree.firstVisibleItem.fileName + ')';
+		}
+	}
+	
+	private function handleCBAutomaticallyBuildGraphClick(event:Event):void
+	{
+		PersistenceSession.instance.automaticallyBuildGraph = event.target.selected;
+	}
+	
+	protected function handleInvoke(event:InvokeEvent):void
+	{
+		for each (var filePath:String in event.arguments)
+		{
+			file = new File(filePath);
+			openFile();
+		}
+	}
+	
+	private function handleTabRemove():void
+	{
+		b_refresh.enabled = tabNavigator.numChildren > 1;
+	}
+	
+	]]></mx:Script>	
+	
+</develar:WindowedApplication>
