@@ -8,6 +8,7 @@ package cachegrindVisualizer.callGraph.builders
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.ProgressEvent;
+	import flash.events.SQLErrorEvent;
 	import flash.events.SQLEvent;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
@@ -60,14 +61,22 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public function cancel():void
 		{
-			selectRootItemStatement.cancel();
-			selectEdgeStatement.cancel();
-			selectNodeStatement.cancel();
+			if (progress > 0)
+			{
+				var sqlErrorHandler:Function = function (event:SQLErrorEvent):void { event.target.removeEventListener(SQLErrorEvent.ERROR, sqlErrorHandler); };
+				selectRootItemStatement.addEventListener(SQLErrorEvent.ERROR, sqlErrorHandler, false, 0, false);
+				selectEdgeStatement.addEventListener(SQLErrorEvent.ERROR, sqlErrorHandler, false, 0, false);
+				selectNodeStatement.addEventListener(SQLErrorEvent.ERROR, sqlErrorHandler, false, 0, false);
 				
-			fileStream.close();
+				selectRootItemStatement.cancel();				
+				selectEdgeStatement.cancel();				
+				selectNodeStatement.cancel();
+				
+				fileStream.close();
 			
-			progress = 0;
-			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
+				progress = 0;
+				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
+			}			
 		}
 		
 		public function set sqlConnection(value:SQLConnection):void
@@ -79,6 +88,15 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public function build(treeItem:TreeItem, file:File, configuration:Configuration):void
 		{
+			progress = 1;
+			
+			if (selectRootItemStatement.executing || selectEdgeStatement.executing || selectNodeStatement.executing)
+			{
+				selectRootItemStatement.cancel();
+				selectEdgeStatement.cancel();
+				selectNodeStatement.cancel();
+			}
+			
 			this.treeItem = treeItem;
 			this.configuration = configuration;
 			label.type = configuration.labelType;
@@ -88,7 +106,7 @@ package cachegrindVisualizer.callGraph.builders
 			nodesBuilt = false;
 			
 			fileStream.openAsync(file, FileMode.WRITE);							
-			var header:String = 'digraph { rankdir="' + configuration.rankDirection + '";\nedge [labelfontsize=12];\n';		
+			var header:String = 'digraph { rankdir=' + configuration.rankDirection + '\nedge [labelfontsize=12]\n';		
 			if (configuration.title != null)
 			{
 				header += 'label="' + configuration.title + '" fontsize=22 labelloc="' + configuration.titleLocation + '"\n';
@@ -98,7 +116,7 @@ package cachegrindVisualizer.callGraph.builders
 			{
 				header += ' style=filled';
 			}		
-			header += '];\n';
+			header += ']\n';
 			fileStream.writeUTFBytes(header);
 			
 			selectRootItem();			
@@ -184,7 +202,7 @@ package cachegrindVisualizer.callGraph.builders
 				{
 					edges += ' color="' + color.edge(edge) + '"';
 				}								
-				edges += '];\n';
+				edges += ']\n';
 				
 				previousEdge = edge;
 			}
@@ -215,7 +233,7 @@ package cachegrindVisualizer.callGraph.builders
 				{
 					nodes += ' color="' + color.node(node) + '"';
 				}
-				nodes += '];\n';
+				nodes += ']\n';
 			}		
 
 			fileStream.writeUTFBytes(nodes);

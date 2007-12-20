@@ -103,7 +103,7 @@ package cachegrindVisualizer.parser
 			while (!fileReader.complete)
 			{
 				var parentId:uint = itemId++;
-				parseBody(parentId, MAIN_FUNCTION_LEVEL);
+				parseBody(parentId, MAIN_FUNCTION_LEVEL + 1);
 			}
 			mainTreeItem.left = key + 1;
 			
@@ -156,7 +156,7 @@ package cachegrindVisualizer.parser
 						var edge:Edge = getEdge(parentId, sample, children, level);
 						for each (var childId:uint in children)
 						{
-							parseBody(childId, level + 1);
+							parseBody(childId, edge.level + 1);
 						}						
 						insert(parentId, edge.right, edge.level, edge.name, edge.fileName, edge.line, edge.time);																		
 						break;
