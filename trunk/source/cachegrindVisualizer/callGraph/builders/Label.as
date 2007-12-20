@@ -21,6 +21,20 @@ package cachegrindVisualizer.callGraph.builders
 		private var percentageFormatter:NumberFormatter = new NumberFormatter();
 		private var timeFormatter:NumberFormatter = new NumberFormatter();
 		
+		private var names:Object;
+		private var fileNames:Object;
+		
+		public function Label(names:Object, fileNames:Object):void
+		{
+			this.names = names;
+			this.fileNames = fileNames;
+			
+			timeFormatter.precision = -1;
+			
+			percentageFormatter.precision = PERCENTAGE_PRECISION;
+			percentageFormatter.rounding = NumberBaseRoundType.NEAREST;
+		}
+		
 		private var _type:uint = 2;
 		public function get type():uint
 		{
@@ -29,14 +43,6 @@ package cachegrindVisualizer.callGraph.builders
 		public function set type(value:uint):void
 		{
 			_type = value;
-		}
-		
-		public function Label():void
-		{
-			timeFormatter.precision = -1;
-			
-			percentageFormatter.precision = PERCENTAGE_PRECISION;
-			percentageFormatter.rounding = NumberBaseRoundType.NEAREST;
 		}
 		
 		public function edge(edge:Edge):String
@@ -51,8 +57,10 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public function node(node:Node):String
 		{
+			var name:String = names[node.name];
+			
 			var label:String = 'label="';			
-			var parts:Array = node.name.split('::', 2);;
+			var parts:Array = name.split('::', 2);;
 			if (parts.length == 2 && parts[0] in INCLUDE_FUNCTIONS)
 			{
 				if (parts[1].length > MAX_INCLUDE_FILE_PATH_LENGTH)
@@ -79,12 +87,12 @@ package cachegrindVisualizer.callGraph.builders
 				}
 				else
 				{
-					label += node.name.replace(/\\/g, '\\\\');
+					label += name.replace(/\\/g, '\\\\');
 				}				
 			}
 			else
 			{
-				label += node.name;
+				label += name;
 			}	
 			
 			if (type != TYPE_NO)

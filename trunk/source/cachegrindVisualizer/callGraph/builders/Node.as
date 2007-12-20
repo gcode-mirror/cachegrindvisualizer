@@ -2,7 +2,7 @@ package cachegrindVisualizer.callGraph.builders
 {
 	public class Node
 	{
-		public var name:String;
+		public var name:uint;
 		
 		public var inclusiveTime:Number = 0;
 				

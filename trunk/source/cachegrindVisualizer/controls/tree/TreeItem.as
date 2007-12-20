@@ -10,8 +10,8 @@ package cachegrindVisualizer.controls.tree
 		
 		public var isBranch:Boolean;
 		
-		public var name:String;		
-		public var fileName:String;
+		public var name:uint;		
+		public var fileName:uint;
 		
 		public var children:ArrayCollection;
 	}

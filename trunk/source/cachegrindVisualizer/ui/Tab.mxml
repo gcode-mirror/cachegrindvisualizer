@@ -2,13 +2,14 @@
 <mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" xmlns="cachegrindVisualizer.ui.*" width="100%" height="100%" creationComplete="handleCreationComplete()">
 	
 	<mx:HDividedBox width="100%" height="100%">
-		<mx:Tree id="tree" labelField="name" wordWrap="true" variableRowHeight="true" width="30%" height="100%" iconFunction="selectIcon" itemClick="handleItemClick(event)"/>
+		<mx:Tree id="tree" labelField="name" labelFunction="treeLabelFunction" wordWrap="true" variableRowHeight="true" width="30%" height="100%" iconFunction="selectIcon" itemClick="handleItemClick(event)"/>
 		<mx:TabNavigator width="70%" height="100%">
 			<CallGraph id="callGraph" styleName="nestedTab"/>
 		</mx:TabNavigator>
 	</mx:HDividedBox>
 	
 	<mx:Script><![CDATA[
+		import cachegrindVisualizer.callGraph.builders.Builder;
 		
 	import flash.filesystem.File;	
 	import flash.system.System;
@@ -21,6 +22,7 @@
 	import develar.formatters.Formatter;
 	
 	import cachegrindVisualizer.parser.Parser;
+	import cachegrindVisualizer.parser.ParserResult;
 	import cachegrindVisualizer.controls.tree.TreeDataDescriptor;
 	import cachegrindVisualizer.controls.tree.TreeItem;
 	
@@ -36,7 +38,10 @@
 	[Embed(source='../../../assets/file.png')]
 	private static var fileIcon:Class;
 	
-	protected var sqlConnection:SQLConnection = new SQLConnection();
+	private var sqlConnection:SQLConnection = new SQLConnection();
+	
+	private var names:Object;
+	private var fileNames:Object;
 	
 	private var _file:File;
 	public function get file():File
@@ -50,7 +55,6 @@
 	
 	private function handleCreationComplete():void
 	{
-		callGraph.builder.sqlConnection = sqlConnection;
 		refresh();
 	}
 	
@@ -64,13 +68,18 @@
 		
 		label = file.name.replace('cachegrind.out.', '');
 		
-		var parser:Parser = new Parser(file, sqlConnection);
+		var parser:Parser = new Parser(sqlConnection);
+		var parserResult:ParserResult = parser.parse(file);
 		
+		names = parserResult.names;
+		fileNames = parserResult.fileNames;
+		
+		callGraph.builder = new Builder(sqlConnection, parserResult.names, parserResult.fileNames);
 		sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
-		sqlConnection.openAsync(parser.db, SQLMode.READ);
+		sqlConnection.openAsync(parserResult.db, SQLMode.READ);
 
-		tree.dataDescriptor = new TreeDataDescriptor(parser.db);					
-		tree.dataProvider = parser.mainTreeItem;
+		tree.dataDescriptor = new TreeDataDescriptor(parserResult.db);					
+		tree.dataProvider = parserResult.mainTreeItem;
 		tree.validateNow();
 		tree.selectedItem = tree.firstVisibleItem;
 		tree.expandItem(tree.firstVisibleItem, true);
@@ -84,74 +93,83 @@
 		callGraph.build();
 	}
 	
+	private function treeLabelFunction(item:TreeItem):String
+	{
+		return names[item.name];
+	}
+	
 	private function selectIcon(item:TreeItem):Class
 	{
-		var parts:Array;
-		if (item.level == Parser.MAIN_FUNCTION_LEVEL)
+		if (item.level == 0)
 		{
 			return fileIcon;
 		}
-		// мы не храним имя файла для встроенных функций и классов PHP, оно всегда равно php:internal
-		else if (item.fileName == null)
+		else
 		{
-			// определяем, это функция или метод, предварительно убирая префикс php::
-			parts = item.name.slice(5).split('->', 2);
-			if (parts.length == 1)
+			var parts:Array;
+			var itemName:String = names[item.name];
+			// мы не храним имя файла для встроенных функций и классов PHP, оно всегда равно php:internal
+			if (item.fileName == 0)
+			{
+				// определяем, это функция или метод, предварительно убирая префикс php::
+				parts = itemName.slice(5).split('->', 2);
+				if (parts.length == 1)
+				{
+					return functionIcon;
+				}
+				else
+				{
+					// определяем, это обычный метод или конструтор (php::blitz->blitz будет иметь пиктограмму конструктора, а php::blitz->set пиктограмму метода)
+					if (parts[0] == parts[1])
+					{
+						return constructorIcon;					
+					}
+					else
+					{
+						return methodIcon;
+					}
+				}	
+			}
+			else if (itemName == '__autoload')
 			{
 				return functionIcon;
 			}
-			else
+		
+			parts = itemName.split('->', 2);
+			// конструкции include и require, а также статические методы
+			if (parts.length == 1)
 			{
-				// определяем, это обычный метод или конструтор (php::blitz->blitz будет иметь пиктограмму конструктора, а php::blitz->set пиктограмму метода)
-				if (parts[0] == parts[1])
+				parts = itemName.split('::', 2);
+				// в include и require имя без префикса php:: равно имени файла
+				if (parts[1] == fileNames[item.fileName])
 				{
-					return constructorIcon;					
+					return fileIcon;
 				}
 				else
 				{
 					return methodIcon;
 				}
-			}	
-		}
-		else if (item.name == '__autoload')
-		{
-			return functionIcon;
-		}
-		
-		parts = item.name.split('->', 2);
-		// конструкции include и require, а также статические методы
-		if (parts.length == 1)
-		{
-			parts = item.name.split('::', 2);
-			// в include и require имя без префикса php:: равно имени файла
-			if (parts[1] == item.fileName)
-			{
-				return fileIcon;
 			}
 			else
 			{
-				return methodIcon;
-			}
-		}
-		else
-		{
-			switch (parts[1])
-			{
-				case '__construct':
+				switch (parts[1])
 				{
-					return constructorIcon;
-				}
-				break;
-				
-				case '__destruct':
-				{
-					return destructorIcon;
-				}
-				break;
-				
-				default:
-				{
-					return methodIcon;
+					case '__construct':
+					{
+						return constructorIcon;
+					}
+					break;
+					
+					case '__destruct':
+					{
+						return destructorIcon;
+					}
+					break;
+					
+					default:
+					{
+						return methodIcon;
+					}
 				}
 			}
 		}

@@ -1,7 +1,5 @@
 package cachegrindVisualizer.parser
 {	
-	import cachegrindVisualizer.controls.tree.TreeItem;
-	
 	import develar.utils.SqlUtil;
 	
 	import flash.data.SQLConnection;
@@ -12,11 +10,14 @@ package cachegrindVisualizer.parser
 	import flash.filesystem.File;
 	
 	public class Parser extends EventDispatcher
-	{
-		public static const MAIN_FUNCTION_LEVEL:uint = 0;
-		private static const MAIN_FUNCTION_RIGHT:int = 0;
-		private static const MAIN_FUNCTION_NAME:String = 'main';		
+	{		
+		private static const MAIN_FUNCTION_NAME:String = 'main';
+		
 		private static const INITIAL_DB_FILE_NAME:String = 'db.db';
+		/**
+		 * Номер ревизии, в которой в последний раз была изменена заготовка БД
+		 */
+		private static const DB_VERSION:uint = 83;
 		
 		private static const SQL_CACHE_SIZE:uint = 200000;
 
@@ -33,19 +34,25 @@ package cachegrindVisualizer.parser
 		private var inclusiveTime:Object = new Object();
 		private var notInMainInclusiveTime:Number = 0;		
 		private var key:int = -1; // 0 для main
+		
+		private var namesMap:Object;
+		private var namesCounter:uint;
+				
+		private var fileNamesMap:Object;
+		private var fileNamesCounter:uint;	
+		
+		private var result:ParserResult = new ParserResult();	
 
-		public function Parser(file:File, sqlConnection:SQLConnection):void
+		public function Parser(sqlConnection:SQLConnection):void
 		{	
 			this.sqlConnection = sqlConnection;
-					
-			mainTreeItem.right = MAIN_FUNCTION_RIGHT;
-			mainTreeItem.level = MAIN_FUNCTION_LEVEL;
-			mainTreeItem.name = MAIN_FUNCTION_NAME;			
-			mainTreeItem.isBranch = true;
-			
+		}
+		
+		public function parse(file:File):ParserResult
+		{
 			fileReader = new FileReader(file);
-			_db = File.applicationStorageDirectory.resolvePath(fileReader.checksum + '.db');
-			if (db.exists)
+			result.db = File.applicationStorageDirectory.resolvePath(DB_VERSION + '_' + fileReader.checksum + '.db');
+			if (result.db.exists)
 			//if (false)
 			{				
 				openExistDb();			
@@ -54,42 +61,48 @@ package cachegrindVisualizer.parser
 			{
 				open();
 			}
+			
+			return result;
 		}
 		
-		private var _mainTreeItem:TreeItem = new TreeItem();
-		public function get mainTreeItem():TreeItem 
+		private function openExistDb():void
 		{
-			return _mainTreeItem;
-		}
-		
-		private var _db:File;
-		public function get db():File 
-		{
-			return _db;
-		}
-		
-		protected function openExistDb():void
-		{
-			sqlConnection.open(db, SQLMode.READ);
+			sqlConnection.open(result.db, SQLMode.READ);
 			var statement:SQLStatement = new SQLStatement();
 			statement.sqlConnection = sqlConnection;				
-			statement.text = 'select left, fileName from main.tree where right = :right and level = :level';
-			statement.parameters[':right'] = MAIN_FUNCTION_RIGHT;
-			statement.parameters[':level'] = MAIN_FUNCTION_LEVEL;
+			statement.text = 'select left, fileName from tree where right = :right and level = :level';
+			statement.parameters[':right'] = 0;
+			statement.parameters[':level'] = 0;
 			statement.execute();
 			
-			var result:Object = statement.getResult().data[0];	
-			mainTreeItem.left = result.left;
-			mainTreeItem.fileName = result.fileName;			
+			var sqlResult:Object = statement.getResult().data[0];	
+			result.mainTreeItem.left = sqlResult.left;
+			result.mainTreeItem.fileName = sqlResult.fileName;
+			
+			var item:Object;
+			statement.clearParameters();
+			statement.text = 'select * from names';
+			statement.execute();
+			for each (item in statement.getResult().data)
+			{
+				result.names[item.id] = item.name;
+			}
+			
+			statement.text = 'select * from fileNames';
+			statement.execute();
+			for each (item in statement.getResult().data)
+			{
+				result.fileNames[item.id] = item.fileName;
+			}
 			
 			sqlConnection.close();
 		}
 		
-		protected function open():void
+		private function open():void
 		{
 			var timeBegin:Number = new Date().time;
-			File.applicationDirectory.resolvePath(INITIAL_DB_FILE_NAME).copyTo(db, true);					
-			sqlConnection.open(db, SQLMode.UPDATE);
+			File.applicationDirectory.resolvePath(INITIAL_DB_FILE_NAME).copyTo(result.db, true);					
+			sqlConnection.open(result.db, SQLMode.UPDATE);
 			sqlConnection.cacheSize = SQL_CACHE_SIZE;
 							
 			insertStatement.sqlConnection = sqlConnection;
@@ -99,13 +112,25 @@ package cachegrindVisualizer.parser
 			
 			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);
 			
+			result.names[0] = MAIN_FUNCTION_NAME;			
+			namesMap = new Object();
+			namesCounter = 1; // 0 для main		
+			
+			fileNamesMap = new Object();
+			fileNamesCounter = 1; // 0 если это php:internal и нет детей
+			
 			// Деструкторы вне main, вызываются внутренним механизмом PHP
 			while (!fileReader.complete)
 			{
 				var parentId:uint = itemId++;
-				parseBody(parentId, MAIN_FUNCTION_LEVEL + 1);
+				parseBody(parentId, 1);
 			}
-			mainTreeItem.left = key + 1;
+			result.mainTreeItem.left = key + 1;
+			
+			namesMap = null;
+			fileNamesMap = null;
+			
+			insertNamesAndFileNames();
 			
 			trace('Затрачено на анализ: ' + ((new Date().time - timeBegin) / 1000));			
 			
@@ -117,8 +142,8 @@ package cachegrindVisualizer.parser
 			
 			sqlConnection.close();
 		}
-				
-		protected function parseBody(parentId:uint, level:uint):void
+						
+		private function parseBody(parentId:uint, level:uint):void
 		{				
 			var children:Array = new Array();
 			while (true)
@@ -128,13 +153,12 @@ package cachegrindVisualizer.parser
 				if (fileReader.getLine(1).charAt(0) == 'f')
 				{
 					// деструкторы вне main, то есть сами по себе, и на данный момент inclusiveTime для него, естественно, не установлено
-					if (_mainTreeItem.fileName == null && !(parentId in inclusiveTime))
+					if (result.mainTreeItem.fileName == 0 && !(parentId in inclusiveTime))
 					{
 						notInMainInclusiveTime += inclusiveTime[parentId] = lineAndTime[1] / TIME_UNIT_IN_MS;
 					}
 
-					var fileName:String = fileReader.getLine(2); // не храним php:internal для экономии, - раз null, значит это php:internal
-					insert(parentId, key--, level, fileReader.getLine(1).slice(3), fileName == 'fl=php:internal' ? null : fileName.slice(3), lineAndTime[0], lineAndTime[1]);
+					insert(parentId, key--, level, getName(1), getFileName(2, true), lineAndTime[0], lineAndTime[1]);
 					fileReader.shiftCursor(4);
 					break;
 				}
@@ -168,7 +192,7 @@ package cachegrindVisualizer.parser
 		/**
 		 * Edge содержит right и level для их корректировки в случае main (xdebug пишет деструкторы вне main, мы это исправляем)
 		 */
-		protected function getEdge(id:uint, sample:String, children:Array, level:uint):Edge
+		private function getEdge(id:uint, sample:String, children:Array, level:uint):Edge
 		{
 			var lineAndTime:Array = fileReader.getLine(3).split(' ');
 			var edge:Edge = new Edge();
@@ -181,7 +205,7 @@ package cachegrindVisualizer.parser
 				}
 				else
 				{
-					edge.level = MAIN_FUNCTION_LEVEL + 1;
+					edge.level = 1;
 					
 					var inclusiveTimeItem:Number = 0;
 					inclusiveTime[id] = 0;
@@ -192,25 +216,22 @@ package cachegrindVisualizer.parser
 					notInMainInclusiveTime += inclusiveTime[id] = inclusiveTimeItem + (lineAndTime[1] / TIME_UNIT_IN_MS);
 				}			
 				
-				edge.right = key--;
-				
-				edge.name = fileReader.getLine(4).slice(3);
-				edge.fileName = fileReader.getLine(5).slice(3);				
+				edge.right = key--;				
+				edge.name = getName(4);
+				edge.fileName = getFileName(5);				
 				
 				fileReader.shiftCursor(7);
 			}
 			// для функции main не указывается файл, есть строка summary, отделенная пустыми строками
 			else if (sample == '' || sample == 's')
 			{
-				var fileName:String = fileReader.getLine(8).slice(3);
-				_mainTreeItem.fileName = fileName;				
-				inclusiveTime[id] = (Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS) + notInMainInclusiveTime;			
+				edge.right = 0;
+				edge.level = 0;				
+				edge.name = 0;
+				edge.fileName = getFileName(8);
 				
-				edge.right = MAIN_FUNCTION_RIGHT;
-				edge.level = MAIN_FUNCTION_LEVEL;
-				
-				edge.name = MAIN_FUNCTION_NAME;
-				edge.fileName = fileReader.getLine(8).slice(3);
+				result.mainTreeItem.fileName = edge.fileName;
+				inclusiveTime[id] = (Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS) + notInMainInclusiveTime;				
 				
 				fileReader.shiftCursor(10);
 			}
@@ -224,7 +245,7 @@ package cachegrindVisualizer.parser
 			return edge;
 		}
 				
-		protected function insert(id:uint, right:int, level:uint, name:String, fileName:String, line:uint, time:Number):void
+		private function insert(id:uint, right:int, level:uint, name:uint, fileName:uint, line:uint, time:Number):void
 		{
 			insertStatement.parameters[':left'] = key--;
 			insertStatement.parameters[':right'] = right;			
@@ -237,6 +258,67 @@ package cachegrindVisualizer.parser
 			
 			insertStatement.execute();
 			delete inclusiveTime[id];
+		}
+		
+		private function getName(offset:uint):uint
+		{
+			var name:String = fileReader.getLine(offset).slice(3);
+			var id:uint = namesMap[name];
+			if (id == 0)
+			{
+				id = namesCounter;
+				namesMap[name] = id;
+				result.names[namesCounter++] = name;
+			}
+			return id;
+		}
+		
+		/**
+		 * не храним php:internal для экономии, - раз null, значит это php:internal
+		 */
+		private function getFileName(offset:uint, checkOnInternal:Boolean = false):uint
+		{			
+			var fileName:String = fileReader.getLine(offset);
+			if (checkOnInternal && fileName == 'fl=php:internal')
+			{
+				return 0;
+			}
+			else
+			{
+				fileName = fileName.slice(3);
+				var id:uint = fileNamesMap[fileName];
+				if (id == 0)
+				{
+					id = fileNamesCounter;
+					fileNamesMap[fileName] = id;
+					result.fileNames[fileNamesCounter++] = fileName;
+				}
+				return id;
+			}
+		}
+		
+		private function insertNamesAndFileNames():void
+		{
+			var statement:SQLStatement = new SQLStatement();
+			statement.sqlConnection = sqlConnection;
+			statement.text = 'insert into names values (:id, :name)';
+			var i:uint;		
+			for each (var name:String in result.names)
+			{
+				statement.parameters[':id'] = i++;
+				statement.parameters[':name'] = name;
+				statement.execute();
+			}
+			
+			statement.clearParameters();
+			statement.text = 'insert into fileNames values (:id, :fileName)';
+			i = 1;
+			for each (var fileName:String in result.fileNames)
+			{
+				statement.parameters[':id'] = i++;
+				statement.parameters[':fileName'] = fileName;
+				statement.execute();
+			}
 		}
 	}
 }

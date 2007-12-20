@@ -24,7 +24,7 @@ package cachegrindVisualizer.callGraph.builders
 		
 		private var fileStream:FileStream = new FileStream();
 			
-		private var label:Label = new Label();
+		private var label:Label;
 		private var color:Color = new Color();
 		
 		private var configuration:Configuration;
@@ -39,8 +39,14 @@ package cachegrindVisualizer.callGraph.builders
 		
 		private var progress:Number;
 		
-		public function Builder():void
+		public function Builder(sqlConnection:SQLConnection, names:Object, fileNames:Object):void
 		{
+			selectEdgeStatement.sqlConnection = sqlConnection;
+			selectNodeStatement.sqlConnection = sqlConnection;
+			selectRootItemStatement.sqlConnection = sqlConnection;			
+			
+			label = new Label(names, fileNames);			
+			
 			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
 			
@@ -77,13 +83,6 @@ package cachegrindVisualizer.callGraph.builders
 				progress = 0;
 				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 			}			
-		}
-		
-		public function set sqlConnection(value:SQLConnection):void
-		{
-			selectEdgeStatement.sqlConnection = value;
-			selectNodeStatement.sqlConnection = value;
-			selectRootItemStatement.sqlConnection = value;
 		}
 		
 		public function build(treeItem:TreeItem, file:File, configuration:Configuration):void
@@ -167,8 +166,8 @@ package cachegrindVisualizer.callGraph.builders
 				{
 					selectNodeStatement.text += ' and';
 				}
-				selectEdgeStatement.text += ' and fileName is not null'
-				selectNodeStatement.text += ' max(fileName) is not null';
+				selectEdgeStatement.text += ' and fileName  != 0'
+				selectNodeStatement.text += ' max(fileName) != 0';
 			}
 			
 			selectEdgeStatement.execute(PREFETCH);
@@ -188,15 +187,15 @@ package cachegrindVisualizer.callGraph.builders
 					parentsNames[edge.level] = previousEdge.name;
 				}				
 						
-				edges += '"' + parentsNames[edge.level] + '" -> "' + edge.name + '" [' + EdgeSize.getSize(edge);
+				edges += parentsNames[edge.level] + ' -> ' + edge.name + ' [' + EdgeSize.getSize(edge);
 				if (label.type != Label.TYPE_NO)
 				{
 					edges += ' label="' + label.edge(edge) + '"';
-				}
-				// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
-				if (label.type != Label.TYPE_NO && edge.time > 0 && edge.time != edge.inclusiveTime)
-				{
-					edges += ' headlabel="' + label.head(edge) + '"';
+					// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
+					if (edge.time > 0 && edge.time != edge.inclusiveTime)
+					{
+						edges += ' headlabel="' + label.head(edge) + '"';
+					}
 				}				
 				if (!configuration.blackAndWhite)
 				{
@@ -228,7 +227,7 @@ package cachegrindVisualizer.callGraph.builders
 			var sqlResult:SQLResult = selectNodeStatement.getResult();
 			for each (var node:Node in sqlResult.data)
 			{
-				nodes += '"' + node.name + '" [' + label.node(node);
+				nodes += node.name + ' [' + label.node(node);
 				if (!configuration.blackAndWhite)
 				{
 					nodes += ' color="' + color.node(node) + '"';
