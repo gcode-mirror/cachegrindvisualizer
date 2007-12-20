@@ -92,6 +92,7 @@
 		labelType.text = labelType.selectedItem.label;
 		rankDirection.text = rankDirection.selectedItem.label;
 		titleLocation.text = titleLocation.selectedItem.label;
+		
 		build();
 	}
 	
@@ -109,6 +110,7 @@
 			file = new File(filePath + '.dot');
 		}
 		
+		builder.cancel();
 		builder.build(TreeItem(Tab(parentDocument).tree.selectedItem), file, configurationManager.configuration);
 	}
 	
@@ -131,7 +133,6 @@
 			configurationManager.configuration[event.target.id] = event.target.text;
 		}
 		
-		builder.cancel();	
 		build();
 	}
 	
