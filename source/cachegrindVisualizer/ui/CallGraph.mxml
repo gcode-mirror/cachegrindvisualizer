@@ -58,7 +58,7 @@
 		</mx:ControlBar>
 	</mx:Panel>
 	<mx:Spacer/>
-	<mx:ProgressBar width="100%" source="{builder}" labelPlacement="center"/>
+	<mx:ProgressBar id="progressBar" width="100%" labelPlacement="center"/>
 	
 	<mx:Script><![CDATA[		
 	
@@ -76,10 +76,15 @@
 	private var configurationManager:ConfigurationManager;
 	private var file:File;
 	
-	private var _builder:Builder = new Builder();
+	private var _builder:Builder;
 	public function get builder():Builder
 	{
 		return _builder;
+	}
+	public function set builder(value:Builder):void
+	{
+		_builder = value;
+		progressBar.source = _builder;
 	}
 	
 	private function handleCreationComplete():void

@@ -125,7 +125,7 @@ package cachegrindVisualizer.parser
 			cursor = data.length - 1;
 		}
 		
-		public function getLine(offset:int):String
+		public function getLine(offset:uint):String
 		{
 			correctCursor(offset);
 			return data[cursor - offset];
