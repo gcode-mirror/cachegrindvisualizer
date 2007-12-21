@@ -22,12 +22,10 @@ package cachegrindVisualizer.callGraph.builders
 		private var timeFormatter:NumberFormatter = new NumberFormatter();
 		
 		private var names:Object;
-		private var fileNames:Object;
 		
-		public function Label(names:Object, fileNames:Object):void
+		public function Label(names:Object):void
 		{
 			this.names = names;
-			this.fileNames = fileNames;
 			
 			timeFormatter.precision = -1;
 			
