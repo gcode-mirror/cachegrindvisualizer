@@ -30,7 +30,7 @@ package cachegrindVisualizer.parser
 			return namesMap[name];
 		}
 		
-		public function getFileId(name:String):uint {			
+		public function getFileId(name:String):int {			
 			if(isCompact) {
 				throw new Error("The map has been compacted already, therefore no name->id hash is available");
 			}
