@@ -12,8 +12,8 @@ package cachegrindVisualizer.parser
 		public var mainTreeItem:TreeItem = new TreeItem();
 		public var db:File;
 		
-		public var names:Object = new Object();
-		public var fileNames:Object = new Object();
+		public var names:Object;
+		public var fileNames:Object;
 		
 		public function ParserResult():void
 		{

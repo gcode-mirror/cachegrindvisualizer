@@ -13,11 +13,13 @@ package cachegrindVisualizer.parser
 	{		
 		private static const MAIN_FUNCTION_NAME:String = 'main';
 		
-		private static const INITIAL_DB_FILE_NAME:String = 'db.db';
+		private static const INITIAL_DB_FILE_NAME:String = 'db.db';		
+		private static const FILE_NAME_TABLE:String = 'fileNames';	
+		private static const FUNCTION_NAME_TABLE:String = 'functionNames';	
 		/**
 		 * Номер ревизии, в которой в последний раз была изменена заготовка БД
 		 */
-		private static const DB_VERSION:uint = 83;
+		private static const DB_VERSION:uint = 86;
 		
 		private static const SQL_CACHE_SIZE:uint = 200000;
 
@@ -35,11 +37,8 @@ package cachegrindVisualizer.parser
 		private var notInMainInclusiveTime:Number = 0;		
 		private var key:int = -1; // 0 для main
 		
-		private var namesMap:Object;
-		private var namesCounter:uint;
-				
-		private var fileNamesMap:Object;
-		private var fileNamesCounter:uint;	
+		private var functionNameMap:NameMap;
+		private var fileNameMap:NameMap;
 		
 		private var result:ParserResult = new ParserResult();	
 
@@ -50,6 +49,9 @@ package cachegrindVisualizer.parser
 		
 		public function parse(file:File):ParserResult
 		{
+			functionNameMap = new NameMap(sqlConnection, FUNCTION_NAME_TABLE);
+			fileNameMap = new NameMap(sqlConnection, FILE_NAME_TABLE);
+			
 			fileReader = new FileReader(file);
 			result.db = File.applicationStorageDirectory.resolvePath(DB_VERSION + '_' + fileReader.checksum + '.db');
 			if (result.db.exists)
@@ -79,21 +81,11 @@ package cachegrindVisualizer.parser
 			result.mainTreeItem.left = sqlResult.left;
 			result.mainTreeItem.fileName = sqlResult.fileName;
 			
-			var item:Object;
-			statement.clearParameters();
-			statement.text = 'select * from names';
-			statement.execute();
-			for each (item in statement.getResult().data)
-			{
-				result.names[item.id] = item.name;
-			}
-			
-			statement.text = 'select * from fileNames';
-			statement.execute();
-			for each (item in statement.getResult().data)
-			{
-				result.fileNames[item.id] = item.fileName;
-			}
+			result.names = functionNameMap.load();
+			functionNameMap = null;
+						
+			result.fileNames = fileNameMap.load();
+			fileNameMap = null;
 			
 			sqlConnection.close();
 		}
@@ -110,14 +102,10 @@ package cachegrindVisualizer.parser
 				
 			fileReader.read();
 			
-			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);
+			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);			
 			
-			result.names[0] = MAIN_FUNCTION_NAME;			
-			namesMap = new Object();
-			namesCounter = 1; // 0 для main		
-			
-			fileNamesMap = new Object();
-			fileNamesCounter = 1; // 0 если это php:internal и нет детей
+			functionNameMap.add(MAIN_FUNCTION_NAME);
+			fileNameMap.add('');
 			
 			// Деструкторы вне main, вызываются внутренним механизмом PHP
 			while (!fileReader.complete)
@@ -126,12 +114,13 @@ package cachegrindVisualizer.parser
 				parseBody(parentId, 1);
 			}
 			result.mainTreeItem.left = key + 1;
-			
-			namesMap = null;
-			fileNamesMap = null;
-			
-			insertNamesAndFileNames();
-			
+
+			result.names = functionNameMap.save();
+			functionNameMap = null;
+
+			result.fileNames = fileNameMap.save();
+			fileNameMap = null;
+
 			trace('Затрачено на анализ: ' + ((new Date().time - timeBegin) / 1000));			
 			
 			// если сначала создать индекс left, right, level, а потом inclusiveTime, то индексы будут битыми и в графе, в итоге, будет нарушена иерархия и имена
@@ -262,15 +251,7 @@ package cachegrindVisualizer.parser
 		
 		private function getName(offset:uint):uint
 		{
-			var name:String = fileReader.getLine(offset).slice(3);
-			var id:uint = namesMap[name];
-			if (id == 0)
-			{
-				id = namesCounter;
-				namesMap[name] = id;
-				result.names[namesCounter++] = name;
-			}
-			return id;
+			return functionNameMap.add(fileReader.getLine(offset).slice(3));
 		}
 		
 		/**
@@ -286,38 +267,7 @@ package cachegrindVisualizer.parser
 			else
 			{
 				fileName = fileName.slice(3);
-				var id:uint = fileNamesMap[fileName];
-				if (id == 0)
-				{
-					id = fileNamesCounter;
-					fileNamesMap[fileName] = id;
-					result.fileNames[fileNamesCounter++] = fileName;
-				}
-				return id;
-			}
-		}
-		
-		private function insertNamesAndFileNames():void
-		{
-			var statement:SQLStatement = new SQLStatement();
-			statement.sqlConnection = sqlConnection;
-			statement.text = 'insert into names values (:id, :name)';
-			var i:uint;		
-			for each (var name:String in result.names)
-			{
-				statement.parameters[':id'] = i++;
-				statement.parameters[':name'] = name;
-				statement.execute();
-			}
-			
-			statement.clearParameters();
-			statement.text = 'insert into fileNames values (:id, :fileName)';
-			i = 1;
-			for each (var fileName:String in result.fileNames)
-			{
-				statement.parameters[':id'] = i++;
-				statement.parameters[':fileName'] = fileName;
-				statement.execute();
+				return fileNameMap.add(fileName);
 			}
 		}
 	}

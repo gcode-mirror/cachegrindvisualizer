@@ -39,13 +39,13 @@ package cachegrindVisualizer.callGraph.builders
 		
 		private var progress:Number;
 		
-		public function Builder(sqlConnection:SQLConnection, names:Object, fileNames:Object):void
+		public function Builder(sqlConnection:SQLConnection, names:Object):void
 		{
 			selectEdgeStatement.sqlConnection = sqlConnection;
 			selectNodeStatement.sqlConnection = sqlConnection;
 			selectRootItemStatement.sqlConnection = sqlConnection;			
 			
-			label = new Label(names, fileNames);			
+			label = new Label(names);			
 			
 			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
