@@ -6,8 +6,8 @@ package cachegrindVisualizer.parser
 	public class FileNameMap
 	{
 		private var length:uint = 0;
-		private var names:Object = new Object;
-		private var namesMap:Object = new Object;
+		private var names:Array = new Array;
+		private var namesMap:Array = new Array;
 		private var sqlConnection:SQLConnection;
 		private var isCompact:Boolean = false;
 		
@@ -20,22 +20,25 @@ package cachegrindVisualizer.parser
 		public function addFile(name:String):uint
 		{
 			if(isCompact) {
-				throw new Error("Map has been compacted already.");
+				throw new Error("The map has been compacted already.");
 			}
-			var id:uint = getFileId(name);
-			if(id) {
-				return id; 
-			} else {
+			if(namesMap[name] == null) {
 				namesMap[name] = length;
-				return length++;
+				names[length] = name;
+				length++;
 			}
+			return namesMap[name];
 		}
 		
 		public function getFileId(name:String):uint {			
 			if(isCompact) {
-				throw new Error("Map has been compacted already, therefore no name->id hash is available");
+				throw new Error("The map has been compacted already, therefore no name->id hash is available");
 			}
-			return namesMap[name];
+			if(namesMap[name] == null) {
+				return -1;
+			} else {
+				return namesMap[name];
+			}
 		}
 		
 		public function getFileName(id:uint):String {
@@ -57,8 +60,8 @@ package cachegrindVisualizer.parser
 		
 		public function reload(compact:Boolean = false):void
 		{
-			names = new Object();
-			namesMap = new Object();
+			names = new Array();
+			namesMap = new Array();
 			isCompact = compact;
 			
 			var statement:SQLStatement = new SQLStatement();
@@ -77,10 +80,10 @@ package cachegrindVisualizer.parser
 		public function compact():void
 		{
 			isCompact = true;
-			namesMap = new Object();
+			namesMap = new Array();
 		}
 		
-		public function getArray():Object
+		public function getArray():Array
 		{
 			return names;
 		}

@@ -36,7 +36,6 @@ package cachegrindVisualizer.parser
 		private var key:int = -1; // 0 для main
 		
 		private var functionMap:FunctionMap;
-		
 		private var fileNameMap:FileNameMap;
 		
 		private var result:ParserResult = new ParserResult();	
@@ -79,12 +78,13 @@ package cachegrindVisualizer.parser
 			
 			functionMap = new FunctionMap(sqlConnection);
 			functionMap.reload(true);
+			result.names = functionMap.getArray();
+			functionMap = null;
 			
 			fileNameMap = new FileNameMap(sqlConnection);
 			fileNameMap.reload(true);
-						
-			result.names = functionMap.getArray();
 			result.fileNames = fileNameMap.getArray();
+			fileNameMap = null;
 			
 			sqlConnection.close();
 		}
@@ -121,10 +121,12 @@ package cachegrindVisualizer.parser
 			fileNameMap.compact();
 
 			functionMap.save();
-			fileNameMap.save();
-
 			result.names = functionMap.getArray();
+			functionMap = null;
+
+			fileNameMap.save();
 			result.fileNames = fileNameMap.getArray();
+			fileNameMap = null;
 
 			trace('Затрачено на анализ: ' + ((new Date().time - timeBegin) / 1000));			
 			
