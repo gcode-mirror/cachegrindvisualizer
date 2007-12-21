@@ -35,11 +35,9 @@ package cachegrindVisualizer.parser
 		private var notInMainInclusiveTime:Number = 0;		
 		private var key:int = -1; // 0 для main
 		
-		private var namesMap:Object;
-		private var namesCounter:uint;
-				
-		private var fileNamesMap:Object;
-		private var fileNamesCounter:uint;	
+		private var functionMap:FunctionMap;
+		
+		private var fileNameMap:FileNameMap;
 		
 		private var result:ParserResult = new ParserResult();	
 
@@ -79,21 +77,14 @@ package cachegrindVisualizer.parser
 			result.mainTreeItem.left = sqlResult.left;
 			result.mainTreeItem.fileName = sqlResult.fileName;
 			
-			var item:Object;
-			statement.clearParameters();
-			statement.text = 'select * from names';
-			statement.execute();
-			for each (item in statement.getResult().data)
-			{
-				result.names[item.id] = item.name;
-			}
+			functionMap = new FunctionMap(sqlConnection);
+			functionMap.reload(true);
 			
-			statement.text = 'select * from fileNames';
-			statement.execute();
-			for each (item in statement.getResult().data)
-			{
-				result.fileNames[item.id] = item.fileName;
-			}
+			fileNameMap = new FileNameMap(sqlConnection);
+			fileNameMap.reload(true);
+						
+			result.names = functionMap.getArray();
+			result.fileNames = fileNameMap.getArray();
 			
 			sqlConnection.close();
 		}
@@ -112,12 +103,11 @@ package cachegrindVisualizer.parser
 			
 			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);
 			
-			result.names[0] = MAIN_FUNCTION_NAME;			
-			namesMap = new Object();
-			namesCounter = 1; // 0 для main		
-			
-			fileNamesMap = new Object();
-			fileNamesCounter = 1; // 0 если это php:internal и нет детей
+			functionMap = new FunctionMap(sqlConnection);
+			functionMap.addFunction("main");
+
+			fileNameMap = new FileNameMap(sqlConnection);
+			fileNameMap.addFile("");
 			
 			// Деструкторы вне main, вызываются внутренним механизмом PHP
 			while (!fileReader.complete)
@@ -126,12 +116,16 @@ package cachegrindVisualizer.parser
 				parseBody(parentId, 1);
 			}
 			result.mainTreeItem.left = key + 1;
-			
-			namesMap = null;
-			fileNamesMap = null;
-			
-			insertNamesAndFileNames();
-			
+
+			functionMap.compact();
+			fileNameMap.compact();
+
+			functionMap.save();
+			fileNameMap.save();
+
+			result.names = functionMap.getArray();
+			result.fileNames = fileNameMap.getArray();
+
 			trace('Затрачено на анализ: ' + ((new Date().time - timeBegin) / 1000));			
 			
 			// если сначала создать индекс left, right, level, а потом inclusiveTime, то индексы будут битыми и в графе, в итоге, будет нарушена иерархия и имена
@@ -263,14 +257,7 @@ package cachegrindVisualizer.parser
 		private function getName(offset:uint):uint
 		{
 			var name:String = fileReader.getLine(offset).slice(3);
-			var id:uint = namesMap[name];
-			if (id == 0)
-			{
-				id = namesCounter;
-				namesMap[name] = id;
-				result.names[namesCounter++] = name;
-			}
-			return id;
+			return functionMap.addFunction(name);
 		}
 		
 		/**
@@ -286,38 +273,7 @@ package cachegrindVisualizer.parser
 			else
 			{
 				fileName = fileName.slice(3);
-				var id:uint = fileNamesMap[fileName];
-				if (id == 0)
-				{
-					id = fileNamesCounter;
-					fileNamesMap[fileName] = id;
-					result.fileNames[fileNamesCounter++] = fileName;
-				}
-				return id;
-			}
-		}
-		
-		private function insertNamesAndFileNames():void
-		{
-			var statement:SQLStatement = new SQLStatement();
-			statement.sqlConnection = sqlConnection;
-			statement.text = 'insert into names values (:id, :name)';
-			var i:uint;		
-			for each (var name:String in result.names)
-			{
-				statement.parameters[':id'] = i++;
-				statement.parameters[':name'] = name;
-				statement.execute();
-			}
-			
-			statement.clearParameters();
-			statement.text = 'insert into fileNames values (:id, :fileName)';
-			i = 1;
-			for each (var fileName:String in result.fileNames)
-			{
-				statement.parameters[':id'] = i++;
-				statement.parameters[':fileName'] = fileName;
-				statement.execute();
+				return fileNameMap.addFile(fileName);
 			}
 		}
 	}
