@@ -24,8 +24,8 @@ package cachegrindVisualizer.callGraph.builders
 		
 		private var fileStream:FileStream = new FileStream();
 			
-		private var label:Label;
-		private var color:Color = new Color();
+		private static var color:Color = new Color();
+		private var label:Label;		
 		
 		private var configuration:Configuration;
 		
@@ -136,17 +136,7 @@ package cachegrindVisualizer.callGraph.builders
 			previousEdge = selectRootItemStatement.getResult().data[0];
 			previousEdge.name = treeItem.name;
 			var onePercentage:Number = previousEdge.inclusiveTime / 100;
-			previousEdge.percentage = previousEdge.time / onePercentage;			
-			
-			// необходимо, так в случае нулевого minNodeCost параметр cost нам не нужен, но он будет оставаться и без очистки будет ошибка несовпадения установленных и существующих параметров
-			selectEdgeStatement.clearParameters();
-			selectNodeStatement.clearParameters();
-
-			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;			
-			selectNodeStatement.parameters[':left'] = selectEdgeStatement.parameters[':left'] = treeItem.left;
-			selectNodeStatement.parameters[':right'] = selectEdgeStatement.parameters[':right'] = treeItem.right;
-			
-			treeItem = null;
+			previousEdge.percentage = previousEdge.time / onePercentage;
 			
 			selectEdgeStatement.text = 'select level, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from tree where left > :left and right < :right';
 			selectNodeStatement.text = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree where left > :left and right < :right group by name';
@@ -155,6 +145,12 @@ package cachegrindVisualizer.callGraph.builders
 				selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost * onePercentage;				
 				selectEdgeStatement.text += ' and inclusiveTime >= :cost';
 				selectNodeStatement.text += ' having max(inclusiveTime) >= :cost';
+			}
+			else
+			{
+				// необходимо, так как в случае нулевого minNodeCost параметр cost нам не нужен, но он будет оставаться и без очистки будет ошибка несовпадения установленных и существующих параметров
+				selectEdgeStatement.clearParameters();
+				selectNodeStatement.clearParameters();
 			}
 			if (configuration.hideLibraryFunctions)
 			{
@@ -169,6 +165,12 @@ package cachegrindVisualizer.callGraph.builders
 				selectEdgeStatement.text += ' and fileName  != 0'
 				selectNodeStatement.text += ' max(fileName) != 0';
 			}
+			
+			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;			
+			selectNodeStatement.parameters[':left'] = selectEdgeStatement.parameters[':left'] = treeItem.left;
+			selectNodeStatement.parameters[':right'] = selectEdgeStatement.parameters[':right'] = treeItem.right;
+			
+			treeItem = null;
 			
 			selectEdgeStatement.execute(PREFETCH);
 			
@@ -187,16 +189,7 @@ package cachegrindVisualizer.callGraph.builders
 					parentsNames[edge.level] = previousEdge.name;
 				}				
 						
-				edges += parentsNames[edge.level] + ' -> ' + edge.name + ' [' + EdgeSize.getSize(edge);
-				if (label.type != Label.TYPE_NO)
-				{
-					edges += ' label="' + label.edge(edge) + '"';
-					// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
-					if (edge.time > 0 && edge.time != edge.inclusiveTime)
-					{
-						edges += ' headlabel="' + label.head(edge) + '"';
-					}
-				}				
+				edges += parentsNames[edge.level] + ' -> ' + edge.name + ' [' + EdgeSize.getSize(edge) + label.edge(edge);
 				if (!configuration.blackAndWhite)
 				{
 					edges += ' color="' + color.edge(edge) + '"';
