@@ -97,6 +97,7 @@ package cachegrindVisualizer.callGraph.managers
 			
 			callGraph.minNodeCost.value = configuration.minNodeCost;			
 			
+			Selector.select(callGraph.grouping, configuration.grouping);
 			Selector.select(callGraph.labelType, configuration.labelType);
 			Selector.select(callGraph.rankDirection, configuration.rankDirection);
 			

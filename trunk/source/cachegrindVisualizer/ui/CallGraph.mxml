@@ -18,6 +18,16 @@
 					</mx:ComboBox>					
 				</mx:HBox>				
 			</mx:FormItem>
+			<mx:FormItem label="{resourceManager.getString('CallGraph', 'grouping')}">
+				<mx:ComboBox id="grouping" change="handleChange(event)">
+					<mx:Array>						
+						<mx:Object data="{Grouper.NODES_AND_CALLS}" label="{resourceManager.getString('CallGraph', 'groupingNodesAndCalls')}"/>
+						<mx:Object data="{Grouper.NODES}" label="{resourceManager.getString('CallGraph', 'groupingNodes')}"/>
+						<mx:Object data="{Grouper.CALLS}" label="{resourceManager.getString('CallGraph', 'groupingCalls')}"/>
+						<mx:Object data="{Grouper.NO}" label="{resourceManager.getString('CallGraph', 'groupingNo')}"/>
+					</mx:Array>
+				</mx:ComboBox>
+			</mx:FormItem>
 			<mx:FormItem label="{resourceManager.getString('CallGraph', 'minNodeCost')}">
 				<develar:NumericStepper id="minNodeCost" maximum="99" maxChars="4" stepSize="0.01" change="handleChangeWithDelay(event)"/>
 			</mx:FormItem>
@@ -68,6 +78,7 @@
 	
 	import cachegrindVisualizer.net.PersistenceSession;
 	import cachegrindVisualizer.callGraph.builders.Builder;
+	import cachegrindVisualizer.callGraph.builders.Grouper;
 	import cachegrindVisualizer.callGraph.builders.Label;
 	import cachegrindVisualizer.callGraph.managers.ConfigurationManager;
 	import cachegrindVisualizer.controls.tree.TreeItem;

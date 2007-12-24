@@ -25,14 +25,12 @@ package cachegrindVisualizer.callGraph.builders
 		private var fileStream:FileStream = new FileStream();
 			
 		private static var color:Color = new Color();
+		private var grouper:Grouper = new Grouper();
 		private var label:Label;		
 		
 		private var configuration:Configuration;
 		
 		private var treeItem:TreeItem;
-		
-		private var previousEdge:Edge;
-		private var parentsNames:Object;
 		
 		private var edgesBuilt:Boolean = true;
 		private var nodesBuilt:Boolean = true;
@@ -98,9 +96,9 @@ package cachegrindVisualizer.callGraph.builders
 			
 			this.treeItem = treeItem;
 			this.configuration = configuration;
+			grouper.type = configuration.grouping;
 			label.type = configuration.labelType;
 			
-			parentsNames = new Object();
 			edgesBuilt = false;
 			nodesBuilt = false;
 			
@@ -133,24 +131,36 @@ package cachegrindVisualizer.callGraph.builders
 			progress = 10;
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 			
-			previousEdge = selectRootItemStatement.getResult().data[0];
-			previousEdge.name = treeItem.name;
-			var onePercentage:Number = previousEdge.inclusiveTime / 100;
-			previousEdge.percentage = previousEdge.time / onePercentage;
+			var rootEdge:Edge = selectRootItemStatement.getResult().data[0];
+			var onePercentage:Number = rootEdge.inclusiveTime / 100;
+			rootEdge.percentage = rootEdge.time / onePercentage;
 			
-			selectEdgeStatement.text = 'select level, name, time, inclusiveTime, time / :onePercentage as percentage, inclusiveTime / :onePercentage as inclusivePercentage from tree where left > :left and right < :right';
-			selectNodeStatement.text = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree where left > :left and right < :right group by name';
+			selectEdgeStatement.clearParameters();
+			selectNodeStatement.clearParameters();
+			
+			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;
+			
+			selectEdgeStatement.text = grouper.sql;
+			selectNodeStatement.text = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree';
+			if (treeItem.right != 0)
+			{
+				selectEdgeStatement.text += ' where left > :left and right < :right';
+				selectNodeStatement.text += ' where left > :left and right < :right';
+				
+				selectNodeStatement.parameters[':left'] = selectEdgeStatement.parameters[':left'] = treeItem.left;
+				selectNodeStatement.parameters[':right'] = selectEdgeStatement.parameters[':right'] = treeItem.right;
+			}
+			selectNodeStatement.text += ' group by name';			
+			if (treeItem.right == 0 && (configuration.minNodeCost > 0 || configuration.hideLibraryFunctions))
+			{
+				selectEdgeStatement.text += ' where';
+			}
+				
 			if (configuration.minNodeCost > 0)
 			{
 				selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost * onePercentage;				
 				selectEdgeStatement.text += ' and inclusiveTime >= :cost';
 				selectNodeStatement.text += ' having max(inclusiveTime) >= :cost';
-			}
-			else
-			{
-				// необходимо, так как в случае нулевого minNodeCost параметр cost нам не нужен, но он будет оставаться и без очистки будет ошибка несовпадения установленных и существующих параметров
-				selectEdgeStatement.clearParameters();
-				selectNodeStatement.clearParameters();
 			}
 			if (configuration.hideLibraryFunctions)
 			{
@@ -166,16 +176,12 @@ package cachegrindVisualizer.callGraph.builders
 				selectNodeStatement.text += ' max(fileName) != 0';
 			}
 			
-			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;			
-			selectNodeStatement.parameters[':left'] = selectEdgeStatement.parameters[':left'] = treeItem.left;
-			selectNodeStatement.parameters[':right'] = selectEdgeStatement.parameters[':right'] = treeItem.right;
-			
-			treeItem = null;
-			
 			selectEdgeStatement.execute(PREFETCH);
 			
-			selectNodeStatement.text += " union select '" + previousEdge.name + "', " + previousEdge.inclusiveTime + ", " + previousEdge.percentage + ", 100";			
+			selectNodeStatement.text += " union select '" + treeItem.name + "', " + rootEdge.inclusiveTime + ", " + rootEdge.percentage + ", 100";			
 			selectNodeStatement.execute(PREFETCH);
+			
+			treeItem = null;
 		}
 		
 		private function handleSelectEdge(event:SQLEvent):void
@@ -183,26 +189,18 @@ package cachegrindVisualizer.callGraph.builders
 			var edges:String = '';
 			var sqlResult:SQLResult = selectEdgeStatement.getResult();
 			for each (var edge:Edge in sqlResult.data)
-			{
-				if (edge.level > previousEdge.level)
-				{
-					parentsNames[edge.level] = previousEdge.name;
-				}				
-						
-				edges += parentsNames[edge.level] + ' -> ' + edge.name + ' [' + EdgeSize.getSize(edge) + label.edge(edge);
+			{	
+				edges += edge.parentName + ' -> ' + edge.name + ' [' + EdgeSize.getSize(edge) + label.edge(edge);
 				if (!configuration.blackAndWhite)
 				{
-					edges += ' color="' + color.edge(edge) + '"';
+					edges += color.edge(edge);
 				}								
 				edges += ']\n';
-				
-				previousEdge = edge;
 			}
 			
 			fileStream.writeUTFBytes(edges);
 			if (sqlResult.complete)
-			{	
-				parentsNames = previousEdge = null;
+			{
 				progress += 50;
 				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 				edgesBuilt = true;
@@ -223,7 +221,7 @@ package cachegrindVisualizer.callGraph.builders
 				nodes += node.name + ' [' + label.node(node);
 				if (!configuration.blackAndWhite)
 				{
-					nodes += ' color="' + color.node(node) + '"';
+					nodes += color.node(node);
 				}
 				nodes += ']\n';
 			}		
@@ -232,8 +230,7 @@ package cachegrindVisualizer.callGraph.builders
 			if (sqlResult.complete)
 			{
 				progress += 40;
-				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
-				
+				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));				
 				nodesBuilt = true;
 				checkComplete();
 			}

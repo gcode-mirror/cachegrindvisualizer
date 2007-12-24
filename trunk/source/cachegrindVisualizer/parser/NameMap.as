@@ -3,7 +3,7 @@ package cachegrindVisualizer.parser
 	import flash.data.SQLConnection;
 	import flash.data.SQLStatement;
 	
-	/* abstract */ public class NameMap
+	public class NameMap
 	{	
 		protected var namesMap:Object = new Object();
 		protected var names:Object = new Object();
