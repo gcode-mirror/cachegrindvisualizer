@@ -15,11 +15,11 @@ package cachegrindVisualizer.parser
 		
 		private static const INITIAL_DB_FILE_NAME:String = 'db.db';		
 		private static const FILE_NAME_TABLE:String = 'fileNames';	
-		private static const FUNCTION_NAME_TABLE:String = 'functionNames';	
+		private static const FUNCTION_NAME_TABLE:String = 'names';	
 		/**
 		 * Номер ревизии, в которой в последний раз была изменена заготовка БД
 		 */
-		private static const DB_VERSION:uint = 86;
+		private static const DB_VERSION:uint = 89;
 		
 		private static const SQL_CACHE_SIZE:uint = 200000;
 
@@ -54,8 +54,8 @@ package cachegrindVisualizer.parser
 			
 			fileReader = new FileReader(file);
 			result.db = File.applicationStorageDirectory.resolvePath(DB_VERSION + '_' + fileReader.checksum + '.db');
-			if (result.db.exists)
-			//if (false)
+			//if (result.db.exists)
+			if (false)
 			{				
 				openExistDb();			
 			}
@@ -98,7 +98,7 @@ package cachegrindVisualizer.parser
 			sqlConnection.cacheSize = SQL_CACHE_SIZE;
 							
 			insertStatement.sqlConnection = sqlConnection;
-			insertStatement.text = 'insert into main.tree (left, right, level, name, fileName, line, time, inclusiveTime) values (:left, :right, :level, :name, :fileName, :line, :time, :inclusiveTime)';
+			insertStatement.text = 'insert into tree values (:left, :right, :level, :name, :parentName, :fileName, :line, :time, :inclusiveTime)';
 				
 			fileReader.read();
 			
@@ -111,7 +111,7 @@ package cachegrindVisualizer.parser
 			while (!fileReader.complete)
 			{
 				var parentId:uint = itemId++;
-				parseBody(parentId, 1);
+				parseBody(parentId, 0, 1);
 			}
 			result.mainTreeItem.left = key + 1;
 
@@ -132,7 +132,7 @@ package cachegrindVisualizer.parser
 			sqlConnection.close();
 		}
 						
-		private function parseBody(parentId:uint, level:uint):void
+		private function parseBody(id:uint, parentName:uint, level:uint):void
 		{				
 			var children:Array = new Array();
 			while (true)
@@ -142,12 +142,12 @@ package cachegrindVisualizer.parser
 				if (fileReader.getLine(1).charAt(0) == 'f')
 				{
 					// деструкторы вне main, то есть сами по себе, и на данный момент inclusiveTime для него, естественно, не установлено
-					if (result.mainTreeItem.fileName == 0 && !(parentId in inclusiveTime))
+					if (result.mainTreeItem.fileName == 0 && !(id in inclusiveTime))
 					{
-						notInMainInclusiveTime += inclusiveTime[parentId] = lineAndTime[1] / TIME_UNIT_IN_MS;
+						notInMainInclusiveTime += inclusiveTime[id] = lineAndTime[1] / TIME_UNIT_IN_MS;
 					}
 
-					insert(parentId, key--, level, getName(1), getFileName(2, true), lineAndTime[0], lineAndTime[1]);
+					insert(id, key--, level, getName(1), parentName, getFileName(2, true), lineAndTime[0], lineAndTime[1]);
 					fileReader.shiftCursor(4);
 					break;
 				}
@@ -166,12 +166,12 @@ package cachegrindVisualizer.parser
 					// данные о родителе после всех детей
 					else
 					{
-						var edge:Edge = getEdge(parentId, sample, children, level);
+						var edge:Edge = getEdge(id, sample, children, level);
 						for each (var childId:uint in children)
 						{
-							parseBody(childId, edge.level + 1);
+							parseBody(childId, edge.name, edge.level + 1);
 						}						
-						insert(parentId, edge.right, edge.level, edge.name, edge.fileName, edge.line, edge.time);																		
+						insert(id, edge.right, edge.level, edge.name, parentName, edge.fileName, edge.line, edge.time);																		
 						break;
 					}
 				}
@@ -234,12 +234,13 @@ package cachegrindVisualizer.parser
 			return edge;
 		}
 				
-		private function insert(id:uint, right:int, level:uint, name:uint, fileName:uint, line:uint, time:Number):void
+		private function insert(id:uint, right:int, level:uint, name:uint, parentName:uint, fileName:uint, line:uint, time:Number):void
 		{
 			insertStatement.parameters[':left'] = key--;
 			insertStatement.parameters[':right'] = right;			
 			insertStatement.parameters[':level'] = level;
-			insertStatement.parameters[':name'] = name;			
+			insertStatement.parameters[':name'] = name;	
+			insertStatement.parameters[':parentName'] = parentName;			
 			insertStatement.parameters[':fileName'] = fileName;
 			insertStatement.parameters[':line'] = line;
 			insertStatement.parameters[':time'] = time / TIME_UNIT_IN_MS;

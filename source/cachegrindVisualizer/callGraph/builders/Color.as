@@ -35,7 +35,7 @@ package cachegrindVisualizer.callGraph.builders
 				saturation = MAX_VALUE;
 			}
 			
-			return hue.toFixed(2) + ' ' + saturation.toFixed(2) + ' ' + MAX_VALUE;
+			return ' color="' + hue.toFixed(2) + ' ' + saturation.toFixed(2) + ' ' + MAX_VALUE + '"';
 		}
 	}
 }
