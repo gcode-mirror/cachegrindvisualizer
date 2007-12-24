@@ -16,10 +16,11 @@ package cachegrindVisualizer.callGraph.builders
 		private static const INCLUDE_FUNCTIONS:Object = {'include': null, 'include_once': null, 'require': null, 'require_once': null};
 		private static const MAX_INCLUDE_FILE_PATH_LENGTH:uint = 20;
 			
+		private static const TIME_PRECISION:int = -1;
 		private static const PERCENTAGE_PRECISION:uint = 2;
 		
-		private var percentageFormatter:NumberFormatter = new NumberFormatter();
-		private var timeFormatter:NumberFormatter = new NumberFormatter();
+		private static var percentageFormatter:NumberFormatter = new NumberFormatter();
+		private static var timeFormatter:NumberFormatter = new NumberFormatter();
 		
 		private var names:Object;
 		
@@ -27,30 +28,31 @@ package cachegrindVisualizer.callGraph.builders
 		{
 			this.names = names;
 			
-			timeFormatter.precision = -1;
+			timeFormatter.precision = TIME_PRECISION;
 			
 			percentageFormatter.precision = PERCENTAGE_PRECISION;
 			percentageFormatter.rounding = NumberBaseRoundType.NEAREST;
 		}
 		
-		private var _type:uint = 2;
-		public function get type():uint
-		{
-			return _type;
-		}
+		private var _type:uint = TYPE_PERCENTAGE_AND_TIME;
 		public function set type(value:uint):void
 		{
 			_type = value;
 		}
 		
 		public function edge(edge:Edge):String
-		{			
-			return build(edge.inclusivePercentage, edge.inclusiveTime);
-		}
-		
-		public function head(edge:Edge):String
-		{			
-			return build(edge.percentage, edge.time);
+		{		
+			var result:String = '';
+			if (_type != Label.TYPE_NO)
+			{
+				result += ' label="' + build(edge.inclusivePercentage, edge.inclusiveTime) + '"';
+				// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
+				if (edge.time > 0 && edge.time != edge.inclusiveTime)
+				{
+					result += ' headlabel="' + build(edge.percentage, edge.time) + '"';
+				}
+			}	
+			return result;
 		}
 		
 		public function node(node:Node):String
@@ -93,7 +95,7 @@ package cachegrindVisualizer.callGraph.builders
 				label += name;
 			}	
 			
-			if (type != TYPE_NO)
+			if (_type != TYPE_NO)
 			{
 				label += '\\n' + build(node.inclusivePercentage, node.inclusiveTime);
 			}
