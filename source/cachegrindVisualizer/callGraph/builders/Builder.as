@@ -225,7 +225,7 @@ package cachegrindVisualizer.callGraph.builders
 					parentsIds[edge.level] = previousEdge.id;
 				}			
 				
-				edges += '"' + getParentEdgePath(edge) + '" -> "' + edge.id + '" [' + edgeBuilder(edge) + ']\n';
+				edges += '"' + getParentEdgeId(edge) + '" -> "' + edge.id + '" [' + edgeBuilder(edge) + ']\n';
 				
 				previousEdge = edge;
 			}
@@ -246,7 +246,7 @@ package cachegrindVisualizer.callGraph.builders
 			}
 		}
 		
-		private function getParentEdgePath(edge:Edge):String
+		private function getParentEdgeId(edge:Edge):String
 		{
 			if (edge.level in parentsIds)
 			{					
@@ -254,7 +254,17 @@ package cachegrindVisualizer.callGraph.builders
 			}
 			else
 			{
-				return edge.id.substr(0, edge.id.length - String(edge.name).length - 1);
+				var aggregatedEdge:AggregatedEdge = AggregatedEdge(edge);
+				if (configuration.grouping == Grouper.NODES_AND_CALLS)
+				{
+					return aggregatedEdge.namesPath.substr(aggregatedEdge.namesPath.lastIndexOf('.') + 1);
+				}
+				else if (configuration.grouping == Grouper.CALLS)
+				{
+					return aggregatedEdge.namesPath;
+				}
+				
+				throw new Error('');
 			}
 		}
 		

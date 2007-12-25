@@ -32,7 +32,7 @@ package cachegrindVisualizer.callGraph.builders
 			edgeSqlBuilder.add(SqlBuilder.FIELD, 'name', 'level');
 			if (groupedByCalls)
 			{
-				edgeSqlBuilder.add(SqlBuilder.FIELD, 'count(*) as number', 'sum(time) as summaryTime', 'avg(time) as averageTime', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'sum(time) / :onePercentage as summaryPercentage');
+				edgeSqlBuilder.add(SqlBuilder.FIELD, 'namesPath', 'count(*) as number', 'sum(time) as summaryTime', 'avg(time) as averageTime', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'sum(time) / :onePercentage as summaryPercentage');
 				edgeSqlStatement.itemClass = AggregatedEdge;
 				
 				if (_type == NODES_AND_CALLS)
