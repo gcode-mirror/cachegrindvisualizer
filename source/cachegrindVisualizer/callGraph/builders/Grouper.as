@@ -48,7 +48,7 @@ package cachegrindVisualizer.callGraph.builders
 			}
 			else
 			{		
-				edgeSqlBuilder.add(SqlBuilder.FIELD, 'id', 'parent');
+				edgeSqlBuilder.add(SqlBuilder.FIELD, 'name as id');
 				edgeSqlBuilder.add(SqlBuilder.FIELD, 'time', 'inclusiveTime', 'time / :onePercentage as percentage', 'inclusiveTime / :onePercentage as inclusivePercentage');
 				edgeSqlStatement.itemClass = Edge;
 			}
@@ -72,8 +72,8 @@ package cachegrindVisualizer.callGraph.builders
 			}
 			else
 			{
-				nodeSqlBuilder.add(SqlBuilder.FIELD, 'id');
-				nodeSqlBuilder.add(SqlBuilder.GROUP_BY, 'id');		
+				nodeSqlBuilder.add(SqlBuilder.FIELD, 'name as id');
+				//nodeSqlBuilder.add(SqlBuilder.GROUP_BY, 'id');		
 			}
 			nodeSqlBuilder.add(SqlBuilder.JOIN, 'tree');
 		}
