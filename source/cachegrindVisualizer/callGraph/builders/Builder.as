@@ -2,6 +2,8 @@ package cachegrindVisualizer.callGraph.builders
 {
 	import cachegrindVisualizer.controls.tree.TreeItem;
 	
+	import develar.data.SqlBuilder;
+	
 	import flash.data.SQLConnection;
 	import flash.data.SQLResult;
 	import flash.data.SQLStatement;
@@ -32,10 +34,15 @@ package cachegrindVisualizer.callGraph.builders
 		
 		private var treeItem:TreeItem;
 		
+		private var previousEdge:Edge;
+		private var parentsIds:Object;
+		
 		private var edgesBuilt:Boolean = true;
 		private var nodesBuilt:Boolean = true;
 		
 		private var progress:Number;
+		
+		private var edgeBuilder:Function;
 		
 		public function Builder(sqlConnection:SQLConnection, names:Object):void
 		{
@@ -43,16 +50,15 @@ package cachegrindVisualizer.callGraph.builders
 			selectNodeStatement.sqlConnection = sqlConnection;
 			selectRootItemStatement.sqlConnection = sqlConnection;			
 			
-			label = new Label(names);			
+			label = new Label(names);
 			
-			selectEdgeStatement.itemClass = Edge;
 			selectEdgeStatement.addEventListener(SQLEvent.RESULT, handleSelectEdge);
 			
 			selectNodeStatement.itemClass = Node;
 			selectNodeStatement.addEventListener(SQLEvent.RESULT, handleSelectNode);
 			
 			selectRootItemStatement.itemClass = Edge;
-			selectRootItemStatement.text = 'select time, inclusiveTime from tree where left = :left and right = :right';
+			selectRootItemStatement.text = 'select namesPath as id, time, inclusiveTime from tree where left = :left and right = :right';
 			selectRootItemStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
 			
 			fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
@@ -99,6 +105,8 @@ package cachegrindVisualizer.callGraph.builders
 			grouper.type = configuration.grouping;
 			label.type = configuration.labelType;
 			
+			parentsIds = new Object();
+			
 			edgesBuilt = false;
 			nodesBuilt = false;
 			
@@ -131,55 +139,77 @@ package cachegrindVisualizer.callGraph.builders
 			progress = 10;
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 			
-			var rootEdge:Edge = selectRootItemStatement.getResult().data[0];
-			var onePercentage:Number = rootEdge.inclusiveTime / 100;
-			rootEdge.percentage = rootEdge.time / onePercentage;
+			previousEdge = selectRootItemStatement.getResult().data[0];
+			var onePercentage:Number = previousEdge.inclusiveTime / 100;
+			previousEdge.percentage = previousEdge.time / onePercentage;
 			
 			selectEdgeStatement.clearParameters();
 			selectNodeStatement.clearParameters();
 			
 			selectNodeStatement.parameters[':onePercentage'] = selectEdgeStatement.parameters[':onePercentage'] = onePercentage;
 			
-			selectEdgeStatement.text = grouper.sql;
-			selectNodeStatement.text = 'select name, sum(inclusiveTime) as inclusiveTime, sum(time) / :onePercentage as percentage, sum(inclusiveTime) / :onePercentage as inclusivePercentage from tree';
-			if (treeItem.right != 0)
-			{
-				selectEdgeStatement.text += ' where left > :left and right < :right';
-				selectNodeStatement.text += ' where left > :left and right < :right';
-				
-				selectNodeStatement.parameters[':left'] = selectEdgeStatement.parameters[':left'] = treeItem.left;
-				selectNodeStatement.parameters[':right'] = selectEdgeStatement.parameters[':right'] = treeItem.right;
-			}
-			selectNodeStatement.text += ' group by name';			
-			if (treeItem.right == 0 && (configuration.minNodeCost > 0 || configuration.hideLibraryFunctions))
-			{
-				selectEdgeStatement.text += ' where';
-			}
+			var edgeSqlBuilder:SqlBuilder = new SqlBuilder();
+			var nodeSqlBuilder:SqlBuilder = new SqlBuilder();
+			
+			grouper.buildEdgeSql(edgeSqlBuilder, selectEdgeStatement);
+			grouper.buildNodeSql(nodeSqlBuilder);
+
+			edgeSqlBuilder.add(SqlBuilder.WHERE, 'left > :left', 'right < :right');
+			nodeSqlBuilder.add(SqlBuilder.WHERE, 'left > :left', 'right < :right');				
+			selectNodeStatement.parameters[':left'] = selectEdgeStatement.parameters[':left'] = treeItem.left;
+			selectNodeStatement.parameters[':right'] = selectEdgeStatement.parameters[':right'] = treeItem.right;
 				
 			if (configuration.minNodeCost > 0)
-			{
-				selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost * onePercentage;				
-				selectEdgeStatement.text += ' and inclusiveTime >= :cost';
-				selectNodeStatement.text += ' having max(inclusiveTime) >= :cost';
+			{				
+				nodeSqlBuilder.add(SqlBuilder.HAVING, 'max(inclusiveTime) >= :cost');				
+				selectNodeStatement.parameters[':cost'] = selectEdgeStatement.parameters[':cost'] = configuration.minNodeCost * onePercentage;
 			}
 			if (configuration.hideLibraryFunctions)
-			{
-				if (configuration.minNodeCost == 0)
-				{
-					selectNodeStatement.text += ' having';
-				}
-				else
-				{
-					selectNodeStatement.text += ' and';
-				}
-				selectEdgeStatement.text += ' and fileName  != 0'
-				selectNodeStatement.text += ' max(fileName) != 0';
+			{								
+				nodeSqlBuilder.add(SqlBuilder.HAVING, 'max(fileName) != 0');
 			}
 			
+			if (grouper.groupedByCalls)
+			{
+				edgeBuilder = buildAggregatedEdge;
+				if (configuration.minNodeCost > 0)
+				{
+					edgeSqlBuilder.add(SqlBuilder.HAVING, 'max(inclusiveTime) >= :cost');
+				}
+				if (configuration.hideLibraryFunctions)
+				{
+					edgeSqlBuilder.add(SqlBuilder.HAVING, 'max(fileName) != 0');
+				}
+			}
+			else
+			{
+				edgeBuilder = buildEdge;
+				if (configuration.minNodeCost > 0)
+				{
+					edgeSqlBuilder.add(SqlBuilder.WHERE, 'inclusiveTime >= :cost');
+				}
+				if (configuration.hideLibraryFunctions)
+				{
+					edgeSqlBuilder.add(SqlBuilder.WHERE, 'fileName != 0');
+				}
+			}			
+			
+			selectEdgeStatement.text = edgeSqlBuilder.build();
 			selectEdgeStatement.execute(PREFETCH);
 			
-			selectNodeStatement.text += " union select '" + treeItem.name + "', " + rootEdge.inclusiveTime + ", " + rootEdge.percentage + ", 100";			
+			if (grouper.groupedByNodes)
+			{
+				previousEdge.id = String(treeItem.name);
+			}
+			else if (configuration.grouping == Grouper.CALLS)
+			{
+				previousEdge.id = '.0';
+			}
+			selectNodeStatement.text = nodeSqlBuilder.build() + ' union select ' + treeItem.name + ', ' + previousEdge.inclusiveTime + ', ' + previousEdge.percentage + ', 100, \'' + previousEdge.id + '\'';			
 			selectNodeStatement.execute(PREFETCH);
+			
+			trace(selectEdgeStatement.text);
+			trace(selectNodeStatement.text + '\n');
 			
 			treeItem = null;
 		}
@@ -189,18 +219,22 @@ package cachegrindVisualizer.callGraph.builders
 			var edges:String = '';
 			var sqlResult:SQLResult = selectEdgeStatement.getResult();
 			for each (var edge:Edge in sqlResult.data)
-			{	
-				edges += edge.parentName + ' -> ' + edge.name + ' [' + EdgeSize.getSize(edge) + label.edge(edge);
-				if (!configuration.blackAndWhite)
+			{
+				if (edge.level > previousEdge.level)
 				{
-					edges += color.edge(edge);
-				}								
-				edges += ']\n';
+					parentsIds[edge.level] = previousEdge.id;
+				}			
+				
+				edges += '"' + getParentEdgePath(edge) + '" -> "' + edge.id + '" [' + edgeBuilder(edge) + ']\n';
+				
+				previousEdge = edge;
 			}
 			
 			fileStream.writeUTFBytes(edges);
 			if (sqlResult.complete)
 			{
+				parentsIds = previousEdge = null;
+				
 				progress += 50;
 				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 				edgesBuilt = true;
@@ -212,13 +246,41 @@ package cachegrindVisualizer.callGraph.builders
 			}
 		}
 		
+		private function getParentEdgePath(edge:Edge):String
+		{
+			if (edge.level in parentsIds)
+			{					
+				return parentsIds[edge.level];
+			}
+			else
+			{
+				return edge.id.substr(0, edge.id.length - String(edge.name).length - 1);
+			}
+		}
+		
+		private function buildEdge(edge:Edge):String
+		{
+			var result:String = EdgeSize.getSize(edge) + label.edge(edge);
+			if (!configuration.blackAndWhite)
+			{
+				result += color.edge(edge);
+			}
+			return result;
+		}
+		
+		private function buildAggregatedEdge(aggregatedEdge:AggregatedEdge):String
+		{
+			var result:String = /*EdgeSize.getSize(aggregatedEdge) + */label.aggregatedEdge(aggregatedEdge);
+			return result;
+		}
+		
 		private function handleSelectNode(event:SQLEvent):void
 		{
 			var nodes:String = '\n';
 			var sqlResult:SQLResult = selectNodeStatement.getResult();
 			for each (var node:Node in sqlResult.data)
 			{
-				nodes += node.name + ' [' + label.node(node);
+				nodes += '"' + node.id + '" [' + label.node(node);
 				if (!configuration.blackAndWhite)
 				{
 					nodes += color.node(node);
