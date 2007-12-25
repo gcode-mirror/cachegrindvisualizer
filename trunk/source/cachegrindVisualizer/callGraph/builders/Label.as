@@ -55,6 +55,17 @@ package cachegrindVisualizer.callGraph.builders
 			return result;
 		}
 		
+		public function aggregatedEdge(aggregatedEdge:AggregatedEdge):String
+		{
+			var result:String = '';
+			result += ' label="×' + aggregatedEdge.number + '"';
+			if (_type != Label.TYPE_NO)
+			{
+				
+			}
+			return result;
+		}
+		
 		public function node(node:Node):String
 		{
 			var name:String = names[node.name];

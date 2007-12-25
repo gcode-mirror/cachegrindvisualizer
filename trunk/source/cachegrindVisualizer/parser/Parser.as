@@ -19,7 +19,7 @@ package cachegrindVisualizer.parser
 		/**
 		 * Номер ревизии, в которой в последний раз была изменена заготовка БД
 		 */
-		private static const DB_VERSION:uint = 89;
+		private static const DB_VERSION:uint = 90;
 		
 		private static const SQL_CACHE_SIZE:uint = 200000;
 
@@ -98,7 +98,7 @@ package cachegrindVisualizer.parser
 			sqlConnection.cacheSize = SQL_CACHE_SIZE;
 							
 			insertStatement.sqlConnection = sqlConnection;
-			insertStatement.text = 'insert into tree values (:left, :right, :level, :name, :parentName, :fileName, :line, :time, :inclusiveTime)';
+			insertStatement.text = 'insert into tree values (:left, :right, :level, :namesPath, :name, :fileName, :line, :time, :inclusiveTime)';
 				
 			fileReader.read();
 			
@@ -110,8 +110,8 @@ package cachegrindVisualizer.parser
 			// Деструкторы вне main, вызываются внутренним механизмом PHP
 			while (!fileReader.complete)
 			{
-				var parentId:uint = itemId++;
-				parseBody(parentId, 0, 1);
+				var id:uint = itemId++;
+				parseBody(id, '', 1);
 			}
 			result.mainTreeItem.left = key + 1;
 
@@ -132,7 +132,7 @@ package cachegrindVisualizer.parser
 			sqlConnection.close();
 		}
 						
-		private function parseBody(id:uint, parentName:uint, level:uint):void
+		private function parseBody(id:uint, namesPath:String, level:uint):void
 		{				
 			var children:Array = new Array();
 			while (true)
@@ -142,12 +142,13 @@ package cachegrindVisualizer.parser
 				if (fileReader.getLine(1).charAt(0) == 'f')
 				{
 					// деструкторы вне main, то есть сами по себе, и на данный момент inclusiveTime для него, естественно, не установлено
-					if (result.mainTreeItem.fileName == 0 && !(id in inclusiveTime))
+					if (namesPath == '')
 					{
+						namesPath = '.0';
 						notInMainInclusiveTime += inclusiveTime[id] = lineAndTime[1] / TIME_UNIT_IN_MS;
 					}
 
-					insert(id, key--, level, getName(1), parentName, getFileName(2, true), lineAndTime[0], lineAndTime[1]);
+					insert(id, key--, level, namesPath, getName(1), getFileName(2, true), lineAndTime[0], lineAndTime[1]);
 					fileReader.shiftCursor(4);
 					break;
 				}
@@ -166,12 +167,12 @@ package cachegrindVisualizer.parser
 					// данные о родителе после всех детей
 					else
 					{
-						var edge:Edge = getEdge(id, sample, children, level);
+						var edge:Edge = getEdge(id, namesPath, sample, children, level);
 						for each (var childId:uint in children)
 						{
-							parseBody(childId, edge.name, edge.level + 1);
+							parseBody(childId, edge.namesPath + '.' + edge.name, edge.level + 1);
 						}						
-						insert(id, edge.right, edge.level, edge.name, parentName, edge.fileName, edge.line, edge.time);																		
+						insert(id, edge.right, edge.level, edge.namesPath, edge.name, edge.fileName, edge.line, edge.time);																		
 						break;
 					}
 				}
@@ -181,7 +182,7 @@ package cachegrindVisualizer.parser
 		/**
 		 * Edge содержит right и level для их корректировки в случае main (xdebug пишет деструкторы вне main, мы это исправляем)
 		 */
-		private function getEdge(id:uint, sample:String, children:Array, level:uint):Edge
+		private function getEdge(id:uint, namesPath:String, sample:String, children:Array, level:uint):Edge
 		{
 			var lineAndTime:Array = fileReader.getLine(3).split(' ');
 			var edge:Edge = new Edge();
@@ -191,10 +192,12 @@ package cachegrindVisualizer.parser
 				if (id in inclusiveTime)
 				{
 					edge.level = level;
+					edge.namesPath = namesPath;
 				}
 				else
 				{
 					edge.level = 1;
+					edge.namesPath = '.0';
 					
 					var inclusiveTimeItem:Number = 0;
 					inclusiveTime[id] = 0;
@@ -205,7 +208,7 @@ package cachegrindVisualizer.parser
 					notInMainInclusiveTime += inclusiveTime[id] = inclusiveTimeItem + (lineAndTime[1] / TIME_UNIT_IN_MS);
 				}			
 				
-				edge.right = key--;				
+				edge.right = key--;							
 				edge.name = getName(4);
 				edge.fileName = getFileName(5);				
 				
@@ -213,14 +216,15 @@ package cachegrindVisualizer.parser
 			}
 			// для функции main не указывается файл, есть строка summary, отделенная пустыми строками
 			else if (sample == '' || sample == 's')
-			{
+			{				
 				edge.right = 0;
-				edge.level = 0;				
+				edge.level = 0;
+				edge.namesPath = '';			
 				edge.name = 0;
 				edge.fileName = getFileName(8);
 				
 				result.mainTreeItem.fileName = edge.fileName;
-				inclusiveTime[id] = (Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS) + notInMainInclusiveTime;				
+				inclusiveTime[0] = (Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS) + notInMainInclusiveTime;				
 				
 				fileReader.shiftCursor(10);
 			}
@@ -234,13 +238,13 @@ package cachegrindVisualizer.parser
 			return edge;
 		}
 				
-		private function insert(id:uint, right:int, level:uint, name:uint, parentName:uint, fileName:uint, line:uint, time:Number):void
+		private function insert(id:uint, right:int, level:uint, namesPath:String, name:uint, fileName:uint, line:uint, time:Number):void
 		{
 			insertStatement.parameters[':left'] = key--;
 			insertStatement.parameters[':right'] = right;			
 			insertStatement.parameters[':level'] = level;
-			insertStatement.parameters[':name'] = name;	
-			insertStatement.parameters[':parentName'] = parentName;			
+			insertStatement.parameters[':namesPath'] = namesPath;
+			insertStatement.parameters[':name'] = name;		
 			insertStatement.parameters[':fileName'] = fileName;
 			insertStatement.parameters[':line'] = line;
 			insertStatement.parameters[':time'] = time / TIME_UNIT_IN_MS;
