@@ -47,7 +47,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			else if (builder.configuration.grouping == Grouper.CALLS)
 			{
 				sqlBuilder.add(SqlBuilder.FIELD, "namesParentPath || '.' || parentName || '.' || name as id");
-				sqlBuilder.add(SqlBuilder.GROUP_BY, 'namesParentPath, parentName, name');
+				sqlBuilder.add(SqlBuilder.GROUP_BY, 'namesParentPath', 'parentName', 'name');
 			}
 			else
 			{

@@ -58,7 +58,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 				else if (builder.configuration.grouping == Grouper.CALLS)
 				{
 					sqlBuilder.add(SqlBuilder.FIELD, "namesParentPath || '.' || parentName || '.' || name as id");
-					sqlBuilder.add(SqlBuilder.GROUP_BY, 'namesParentPath, parentName, name');
+					sqlBuilder.add(SqlBuilder.GROUP_BY, 'namesParentPath', 'parentName', 'name');
 				}
 				
 				edgeBuilder = buildAggregatedEdge;
@@ -138,6 +138,28 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 				
 			throw new Error('');
 		}
+		
+		/*private function getParentId(edge:Edge):String
+		{
+			if (edge.level in parentsIds)
+			{					
+				return parentsIds[edge.level];
+			}
+			else
+			{
+				var aggregatedEdge:AggregatedEdge = AggregatedEdge(edge);
+				if (builder.configuration.grouping == Grouper.NODES_AND_CALLS)
+				{
+					//return aggregatedEdge.namesPath.substr(aggregatedEdge.namesPath.lastIndexOf('.') + 1);
+				}
+				else if (builder.configuration.grouping == Grouper.CALLS)
+				{
+					return aggregatedEdge.namesParentPath + '.' + aggregatedEdge.parentName;
+				}
+				
+				throw new Error('');
+			}
+		}*/
 		
 		private function buildEdge(edge:Edge):String
 		{
