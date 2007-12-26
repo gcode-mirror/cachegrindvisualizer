@@ -19,7 +19,7 @@ package cachegrindVisualizer.parser
 		/**
 		 * Номер ревизии, в которой в последний раз была изменена заготовка БД
 		 */
-		private static const DB_VERSION:uint = 90;
+		private static const DB_VERSION:uint = 98;
 		
 		private static const SQL_CACHE_SIZE:uint = 200000;
 
@@ -37,6 +37,7 @@ package cachegrindVisualizer.parser
 		private var notInMainInclusiveTime:Number = 0;		
 		private var key:int = -1; // 0 для main
 		
+		private var functionNamesPathMap:NameMap;
 		private var functionNameMap:NameMap;
 		private var fileNameMap:NameMap;
 		
@@ -51,6 +52,7 @@ package cachegrindVisualizer.parser
 		{
 			functionNameMap = new NameMap(sqlConnection, FUNCTION_NAME_TABLE);
 			fileNameMap = new NameMap(sqlConnection, FILE_NAME_TABLE);
+			functionNamesPathMap = new NameMap();
 			
 			fileReader = new FileReader(file);
 			result.db = File.applicationStorageDirectory.resolvePath(DB_VERSION + '_' + fileReader.checksum + '.db');
@@ -98,20 +100,21 @@ package cachegrindVisualizer.parser
 			sqlConnection.cacheSize = SQL_CACHE_SIZE;
 							
 			insertStatement.sqlConnection = sqlConnection;
-			insertStatement.text = 'insert into tree values (:left, :right, :level, :namesParentPath, :parentName, :name, :fileName, :line, :time, :inclusiveTime)';
+			insertStatement.text = 'insert into tree values (:left, :right, :level, :namesPath, :parentName, :name, :fileName, :line, :time, :inclusiveTime)';
 				
 			fileReader.read();
 			
 			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);			
 			
 			functionNameMap.add(MAIN_FUNCTION_NAME);
+			functionNamesPathMap.add('');
 			fileNameMap.add('');
 			
 			// Деструкторы вне main, вызываются внутренним механизмом PHP
 			while (!fileReader.complete)
 			{
 				var id:uint = itemId++;
-				parseBody(id, '', '0', 1);
+				parseBody(id, '0', 0, 1);
 			}
 			result.mainTreeItem.left = key + 1;
 
@@ -132,7 +135,7 @@ package cachegrindVisualizer.parser
 			sqlConnection.close();
 		}
 						
-		private function parseBody(id:uint, namesParentPath:String, parentName:String, level:uint):void
+		private function parseBody(id:uint, namesPath:String, parentName:uint, level:uint):void
 		{				
 			var children:Array = new Array();
 			while (true)
@@ -142,12 +145,12 @@ package cachegrindVisualizer.parser
 				if (fileReader.getLine(1).charAt(0) == 'f')
 				{
 					// деструкторы вне main, то есть сами по себе, и на данный момент inclusiveTime для него, естественно, не установлено
-					if (namesParentPath == '')
+					if (namesPath == '0')
 					{
 						notInMainInclusiveTime += inclusiveTime[id] = lineAndTime[1] / TIME_UNIT_IN_MS;
 					}
 
-					insert(id, key--, level, namesParentPath, parentName, getName(1), getFileName(2, true), lineAndTime[0], lineAndTime[1]);
+					insert(id, key--, level, namesPath, parentName, getName(1), getFileName(2, true), lineAndTime[0], lineAndTime[1]);
 					fileReader.shiftCursor(4);
 					break;
 				}
@@ -169,9 +172,9 @@ package cachegrindVisualizer.parser
 						var edge:Edge = getEdge(id, sample, children, level);
 						for each (var childId:uint in children)
 						{
-							parseBody(childId, namesParentPath + '.' + parentName, String(edge.name), edge.level + 1);
+							parseBody(childId, namesPath + '.' + edge.name, edge.name, edge.level + 1);
 						}						
-						insert(id, edge.right, edge.level, namesParentPath, parentName, edge.name, edge.fileName, edge.line, edge.time);																		
+						insert(id, edge.right, edge.level, namesPath, parentName, edge.name, edge.fileName, edge.line, edge.time);																		
 						break;
 					}
 				}
@@ -220,7 +223,7 @@ package cachegrindVisualizer.parser
 				edge.fileName = getFileName(8);
 				
 				result.mainTreeItem.fileName = edge.fileName;
-				inclusiveTime[0] = (Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS) + notInMainInclusiveTime;				
+				inclusiveTime[id] = (Number(fileReader.getLine(5).slice(9)) / TIME_UNIT_IN_MS) + notInMainInclusiveTime;				
 				
 				fileReader.shiftCursor(10);
 			}
@@ -234,13 +237,13 @@ package cachegrindVisualizer.parser
 			return edge;
 		}
 				
-		private function insert(id:uint, right:int, level:uint, namesParentPath:String, parentName:String, name:uint, fileName:uint, line:uint, time:Number):void
+		private function insert(id:uint, right:int, level:uint, namesPath:String, parentName:uint, name:uint, fileName:uint, line:uint, time:Number):void
 		{
 			insertStatement.parameters[':left'] = key--;
 			insertStatement.parameters[':right'] = right;			
 			insertStatement.parameters[':level'] = level;
 			insertStatement.parameters[':parentName'] = parentName;
-			insertStatement.parameters[':namesParentPath'] = namesParentPath;
+			insertStatement.parameters[':namesPath'] = functionNamesPathMap.add(namesPath + '.' + name);
 			insertStatement.parameters[':name'] = name;		
 			insertStatement.parameters[':fileName'] = fileName;
 			insertStatement.parameters[':line'] = line;

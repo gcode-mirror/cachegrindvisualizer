@@ -4,8 +4,7 @@ package cachegrindVisualizer.callGraph.builders
 	{
 		public var number:uint;
 		
-		public var parentName:String;
-		public var namesParentPath:String;
+		public var parentName:uint;
 		
 		public var summaryTime:Number;
 		public var averageTime:Number;

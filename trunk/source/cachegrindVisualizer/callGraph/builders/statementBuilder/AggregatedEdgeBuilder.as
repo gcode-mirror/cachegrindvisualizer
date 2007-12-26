@@ -25,7 +25,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 		override public function prepare():void
 		{
 			sqlBuilder.add(SqlBuilder.FIELD, 'name', 'level');
-			sqlBuilder.add(SqlBuilder.FIELD, 'namesParentPath', 'parentName', 'count(*) as number', 'sum(time) as summaryTime', 'avg(time) as averageTime', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'sum(time) / :onePercentage as summaryPercentage');
+			sqlBuilder.add(SqlBuilder.FIELD, 'parentName', 'count(*) as number', 'sum(time) as summaryTime', 'avg(time) as averageTime', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'sum(time) / :onePercentage as summaryPercentage');
 				
 			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS)
 			{
@@ -34,12 +34,15 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			}
 			else if (builder.configuration.grouping == Grouper.CALLS)
 			{
-				sqlBuilder.add(SqlBuilder.FIELD, "namesParentPath || '.' || parentName || '.' || name as id");
-				sqlBuilder.add(SqlBuilder.GROUP_BY, 'namesParentPath', 'parentName', 'name');
+				sqlBuilder.add(SqlBuilder.FIELD, 'namesPath as id');
+				sqlBuilder.add(SqlBuilder.GROUP_BY, 'namesPath');
 			}
 			
-			sqlBuilder.add(SqlBuilder.ORDER_BY, 'left');			
-			sqlBuilder.build();			
+			sqlBuilder.add(SqlBuilder.ORDER_BY, 'min(left)');			
+			sqlBuilder.build();
+			
+			previousId = builder.rootNode.id;
+			previousLevel = builder.treeItem.level;			
 		}
 		
 		override protected function handleSelect(event:SQLEvent):void
@@ -48,14 +51,22 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			var sqlResult:SQLResult = sqlBuilder.statement.getResult();
 			for each (var edge:AggregatedEdge in sqlResult.data)
 			{
+				if (edge.level > previousLevel)
+				{
+					parentsIds[edge.level] = previousId;
+				}
+				
 				edges += '"' + getParentId(edge) + '" -> "' + edge.id + '" [' + build(edge) + ']\n';
+				
+				previousLevel = edge.level;
+				previousId = edge.id;
 			}
 			
 			builder.fileStream.writeUTFBytes(edges);
 			next(sqlResult);
 		}
 		
-		private function getParentId(edge:AggregatedEdge):String
+		private function getParentId(edge:AggregatedEdge):uint
 		{
 			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS)
 			{
@@ -63,7 +74,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			}
 			else if (builder.configuration.grouping == Grouper.CALLS)
 			{
-				return edge.namesParentPath + '.' + edge.parentName;
+				return parentsIds[edge.level];
 			}
 			
 			throw new Error();
