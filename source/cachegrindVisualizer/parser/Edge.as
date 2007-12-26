@@ -5,7 +5,7 @@ package cachegrindVisualizer.parser
 		public var right:int;
 		public var level:uint;
 		
-		public var namesPath:String;
+		//public var namesParentPath:String;
 				
 		public var name:uint;
 		public var fileName:uint;		
