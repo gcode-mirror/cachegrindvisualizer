@@ -31,7 +31,7 @@ package cachegrindVisualizer.callGraph.builders
 			_label = new Label(names);
 			
 			selectRootItemStatement.itemClass = RootNode;
-			selectRootItemStatement.text = 'select namesParentPath, parentName, time, inclusiveTime from tree where left = :left and right = :right';
+			selectRootItemStatement.text = 'select namesPath, time, inclusiveTime from tree where left = :left and right = :right';
 			selectRootItemStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
 			
 			fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
@@ -156,15 +156,15 @@ package cachegrindVisualizer.callGraph.builders
 			
 			if (configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || configuration.grouping == Grouper.FUNCTIONS)
 			{
-				rootNode.id = String(rootNode.name);
+				rootNode.id = rootNode.name;
 			}
 			else if (configuration.grouping == Grouper.CALLS)
 			{
-				rootNode.id = rootNode.namesParentPath + '.' + rootNode.parentName + '.' + rootNode.name;
+				rootNode.id = rootNode.namesPath;
 			}
 			else
 			{
-				rootNode.id = String(treeItem.left);
+				rootNode.id = treeItem.left;
 			}
 			
 			if (configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || configuration.grouping == Grouper.CALLS)

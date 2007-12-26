@@ -2,7 +2,7 @@ package cachegrindVisualizer.callGraph.builders
 {
 	public class Edge
 	{
-		public var id:String;
+		public var id:uint;
 		public var level:uint;
 		
 		public var name:uint;		

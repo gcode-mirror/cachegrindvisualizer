@@ -13,9 +13,9 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 	
 	public class EdgeBuilder extends StatementBuilder
 	{
-		private var previousId:String;
-		private var previousLevel:uint;
-		private var parentsIds:Object;
+		protected var previousId:uint;
+		protected var previousLevel:uint;
+		protected var parentsIds:Object = new Object();
 		
 		public function EdgeBuilder(builder:Builder)
 		{
@@ -24,9 +24,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 		}
 		
 		override public function prepare():void
-		{
-			parentsIds = new Object();
-			
+		{			
 			sqlBuilder.add(SqlBuilder.FIELD, 'name', 'level');
 			sqlBuilder.add(SqlBuilder.FIELD, 'time', 'inclusiveTime', 'time / :onePercentage as percentage', 'inclusiveTime / :onePercentage as inclusivePercentage');
 			

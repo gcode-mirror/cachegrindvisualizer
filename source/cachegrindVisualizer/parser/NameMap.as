@@ -13,7 +13,7 @@ package cachegrindVisualizer.parser
 		protected var sqlStatement:SQLStatement = new SQLStatement();
 		protected var table:String;
 		
-		public function NameMap(sqlConnection:SQLConnection, table:String):void
+		public function NameMap(sqlConnection:SQLConnection = null, table:String = null):void
 		{
 			sqlStatement.sqlConnection = sqlConnection;
 			this.table = table;
@@ -35,7 +35,6 @@ package cachegrindVisualizer.parser
 			namesMap = null;
 			
 			sqlStatement.text = 'insert into ' + table + ' values (:id, :name)';
-
 			for (var id:String in names)
 			{
 				sqlStatement.parameters[':id'] = id;
