@@ -1,6 +1,9 @@
-package cachegrindVisualizer.callGraph.builders
+package cachegrindVisualizer.callGraph.builders.statement.edge
 {
-	public class EdgeSize
+	import cachegrindVisualizer.callGraph.builders.AggregatedEdge;
+	import cachegrindVisualizer.callGraph.builders.Edge;
+	
+	public class Size
 	{
 		private static const PERCENTAGE_IN_EDGE_LINE_WIDTH:Number = 0.2;
 		private static const ARROW_SIZE_COEFFICIENT:Number = 1.5;
@@ -11,16 +14,26 @@ package cachegrindVisualizer.callGraph.builders
 		private static const MIN_PERCENTAGE_FALLBACK_LINE_WIDTH:Number = 1;
 		private static const MAX_PERCENTAGE_FALLBACK_LINE_WIDTH:Number = 8;
 		
-		public static function getSize(edge:Edge):String
+		public function individual(edge:Edge):String
+		{
+			return build(edge.percentage);
+		}
+		
+		public function aggregated(edge:AggregatedEdge):String
+		{
+			return build(edge.maximumPercentage);
+		}
+		
+		protected function build(percentage:Number):String
 		{	
 			var width:Number;		
-			if (edge.percentage < MIN_PERCENTAGE)
+			if (percentage < MIN_PERCENTAGE)
 			{
 				return '';
 			}
-			else if (edge.percentage < MAX_PERCENTAGE)
+			else if (percentage < MAX_PERCENTAGE)
 			{
-				width = edge.percentage * PERCENTAGE_IN_EDGE_LINE_WIDTH;				
+				width = percentage * PERCENTAGE_IN_EDGE_LINE_WIDTH;				
 			}
 			else
 			{

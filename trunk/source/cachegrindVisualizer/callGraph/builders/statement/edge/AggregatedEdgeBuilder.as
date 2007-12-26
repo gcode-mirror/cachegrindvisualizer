@@ -1,8 +1,9 @@
-package cachegrindVisualizer.callGraph.builders.statementBuilder
+package cachegrindVisualizer.callGraph.builders.statement.edge
 {
 	import cachegrindVisualizer.callGraph.builders.AggregatedEdge;
 	import cachegrindVisualizer.callGraph.builders.Builder;
 	import cachegrindVisualizer.callGraph.builders.Grouper;
+	import cachegrindVisualizer.callGraph.builders.Label;
 	
 	import develar.data.SqlBuilder;
 	
@@ -25,7 +26,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 		override public function prepare():void
 		{
 			sqlBuilder.add(SqlBuilder.FIELD, 'name', 'level');
-			sqlBuilder.add(SqlBuilder.FIELD, 'parentName', 'count(*) as number', 'sum(time) as summaryTime', 'avg(time) as averageTime', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'sum(time) / :onePercentage as summaryPercentage');
+			sqlBuilder.add(SqlBuilder.FIELD, 'parentName', 'count(*) as number', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'min(inclusiveTime) as minimumInclusiveTime', 'max(inclusiveTime) as maximumInclusiveTime', 'max(time) / :onePercentage as maximumPercentage');
 				
 			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS)
 			{
@@ -56,7 +57,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 					parentsIds[edge.level] = previousId;
 				}
 				
-				edges += '"' + getParentId(edge) + '" -> "' + edge.id + '" [' + build(edge) + ']\n';
+				edges += getParentId(edge) + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
 				
 				previousLevel = edge.level;
 				previousId = edge.id;
@@ -80,9 +81,13 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			throw new Error();
 		}
 		
-		private function build(aggregatedEdge:AggregatedEdge):String
+		private function build(edge:AggregatedEdge):String
 		{
-			var result:String = /*EdgeSize.getSize(aggregatedEdge) + */builder.label.aggregatedEdge(aggregatedEdge);
+			var result:String = size.aggregated(edge) + builder.label.aggregatedEdge(edge, builder.onePercentage);
+			if (!builder.configuration.blackAndWhite)
+			{
+				result += builder.color.aggregatedEdge(edge);
+			}
 			return result;
 		}		
 	}
