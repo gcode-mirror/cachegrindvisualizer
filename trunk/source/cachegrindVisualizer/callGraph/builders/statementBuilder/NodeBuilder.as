@@ -17,17 +17,12 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			sqlBuilder.statement.itemClass = Node;
 		}
 		
-		public function get groupedByNodes():Boolean
-		{
-			return builder.configuration.grouping == Grouper.NODES_AND_CALLS || builder.configuration.grouping == Grouper.NODES;
-		}
-		
 		override protected function get grouped():Boolean
 		{
 			return builder.configuration.grouping != Grouper.NO;
 		}
 		
-		override public function build():void
+		override public function prepare():void
 		{
 			sqlBuilder.add(SqlBuilder.FIELD, 'name');
 			if (grouped)
@@ -39,7 +34,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 				sqlBuilder.add(SqlBuilder.FIELD, 'inclusiveTime as inclusiveTime', 'time / :onePercentage as percentage', 'inclusiveTime / :onePercentage as inclusivePercentage');
 			}			
 			
-			if (groupedByNodes)
+			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || builder.configuration.grouping == Grouper.FUNCTIONS)
 			{
 				sqlBuilder.add(SqlBuilder.FIELD, 'name as id');
 				sqlBuilder.add(SqlBuilder.GROUP_BY, 'name');
@@ -52,9 +47,8 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			else
 			{
 				sqlBuilder.add(SqlBuilder.FIELD, 'left as id');
-			}
+			}			
 			
-			sqlBuilder.add(SqlBuilder.JOIN, 'tree');
 			sqlBuilder.build();
 			sqlBuilder.statement.text += 'union select ' + builder.rootNode.name + ', ' + builder.rootNode.inclusiveTime + ', ' + builder.rootNode.percentage + ', ' + builder.rootNode.inclusivePercentage + ", '" + builder.rootNode.id + "'";
 		}
@@ -74,14 +68,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			}		
 
 			builder.fileStream.writeUTFBytes(nodes);
-			if (sqlResult.complete)
-			{
-				builder.checkComplete();
-			}
-			else
-			{				
-				sqlBuilder.statement.next(Builder.PREFETCH);
-			}
+			next(sqlResult);			
 		}
 	}
 }

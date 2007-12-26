@@ -21,8 +21,8 @@
 			<mx:FormItem label="{resourceManager.getString('CallGraph', 'grouping')}">
 				<mx:ComboBox id="grouping" change="handleChange(event)">
 					<mx:Array>						
-						<mx:Object data="{Grouper.NODES_AND_CALLS}" label="{resourceManager.getString('CallGraph', 'groupingNodesAndCalls')}"/>
-						<mx:Object data="{Grouper.NODES}" label="{resourceManager.getString('CallGraph', 'groupingNodes')}"/>
+						<mx:Object data="{Grouper.FUNCTIONS_AND_CALLS}" label="{resourceManager.getString('CallGraph', 'groupingFunctionsAndCalls')}"/>
+						<mx:Object data="{Grouper.FUNCTIONS}" label="{resourceManager.getString('CallGraph', 'groupingFunctions')}"/>
 						<mx:Object data="{Grouper.CALLS}" label="{resourceManager.getString('CallGraph', 'groupingCalls')}"/>
 						<mx:Object data="{Grouper.NO}" label="{resourceManager.getString('CallGraph', 'groupingNo')}"/>
 					</mx:Array>
