@@ -55,7 +55,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 					parentsIds[edge.level] = previousId;
 				}			
 				
-				edges += '"' + parentsIds[edge.level] + '" -> "' + edge.id + '" [' + build(edge) + ']\n';
+				edges += parentsIds[edge.level] + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
 				
 				previousLevel = edge.level;
 				previousId = edge.id;

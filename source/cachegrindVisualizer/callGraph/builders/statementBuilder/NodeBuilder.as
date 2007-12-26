@@ -59,7 +59,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 			var sqlResult:SQLResult = sqlBuilder.statement.getResult();
 			for each (var node:Node in sqlResult.data)
 			{
-				nodes += '"' + node.id + '" [' + builder.label.node(node);
+				nodes += node.id + ' [' + builder.label.node(node);
 				if (!builder.configuration.blackAndWhite)
 				{
 					nodes += builder.color.node(node);

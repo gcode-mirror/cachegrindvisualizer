@@ -121,7 +121,7 @@ package cachegrindVisualizer.callGraph.builders
 			label.type = configuration.labelType;
 			
 			fileStream.openAsync(file, FileMode.WRITE);							
-			var header:String = 'digraph { rankdir=' + configuration.rankDirection + '\nedge [labelfontsize=12]\n';		
+			var header:String = 'digraph { rankdir=' + configuration.rankDirection + ' ordering=out \nedge [labelfontsize=12]\n';		
 			if (configuration.title != null)
 			{
 				header += 'label="' + configuration.title + '" fontsize=22 labelloc="' + configuration.titleLocation + '"\n';
