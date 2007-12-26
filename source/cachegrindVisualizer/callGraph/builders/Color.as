@@ -1,5 +1,8 @@
 package cachegrindVisualizer.callGraph.builders
-{	
+{
+	import cachegrindVisualizer.callGraph.builders.statement.edge.AggregatedEdge;
+	import cachegrindVisualizer.callGraph.builders.statement.edge.Edge;
+		
 	public class Color
 	{	
 		protected static const MIN_HUE:Number = 0.6;

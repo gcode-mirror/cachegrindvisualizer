@@ -1,4 +1,4 @@
-package cachegrindVisualizer.callGraph.builders
+package cachegrindVisualizer.callGraph.builders.statement.edge
 {
 	public class AggregatedEdge extends Edge
 	{
@@ -10,12 +10,6 @@ package cachegrindVisualizer.callGraph.builders
 		public var averageInclusiveTime:Number;
 		public var minimumInclusiveTime:Number;
 		public var maximumInclusiveTime:Number;
-		
-		/*public var summaryTime:Number;
-		public var averageTime:Number;
-		
-		
-		public var averageInclusiveTime:Number;*/
 		
 		public var maximumPercentage:Number;
 	}

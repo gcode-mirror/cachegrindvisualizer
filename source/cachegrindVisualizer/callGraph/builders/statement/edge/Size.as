@@ -1,8 +1,5 @@
 package cachegrindVisualizer.callGraph.builders.statement.edge
-{
-	import cachegrindVisualizer.callGraph.builders.AggregatedEdge;
-	import cachegrindVisualizer.callGraph.builders.Edge;
-	
+{	
 	public class Size
 	{
 		private static const PERCENTAGE_IN_EDGE_LINE_WIDTH:Number = 0.2;
