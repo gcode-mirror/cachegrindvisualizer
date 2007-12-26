@@ -169,7 +169,7 @@ package cachegrindVisualizer.parser
 						var edge:Edge = getEdge(id, sample, children, level);
 						for each (var childId:uint in children)
 						{
-							parseBody(childId, namesParentPath + '.' + edge.name, String(edge.name), edge.level + 1);
+							parseBody(childId, namesParentPath + '.' + parentName, String(edge.name), edge.level + 1);
 						}						
 						insert(id, edge.right, edge.level, namesParentPath, parentName, edge.name, edge.fileName, edge.line, edge.time);																		
 						break;
