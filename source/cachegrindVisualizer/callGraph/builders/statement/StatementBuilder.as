@@ -1,4 +1,4 @@
-package cachegrindVisualizer.callGraph.builders.statementBuilder
+package cachegrindVisualizer.callGraph.builders.statement
 {
 	import cachegrindVisualizer.callGraph.builders.Builder;
 	

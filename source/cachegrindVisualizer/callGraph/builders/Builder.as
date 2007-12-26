@@ -1,8 +1,8 @@
 package cachegrindVisualizer.callGraph.builders
 {
-	import cachegrindVisualizer.callGraph.builders.statementBuilder.AggregatedEdgeBuilder;
-	import cachegrindVisualizer.callGraph.builders.statementBuilder.EdgeBuilder;
-	import cachegrindVisualizer.callGraph.builders.statementBuilder.NodeBuilder;
+	import cachegrindVisualizer.callGraph.builders.statement.edge.AggregatedEdgeBuilder;
+	import cachegrindVisualizer.callGraph.builders.statement.edge.EdgeBuilder;
+	import cachegrindVisualizer.callGraph.builders.statement.NodeBuilder;
 	import cachegrindVisualizer.controls.tree.TreeItem;
 	
 	import flash.data.SQLConnection;

@@ -1,10 +1,11 @@
-package cachegrindVisualizer.callGraph.builders.statementBuilder
+package cachegrindVisualizer.callGraph.builders.statement.edge
 {
 	import cachegrindVisualizer.callGraph.builders.AggregatedEdge;
 	import cachegrindVisualizer.callGraph.builders.Builder;
 	import cachegrindVisualizer.callGraph.builders.Edge;
-	import cachegrindVisualizer.callGraph.builders.EdgeSize;
+	import cachegrindVisualizer.callGraph.builders.statement.edge.Size;
 	import cachegrindVisualizer.callGraph.builders.Grouper;
+	import cachegrindVisualizer.callGraph.builders.statement.StatementBuilder;
 	
 	import develar.data.SqlBuilder;
 	
@@ -16,6 +17,8 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 		protected var previousId:uint;
 		protected var previousLevel:uint;
 		protected var parentsIds:Object = new Object();
+		
+		protected var size:Size = new Size();
 		
 		public function EdgeBuilder(builder:Builder)
 		{
@@ -67,10 +70,10 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 		
 		private function build(edge:Edge):String
 		{
-			var result:String = EdgeSize.getSize(edge) + builder.label.edge(edge);
+			var result:String = size.individual(edge) + builder.label.edge(edge);
 			if (!builder.configuration.blackAndWhite)
 			{
-				result += builder.color.edge(edge);
+				result += builder.color.individualEdge(edge);
 			}
 			return result;
 		}

@@ -6,12 +6,17 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public var parentName:uint;
 		
-		public var summaryTime:Number;
-		public var averageTime:Number;
-		
 		public var summaryInclusiveTime:Number;
 		public var averageInclusiveTime:Number;
+		public var minimumInclusiveTime:Number;
+		public var maximumInclusiveTime:Number;
 		
-		public var summaryPercentage:Number;
+		/*public var summaryTime:Number;
+		public var averageTime:Number;
+		
+		
+		public var averageInclusiveTime:Number;*/
+		
+		public var maximumPercentage:Number;
 	}
 }

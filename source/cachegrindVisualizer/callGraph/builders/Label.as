@@ -1,6 +1,7 @@
 package cachegrindVisualizer.callGraph.builders
 {
 	import develar.formatters.NumberFormatter;
+	import develar.resources.ResourceManager;
 	
 	import mx.formatters.NumberBaseRoundType;
 	
@@ -16,7 +17,7 @@ package cachegrindVisualizer.callGraph.builders
 		private static const INCLUDE_FUNCTIONS:Object = {'include': null, 'include_once': null, 'require': null, 'require_once': null};
 		private static const MAX_INCLUDE_FILE_PATH_LENGTH:uint = 20;
 			
-		private static const TIME_PRECISION:int = -1;
+		private static const TIME_PRECISION:int = 0;
 		private static const PERCENTAGE_PRECISION:uint = 2;
 		
 		private static var percentageFormatter:NumberFormatter = new NumberFormatter();
@@ -29,6 +30,7 @@ package cachegrindVisualizer.callGraph.builders
 			this.names = names;
 			
 			timeFormatter.precision = TIME_PRECISION;
+			timeFormatter.rounding = NumberBaseRoundType.NEAREST;
 			
 			percentageFormatter.precision = PERCENTAGE_PRECISION;
 			percentageFormatter.rounding = NumberBaseRoundType.NEAREST;
@@ -55,15 +57,73 @@ package cachegrindVisualizer.callGraph.builders
 			return result;
 		}
 		
-		public function aggregatedEdge(aggregatedEdge:AggregatedEdge):String
-		{
-			var result:String = '';
-			result += ' label="×' + aggregatedEdge.number + '"';
-			if (_type != Label.TYPE_NO)
+		public function aggregatedEdge(edge:AggregatedEdge, onePercentage:Number):String
+		{						
+			if (_type == TYPE_NO && edge.number > 1)
 			{
-				
+				return ' label="×' + edge.number + '"';
 			}
-			return result;
+			else
+			{
+				var result:String = '';
+				var maximumInclusivePercentage:Number;
+				result += ' label="';
+				if (edge.number > 1)
+				{
+					if (_type != TYPE_TIME)
+					{
+						var summaryInclusivePercentage:Number = edge.summaryInclusiveTime / onePercentage;
+						var averageInclusivePercentage:Number = edge.averageInclusiveTime / onePercentage;					
+						var minimumInclusivePercentage:Number = edge.minimumInclusiveTime / onePercentage;
+						maximumInclusivePercentage = edge.maximumInclusiveTime / onePercentage;
+						
+						var percentageLabel:String = '[' + percentageFormatter.format(minimumInclusivePercentage) + ' %…' + percentageFormatter.format(averageInclusivePercentage) + ' %…' + percentageFormatter.format(maximumInclusivePercentage) + ' %]×' + edge.number + '=' + percentageFormatter.format(summaryInclusivePercentage) + ' %';
+					}
+					var timeLabel:String = '[' + timeFormatter.format(edge.minimumInclusiveTime) + '…' + timeFormatter.format(edge.averageInclusiveTime) + '…' + timeFormatter.format(edge.maximumInclusiveTime) + ']×' + edge.number + '=' + timeFormatter.format(edge.summaryInclusiveTime);
+					
+					switch (_type)
+					{
+						case TYPE_PERCENTAGE_AND_TIME:
+						{
+							result += percentageLabel + '\\n(' + timeLabel + ')';
+						}
+						break;
+						
+						case TYPE_TIME_AND_PERCENTAGE:
+						{
+							result += timeLabel + '\\n(' + percentageLabel + ')';
+						}
+						break;
+						
+						case TYPE_PERCENTAGE:
+						{
+							result += percentageLabel;
+						}
+						break;
+							
+						case TYPE_TIME:
+						{
+							result += timeLabel;
+						}
+						break;
+							
+						default:
+						{
+							throw new Error('Unknown label type');
+						}	
+						break;			
+					}
+				}
+				else
+				{
+					if (_type != TYPE_TIME)
+					{
+						maximumInclusivePercentage = edge.maximumInclusiveTime / onePercentage;
+					}
+					result += build(maximumInclusivePercentage, edge.maximumInclusiveTime);
+				}
+				return result + '"';
+			}
 		}
 		
 		public function node(node:Node):String
@@ -113,7 +173,7 @@ package cachegrindVisualizer.callGraph.builders
 			return label + '"';
 		}
 		
-		protected function build(percentage:Number, time:uint):String
+		protected function build(percentage:Number, time:Number):String
 		{			
 			switch (_type)
 			{
