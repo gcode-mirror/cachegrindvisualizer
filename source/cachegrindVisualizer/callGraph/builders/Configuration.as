@@ -17,7 +17,7 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public var blackAndWhite:Boolean = false;
 		
-		public var grouping:uint = Grouper.NODES_AND_CALLS;
+		public var grouping:uint = Grouper.FUNCTIONS_AND_CALLS;
 		public var rankDirection:String = RANK_DIRECTION_TB;
 		public var labelType:uint = Label.TYPE_PERCENTAGE_AND_TIME;
 		

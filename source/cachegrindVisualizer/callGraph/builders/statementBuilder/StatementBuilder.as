@@ -4,6 +4,7 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 	
 	import develar.data.SqlBuilder;
 	
+	import flash.data.SQLResult;
 	import flash.events.SQLEvent;
 	
 	/* abstract */ public class StatementBuilder
@@ -29,11 +30,12 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 				filterByLibraryFunctions();
 			}
 			
-			build();
+			sqlBuilder.add(SqlBuilder.JOIN, 'tree');
+			prepare();
 			sqlBuilder.statement.execute(Builder.PREFETCH);
 		}
 		
-		/* abstract */ public function build():void
+		/* abstract */ public function prepare():void
 		{
 			
 		}
@@ -78,6 +80,18 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 		/* abstract */ protected function handleSelect(event:SQLEvent):void
 		{
 			
+		}
+		
+		protected function next(sqlResult:SQLResult):void
+		{
+			if (sqlResult.complete)
+			{
+				builder.checkComplete();
+			}
+			else
+			{				
+				sqlBuilder.statement.next(Builder.PREFETCH);
+			}
 		}
 	}
 }

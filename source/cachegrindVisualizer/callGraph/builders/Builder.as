@@ -1,5 +1,6 @@
 package cachegrindVisualizer.callGraph.builders
 {
+	import cachegrindVisualizer.callGraph.builders.statementBuilder.AggregatedEdgeBuilder;
 	import cachegrindVisualizer.callGraph.builders.statementBuilder.EdgeBuilder;
 	import cachegrindVisualizer.callGraph.builders.statementBuilder.NodeBuilder;
 	import cachegrindVisualizer.controls.tree.TreeItem;
@@ -153,7 +154,7 @@ package cachegrindVisualizer.callGraph.builders
 			_onePercentage = rootNode.inclusiveTime / 100;			
 			rootNode.percentage = rootNode.time / onePercentage;
 			
-			if (configuration.grouping == Grouper.NODES_AND_CALLS || configuration.grouping == Grouper.NODES)
+			if (configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || configuration.grouping == Grouper.FUNCTIONS)
 			{
 				rootNode.id = String(rootNode.name);
 			}
@@ -166,8 +167,16 @@ package cachegrindVisualizer.callGraph.builders
 				rootNode.id = String(treeItem.left);
 			}
 			
-			var edgeBuilder:EdgeBuilder = new EdgeBuilder(this);
-			var nodeBuilder:NodeBuilder = new NodeBuilder(this);
+			if (configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || configuration.grouping == Grouper.CALLS)
+			{
+				new AggregatedEdgeBuilder(this);
+			}
+			else
+			{
+				new EdgeBuilder(this);
+			}
+			
+			new NodeBuilder(this);
 			
 			_treeItem = null;
 		}

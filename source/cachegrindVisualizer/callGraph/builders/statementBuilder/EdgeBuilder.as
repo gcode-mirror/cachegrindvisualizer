@@ -15,68 +15,30 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 	{
 		private var previousId:String;
 		private var previousLevel:uint;
-		private var parentsIds:Object = new Object();
-		
-		private var edgeBuilder:Function;
+		private var parentsIds:Object;
 		
 		public function EdgeBuilder(builder:Builder)
 		{
-			super(builder);			
+			super(builder);
+			sqlBuilder.statement.itemClass = Edge;		
 		}
 		
-		override protected function get grouped():Boolean
+		override public function prepare():void
 		{
-			return groupedByCalls;
-		}
-		
-		public function get groupedByCalls():Boolean
-		{
-			return builder.configuration.grouping == Grouper.NODES_AND_CALLS || builder.configuration.grouping == Grouper.CALLS;
-		}
-		
-		override public function build():void
-		{
+			parentsIds = new Object();
+			
 			sqlBuilder.add(SqlBuilder.FIELD, 'name', 'level');
-			if (grouped)
+			sqlBuilder.add(SqlBuilder.FIELD, 'time', 'inclusiveTime', 'time / :onePercentage as percentage', 'inclusiveTime / :onePercentage as inclusivePercentage');
+			
+			if (builder.configuration.grouping == Grouper.FUNCTIONS)
 			{
-				sqlBuilder.add(SqlBuilder.FIELD, 'namesParentPath', 'parentName', 'count(*) as number', 'sum(time) as summaryTime', 'avg(time) as averageTime', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'sum(time) / :onePercentage as summaryPercentage');
-				sqlBuilder.statement.itemClass = AggregatedEdge;
+				sqlBuilder.add(SqlBuilder.FIELD, 'name as id');
 			}
-			else
+			else if (builder.configuration.grouping == Grouper.NO)
 			{
-				sqlBuilder.add(SqlBuilder.FIELD, 'time', 'inclusiveTime', 'time / :onePercentage as percentage', 'inclusiveTime / :onePercentage as inclusivePercentage');
-				sqlBuilder.statement.itemClass = Edge;
+				sqlBuilder.add(SqlBuilder.FIELD, 'left as id');
 			}
 			
-			if (groupedByCalls)
-			{
-				if (builder.configuration.grouping == Grouper.NODES_AND_CALLS)
-				{
-					sqlBuilder.add(SqlBuilder.FIELD, 'name as id');
-					sqlBuilder.add(SqlBuilder.GROUP_BY, 'parentName, name');
-				}
-				else if (builder.configuration.grouping == Grouper.CALLS)
-				{
-					sqlBuilder.add(SqlBuilder.FIELD, "namesParentPath || '.' || parentName || '.' || name as id");
-					sqlBuilder.add(SqlBuilder.GROUP_BY, 'namesParentPath', 'parentName', 'name');
-				}
-				
-				edgeBuilder = buildAggregatedEdge;
-			}
-			else
-			{		
-				edgeBuilder = buildEdge;
-				if (builder.configuration.grouping == Grouper.NODES)
-				{
-					sqlBuilder.add(SqlBuilder.FIELD, 'name as id');
-				}
-				else if (builder.configuration.grouping == Grouper.NO)
-				{
-					sqlBuilder.add(SqlBuilder.FIELD, 'left as id');
-				}
-			}
-			
-			sqlBuilder.add(SqlBuilder.JOIN, 'tree');
 			sqlBuilder.add(SqlBuilder.ORDER_BY, 'left');			
 			sqlBuilder.build();
 			
@@ -95,85 +57,23 @@ package cachegrindVisualizer.callGraph.builders.statementBuilder
 					parentsIds[edge.level] = previousId;
 				}			
 				
-				edges += '"' + getParentId(edge) + '" -> "' + edge.id + '" [' + edgeBuilder(edge) + ']\n';
+				edges += '"' + parentsIds[edge.level] + '" -> "' + edge.id + '" [' + build(edge) + ']\n';
 				
 				previousLevel = edge.level;
 				previousId = edge.id;
 			}
 			
 			builder.fileStream.writeUTFBytes(edges);
-			if (sqlResult.complete)
-			{
-				parentsIds = null;
-
-				builder.checkComplete();
-			}
-			else
-			{
-				sqlBuilder.statement.next(Builder.PREFETCH);				
-			}
-		}
+			next(sqlResult);
+		}		
 		
-		/**
-		 * надо отрефаторить
-		 */
-		private function getParentId(edge:Edge):String
-		{
-			if (edge is AggregatedEdge)
-			{
-				var aggregatedEdge:AggregatedEdge = AggregatedEdge(edge);
-				if (builder.configuration.grouping == Grouper.NODES_AND_CALLS)
-				{
-					return aggregatedEdge.parentName;
-				}
-				else if (builder.configuration.grouping == Grouper.CALLS)
-				{
-					return aggregatedEdge.namesParentPath + '.' + aggregatedEdge.parentName;
-				}
-			}			
-			else (edge.level in parentsIds)
-			{
-				return parentsIds[edge.level];
-			}
-				
-			throw new Error('');
-		}
-		
-		/*private function getParentId(edge:Edge):String
-		{
-			if (edge.level in parentsIds)
-			{					
-				return parentsIds[edge.level];
-			}
-			else
-			{
-				var aggregatedEdge:AggregatedEdge = AggregatedEdge(edge);
-				if (builder.configuration.grouping == Grouper.NODES_AND_CALLS)
-				{
-					//return aggregatedEdge.namesPath.substr(aggregatedEdge.namesPath.lastIndexOf('.') + 1);
-				}
-				else if (builder.configuration.grouping == Grouper.CALLS)
-				{
-					return aggregatedEdge.namesParentPath + '.' + aggregatedEdge.parentName;
-				}
-				
-				throw new Error('');
-			}
-		}*/
-		
-		private function buildEdge(edge:Edge):String
+		private function build(edge:Edge):String
 		{
 			var result:String = EdgeSize.getSize(edge) + builder.label.edge(edge);
 			if (!builder.configuration.blackAndWhite)
 			{
 				result += builder.color.edge(edge);
 			}
-			return result;
-		}
-		
-		private function buildAggregatedEdge(aggregatedEdge:AggregatedEdge):String
-		{
-			var result:String = /*EdgeSize.getSize(aggregatedEdge) + */builder.label.aggregatedEdge(aggregatedEdge);
 			return result;
 		}
 	}
