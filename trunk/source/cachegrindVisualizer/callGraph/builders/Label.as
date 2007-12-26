@@ -1,7 +1,9 @@
 package cachegrindVisualizer.callGraph.builders
 {
+	import cachegrindVisualizer.callGraph.builders.statement.edge.AggregatedEdge;
+	import cachegrindVisualizer.callGraph.builders.statement.edge.Edge;
+	
 	import develar.formatters.NumberFormatter;
-	import develar.resources.ResourceManager;
 	
 	import mx.formatters.NumberBaseRoundType;
 	
