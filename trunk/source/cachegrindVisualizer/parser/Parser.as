@@ -19,7 +19,7 @@ package cachegrindVisualizer.parser
 		/**
 		 * Номер ревизии, в которой в последний раз была изменена заготовка БД
 		 */
-		private static const DB_VERSION:uint = 98;
+		private static const DB_VERSION:uint = 100;
 		
 		private static const SQL_CACHE_SIZE:uint = 200000;
 
@@ -56,8 +56,8 @@ package cachegrindVisualizer.parser
 			
 			fileReader = new FileReader(file);
 			result.db = File.applicationStorageDirectory.resolvePath(DB_VERSION + '_' + fileReader.checksum + '.db');
-			//if (result.db.exists)
-			if (false)
+			if (result.db.exists)
+			//if (false)
 			{				
 				openExistDb();			
 			}

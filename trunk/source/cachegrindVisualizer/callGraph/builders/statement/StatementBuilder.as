@@ -5,6 +5,7 @@ package cachegrindVisualizer.callGraph.builders.statement
 	import develar.data.SqlBuilder;
 	
 	import flash.data.SQLResult;
+	import flash.events.SQLErrorEvent;
 	import flash.events.SQLEvent;
 	
 	/* abstract */ public class StatementBuilder
@@ -91,6 +92,16 @@ package cachegrindVisualizer.callGraph.builders.statement
 			else
 			{				
 				sqlBuilder.statement.next(Builder.PREFETCH);
+			}
+		}
+		
+		public function cancel():void
+		{
+			if (sqlBuilder.statement.executing)
+			{
+				var sqlErrorHandler:Function = function (event:SQLErrorEvent):void { event.target.removeEventListener(SQLErrorEvent.ERROR, sqlErrorHandler); };
+				sqlBuilder.statement.addEventListener(SQLErrorEvent.ERROR, sqlErrorHandler, false, 0, false);
+				sqlBuilder.statement.cancel();
 			}
 		}
 	}

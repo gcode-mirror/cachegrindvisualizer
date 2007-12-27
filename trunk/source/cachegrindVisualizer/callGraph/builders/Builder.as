@@ -1,8 +1,9 @@
 package cachegrindVisualizer.callGraph.builders
 {
+	import cachegrindVisualizer.callGraph.builders.statement.NodeBuilder;
+	import cachegrindVisualizer.callGraph.builders.statement.StatementBuilder;
 	import cachegrindVisualizer.callGraph.builders.statement.edge.AggregatedEdgeBuilder;
 	import cachegrindVisualizer.callGraph.builders.statement.edge.EdgeBuilder;
-	import cachegrindVisualizer.callGraph.builders.statement.NodeBuilder;
 	import cachegrindVisualizer.controls.tree.TreeItem;
 	
 	import flash.data.SQLConnection;
@@ -10,6 +11,7 @@ package cachegrindVisualizer.callGraph.builders
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.ProgressEvent;
+	import flash.events.SQLErrorEvent;
 	import flash.events.SQLEvent;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
@@ -22,6 +24,7 @@ package cachegrindVisualizer.callGraph.builders
 		private var selectRootItemStatement:SQLStatement = new SQLStatement();
 		
 		private var progress:Number;
+		private var statementBuilders:Array;
 		
 		public function Builder(sqlConnection:SQLConnection, names:Object):void
 		{
@@ -89,15 +92,19 @@ package cachegrindVisualizer.callGraph.builders
 		{
 			if (progress > 0)
 			{
-				/*var sqlErrorHandler:Function = function (event:SQLErrorEvent):void { event.target.removeEventListener(SQLErrorEvent.ERROR, sqlErrorHandler); };
-				selectRootItemStatement.addEventListener(SQLErrorEvent.ERROR, sqlErrorHandler, false, 0, false);
-				selectEdgeStatement.addEventListener(SQLErrorEvent.ERROR, sqlErrorHandler, false, 0, false);
-				selectNodeStatement.addEventListener(SQLErrorEvent.ERROR, sqlErrorHandler, false, 0, false);
+				if (selectRootItemStatement.executing)
+				{
+					var sqlErrorHandler:Function = function (event:SQLErrorEvent):void { event.target.removeEventListener(SQLErrorEvent.ERROR, sqlErrorHandler); };
+					selectRootItemStatement.addEventListener(SQLErrorEvent.ERROR, sqlErrorHandler, false, 0, false);				
+					selectRootItemStatement.cancel();
+				}
 				
-				selectRootItemStatement.cancel();				
-				selectEdgeStatement.cancel();				
-				selectNodeStatement.cancel();
-				*/
+				for each (var statementBuilder:StatementBuilder in statementBuilders)
+				{
+					statementBuilder.cancel();
+				}
+				statementBuilders = null;
+				
 				fileStream.close();
 			
 				progress = 0;
@@ -107,14 +114,8 @@ package cachegrindVisualizer.callGraph.builders
 		
 		public function build(treeItem:TreeItem, file:File, configuration:Configuration):void
 		{
+			cancel();
 			progress = 1;
-			
-			/*if (selectRootItemStatement.executing || selectEdgeStatement.executing || selectNodeStatement.executing)
-			{
-				selectRootItemStatement.cancel();
-				selectEdgeStatement.cancel();
-				selectNodeStatement.cancel();
-			}*/
 			
 			_treeItem = treeItem;
 			_configuration = configuration;
@@ -167,16 +168,17 @@ package cachegrindVisualizer.callGraph.builders
 				rootNode.id = treeItem.left;
 			}
 			
+			statementBuilders = new Array();
 			if (configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || configuration.grouping == Grouper.CALLS)
 			{
-				new AggregatedEdgeBuilder(this);
+				statementBuilders.push(new AggregatedEdgeBuilder(this));
 			}
 			else
 			{
-				new EdgeBuilder(this);
+				statementBuilders.push(new EdgeBuilder(this));
 			}
 			
-			new NodeBuilder(this);
+			statementBuilders.push(new NodeBuilder(this));
 			
 			_treeItem = null;
 		}
@@ -187,6 +189,7 @@ package cachegrindVisualizer.callGraph.builders
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 			if (progress == 100)
 			{
+				statementBuilders = null;
 				fileStream.writeUTFBytes('}');
 				fileStream.close();
 			}
