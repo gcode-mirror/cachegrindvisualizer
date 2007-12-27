@@ -95,6 +95,7 @@ package cachegrindVisualizer.parser
 		private function open():void
 		{
 			var timeBegin:Number = new Date().time;
+			
 			File.applicationDirectory.resolvePath(INITIAL_DB_FILE_NAME).copyTo(result.db, true);					
 			sqlConnection.open(result.db, SQLMode.UPDATE);
 			sqlConnection.cacheSize = SQL_CACHE_SIZE;

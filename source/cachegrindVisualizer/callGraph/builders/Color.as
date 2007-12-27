@@ -17,14 +17,9 @@ package cachegrindVisualizer.callGraph.builders
 			return build(node.percentage);
 		}
 		
-		public function individualEdge(edge:Edge):String
+		public function edge(edge:Edge):String
 		{				
-			return build(edge.percentage, EDGE_HUE_COEFFICIENT, EDGE_SATURATION_COEFFICIENT);
-		}
-		
-		public function aggregatedEdge(edge:AggregatedEdge):String
-		{				
-			return build(edge.maximumPercentage, EDGE_HUE_COEFFICIENT, EDGE_SATURATION_COEFFICIENT);
+			return build(edge.sizeBase, EDGE_HUE_COEFFICIENT, EDGE_SATURATION_COEFFICIENT);
 		}
 		
 		protected function build(percentage:Number, hueCoefficient:Number = 0, saturationCoefficient:Number = 0):String

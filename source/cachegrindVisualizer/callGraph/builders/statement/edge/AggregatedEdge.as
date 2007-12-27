@@ -9,8 +9,6 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		public var summaryInclusiveTime:Number;
 		public var averageInclusiveTime:Number;
 		public var minimumInclusiveTime:Number;
-		public var maximumInclusiveTime:Number;
-		
-		public var maximumPercentage:Number;
+		public var maximumInclusiveTime:Number;		
 	}
 }
