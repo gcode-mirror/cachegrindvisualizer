@@ -24,17 +24,21 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		override public function prepare():void
 		{
 			sqlBuilder.add(SqlBuilder.FIELD, 'name', 'level');
-			sqlBuilder.add(SqlBuilder.FIELD, 'parentName', 'count(*) as number', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'min(inclusiveTime) as minimumInclusiveTime', 'max(inclusiveTime) as maximumInclusiveTime', 'max(time) / :onePercentage as maximumPercentage');
+			sqlBuilder.add(SqlBuilder.FIELD, 'parentName', 'count(*) as number', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'min(inclusiveTime) as minimumInclusiveTime', 'max(inclusiveTime) as maximumInclusiveTime');
 				
 			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS)
 			{
 				sqlBuilder.add(SqlBuilder.FIELD, 'name as id');
 				sqlBuilder.add(SqlBuilder.GROUP_BY, 'parentName, name');
+				
+				sqlBuilder.add(SqlBuilder.FIELD, 'max(time) / :onePercentage as sizeBase');
 			}
 			else if (builder.configuration.grouping == Grouper.CALLS)
 			{
 				sqlBuilder.add(SqlBuilder.FIELD, 'namesPath as id');
 				sqlBuilder.add(SqlBuilder.GROUP_BY, 'namesPath');
+				
+				sqlBuilder.add(SqlBuilder.FIELD, 'sum(inclusiveTime) / :onePercentage as sizeBase');
 			}
 			
 			sqlBuilder.add(SqlBuilder.ORDER_BY, 'min(left)');			
@@ -81,10 +85,10 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		
 		private function build(edge:AggregatedEdge):String
 		{
-			var result:String = size.aggregated(edge) + builder.label.aggregatedEdge(edge, builder.onePercentage);
+			var result:String = size.edge(edge) + builder.label.aggregatedEdge(edge, builder.onePercentage);
 			if (!builder.configuration.blackAndWhite)
 			{
-				result += builder.color.aggregatedEdge(edge);
+				result += builder.color.edge(edge);
 			}
 			return result;
 		}		

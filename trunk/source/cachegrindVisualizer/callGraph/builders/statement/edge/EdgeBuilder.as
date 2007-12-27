@@ -2,12 +2,15 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 {
 	import cachegrindVisualizer.callGraph.builders.Builder;
 	import cachegrindVisualizer.callGraph.builders.Grouper;
+	import cachegrindVisualizer.callGraph.builders.Label;
 	import cachegrindVisualizer.callGraph.builders.statement.StatementBuilder;
 	
 	import develar.data.SqlBuilder;
 	
 	import flash.data.SQLResult;
 	import flash.events.SQLEvent;
+	
+	import mx.controls.Alert;
 	
 	public class EdgeBuilder extends StatementBuilder
 	{
@@ -23,18 +26,34 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 			sqlBuilder.statement.itemClass = Edge;		
 		}
 		
+		/**
+		 * percentage требуется в label.edge для расчета headlabel (поэтому он не зависит от label.needPercentage)
+		 */
 		override public function prepare():void
 		{			
 			sqlBuilder.add(SqlBuilder.FIELD, 'name', 'level');
-			sqlBuilder.add(SqlBuilder.FIELD, 'time', 'inclusiveTime', 'time / :onePercentage as percentage', 'inclusiveTime / :onePercentage as inclusivePercentage');
+			sqlBuilder.add(SqlBuilder.FIELD, 'time', 'inclusiveTime');			
+			if (builder.label.needPercentage)
+			{
+				sqlBuilder.add(SqlBuilder.FIELD, 'time / :onePercentage as percentage');
+				sqlBuilder.add(SqlBuilder.FIELD, 'inclusiveTime / :onePercentage as inclusivePercentage');
+			}
 			
 			if (builder.configuration.grouping == Grouper.FUNCTIONS)
 			{
 				sqlBuilder.add(SqlBuilder.FIELD, 'name as id');
+				if (!builder.label.needPercentage)
+				{
+					sqlBuilder.add(SqlBuilder.FIELD, 'time / :onePercentage as percentage');
+				}
 			}
 			else if (builder.configuration.grouping == Grouper.NO)
 			{
 				sqlBuilder.add(SqlBuilder.FIELD, 'left as id');
+				if (!builder.label.needPercentage)
+				{
+					sqlBuilder.add(SqlBuilder.FIELD, 'inclusiveTime / :onePercentage as inclusivePercentage');
+				}
 			}
 			
 			sqlBuilder.add(SqlBuilder.ORDER_BY, 'left');			
@@ -53,7 +72,16 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 				if (edge.level > previousLevel)
 				{
 					parentsIds[edge.level] = previousId;
-				}			
+				}
+				
+				if (builder.configuration.grouping == Grouper.FUNCTIONS)
+				{
+					edge.sizeBase = edge.percentage;
+				}
+				else // Grouper.NO
+				{
+					edge.sizeBase = edge.inclusivePercentage;
+				}					
 				
 				edges += parentsIds[edge.level] + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
 				
@@ -67,10 +95,10 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		
 		private function build(edge:Edge):String
 		{
-			var result:String = size.individual(edge) + builder.label.edge(edge);
+			var result:String = size.edge(edge) + builder.label.edge(edge);
 			if (!builder.configuration.blackAndWhite)
 			{
-				result += builder.color.individualEdge(edge);
+				result += builder.color.edge(edge);
 			}
 			return result;
 		}

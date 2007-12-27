@@ -44,6 +44,11 @@ package cachegrindVisualizer.callGraph.builders
 			_type = value;
 		}
 		
+		public function get needPercentage():Boolean
+		{
+			return _type == TYPE_PERCENTAGE_AND_TIME || _type == TYPE_TIME_AND_PERCENTAGE || _type == TYPE_PERCENTAGE;
+		}
+		
 		public function edge(edge:Edge):String
 		{		
 			var result:String = '';
@@ -72,7 +77,7 @@ package cachegrindVisualizer.callGraph.builders
 				result += ' label="';
 				if (edge.number > 1)
 				{
-					if (_type != TYPE_TIME)
+					if (needPercentage)
 					{
 						var summaryInclusivePercentage:Number = edge.summaryInclusiveTime / onePercentage;
 						var averageInclusivePercentage:Number = edge.averageInclusiveTime / onePercentage;					

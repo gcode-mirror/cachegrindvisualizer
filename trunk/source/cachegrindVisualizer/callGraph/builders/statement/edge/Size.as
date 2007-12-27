@@ -11,14 +11,9 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		private static const MIN_PERCENTAGE_FALLBACK_LINE_WIDTH:Number = 1;
 		private static const MAX_PERCENTAGE_FALLBACK_LINE_WIDTH:Number = 8;
 		
-		public function individual(edge:Edge):String
+		public function edge(edge:Edge):String
 		{
-			return build(edge.percentage);
-		}
-		
-		public function aggregated(edge:AggregatedEdge):String
-		{
-			return build(edge.maximumPercentage);
+			return build(edge.sizeBase);
 		}
 		
 		protected function build(percentage:Number):String
