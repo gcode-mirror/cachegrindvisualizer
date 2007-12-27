@@ -79,9 +79,9 @@ package cachegrindVisualizer.callGraph.builders
 						var minimumInclusivePercentage:Number = edge.minimumInclusiveTime / onePercentage;
 						maximumInclusivePercentage = edge.maximumInclusiveTime / onePercentage;
 						
-						var percentageLabel:String = '[' + percentageFormatter.format(minimumInclusivePercentage) + ' %…' + percentageFormatter.format(averageInclusivePercentage) + ' %…' + percentageFormatter.format(maximumInclusivePercentage) + ' %]×' + edge.number + '=' + percentageFormatter.format(summaryInclusivePercentage) + ' %';
+						var percentageLabel:String =  percentageFormatter.format(summaryInclusivePercentage) + '%=' + edge.number + '×[' + percentageFormatter.format(minimumInclusivePercentage) + '%..' + percentageFormatter.format(averageInclusivePercentage) + '%..' + percentageFormatter.format(maximumInclusivePercentage) + '%]';
 					}
-					var timeLabel:String = '[' + timeFormatter.format(edge.minimumInclusiveTime) + '…' + timeFormatter.format(edge.averageInclusiveTime) + '…' + timeFormatter.format(edge.maximumInclusiveTime) + ']×' + edge.number + '=' + timeFormatter.format(edge.summaryInclusiveTime);
+					var timeLabel:String = timeFormatter.format(edge.summaryInclusiveTime) + '=' + edge.number + '×[' + timeFormatter.format(edge.minimumInclusiveTime) + '..' + timeFormatter.format(edge.averageInclusiveTime) + '..' + timeFormatter.format(edge.maximumInclusiveTime) + ']';
 					
 					switch (_type)
 					{
