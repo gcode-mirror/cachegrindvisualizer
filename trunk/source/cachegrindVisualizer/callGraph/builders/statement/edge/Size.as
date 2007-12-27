@@ -1,15 +1,16 @@
 package cachegrindVisualizer.callGraph.builders.statement.edge
 {	
 	public class Size
-	{
-		private static const PERCENTAGE_IN_EDGE_LINE_WIDTH:Number = 0.2;
+	{	
+		private static const MIN_PERCENTAGE:Number = 0.05;
+		private static const MAX_PERCENTAGE:Number = 100;
+		
+		private static const MIN_LINE_WIDTH:Number = 1;
+		private static const MAX_LINE_WIDTH:Number = 8;
+				
+		private static const TANGENT:Number = (MAX_LINE_WIDTH - MIN_LINE_WIDTH) / (MAX_PERCENTAGE - MIN_PERCENTAGE);
+		
 		private static const ARROW_SIZE_COEFFICIENT:Number = 1.5;
-		
-		private static const MIN_PERCENTAGE:Number = 5;
-		private static const MAX_PERCENTAGE:Number = 40;
-		
-		private static const MIN_PERCENTAGE_FALLBACK_LINE_WIDTH:Number = 1;
-		private static const MAX_PERCENTAGE_FALLBACK_LINE_WIDTH:Number = 8;
 		
 		public function edge(edge:Edge):String
 		{
@@ -17,21 +18,16 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		}
 		
 		protected function build(percentage:Number):String
-		{	
-			var width:Number;		
+		{
 			if (percentage < MIN_PERCENTAGE)
 			{
 				return '';
 			}
-			else if (percentage < MAX_PERCENTAGE)
-			{
-				width = percentage * PERCENTAGE_IN_EDGE_LINE_WIDTH;				
-			}
 			else
 			{
-				width = MAX_PERCENTAGE_FALLBACK_LINE_WIDTH;
+				var width:Number = MIN_LINE_WIDTH + TANGENT * (percentage - MIN_PERCENTAGE);
+				return 'style="setlinewidth(' + width.toFixed(2) + ')" arrowsize=' + (width / ARROW_SIZE_COEFFICIENT).toFixed(2);
 			}
-			return 'style="setlinewidth(' + width.toFixed(2) + ')" arrowsize=' + (width / ARROW_SIZE_COEFFICIENT).toFixed(2);
 		}
 	}
 }
