@@ -27,7 +27,7 @@ functionsAndCalls — по maximumPercentage
 == 18 December 2007 0.4 beta 2 ==
  * Узел как box, а не ellipse, так компактнее.
  * Толщина (linewidth) и размер наконечника (arrowsize) ребра зависит от собственного времени исполнения вызываемой функции, — чем больше, тем толще и больше. Если более 40 %, то толще и больше уже не становится, так как некрасиво.
- * Путь в (require|include)(_once)? сокращается. Поддерживается и прямой, и косой слеш, а также их смешивание. Ограничение на длину пути 20 символов (без учета префикса include). Пусть у вас есть `include::S:\usr\local\flyti\trunk\classes\cms\tools\viewsListGenerator\Scanner.php`, оно будет как `include::S:\usr\loc…tGenerator\Scanner.php` Имя файла никогда не будет сокращено, оно всегда будет в неизменном виде.
+ * Путь в (require|include)(_once)? сокращается. Поддерживается и прямой, и косой слеш, а также их смешивание. Ограничение на длину пути 20 символов (без учета префикса include). Пусть у вас есть `include::S:\usr\local\flyti\trunk\classes\cms\tools\viewsListGenerator\Scanner.php`, оно будет как `include::S:\usr\loc…tGenerator\Scanner.php`. Имя файла никогда не будет сокращено, оно всегда будет в неизменном виде.
 
 == 18 December 2007 0.4 beta 1 ==
  * в значительной мере ускорена подгрузка данных в дерево.
