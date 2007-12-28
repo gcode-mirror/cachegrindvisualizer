@@ -1,43 +1,43 @@
 package cachegrindVisualizer.callGraph.builders
 {
-	import cachegrindVisualizer.callGraph.builders.statement.edge.AggregatedEdge;
 	import cachegrindVisualizer.callGraph.builders.statement.edge.Edge;
 		
 	public class Color
-	{	
-		protected static const MIN_HUE:Number = 0.6;
-		protected static const MIN_SATURATION:Number = 0.1;
-		protected static const MAX_VALUE:Number = 1;
+	{
+		private static const MAX_PERCENTAGE:Number = 100;
 		
-		protected static const EDGE_HUE_COEFFICIENT:Number = 0.05;
-		protected static const EDGE_SATURATION_COEFFICIENT:Number = 0.3;
+		private static const MIN_HUE:Number = 0.6;
+		private static const MIN_SATURATION:Number = 0.1;
+		private static const MAX_VALUE:Number = 1;
+		
+		/**
+		 * Цвет ребра должен быть более заметен, чем цвет фона узла
+		 */
+		private static const EDGE_HUE_COEFFICIENT:Number = 0.05;
+		private static const EDGE_SATURATION_COEFFICIENT:Number = 0.3;
+		private static const EDGE_MIN_HUE:Number = MIN_HUE + EDGE_HUE_COEFFICIENT;
+		private static const EDGE_MIN_SATURATION:Number = MIN_SATURATION + EDGE_SATURATION_COEFFICIENT;
+		
+		private static const HUE_TANGENT:Number = (MAX_VALUE - MIN_HUE) / MAX_PERCENTAGE;
+		private static const SATURATION_TANGENT:Number = (MAX_VALUE - MIN_SATURATION) / MAX_PERCENTAGE;
+		
+		private static const EDGE_HUE_TANGENT:Number = (MAX_VALUE - EDGE_MIN_HUE) / MAX_PERCENTAGE;
+		private static const EDGE_SATURATION_TANGENT:Number = (MAX_VALUE - EDGE_MIN_SATURATION) / MAX_PERCENTAGE;		
 			
 		public function node(node:Node):String
-		{				
-			return build(node.percentage);
+		{	
+			return build(node.percentage, MIN_HUE, HUE_TANGENT, MIN_SATURATION, SATURATION_TANGENT);
 		}
 		
 		public function edge(edge:Edge):String
-		{				
-			return build(edge.sizeBase, EDGE_HUE_COEFFICIENT, EDGE_SATURATION_COEFFICIENT);
+		{
+			return build(edge.sizeBase, EDGE_MIN_HUE, EDGE_HUE_TANGENT, EDGE_MIN_SATURATION, EDGE_SATURATION_TANGENT);
 		}
 		
-		protected function build(percentage:Number, hueCoefficient:Number = 0, saturationCoefficient:Number = 0):String
+		protected function build(percentage:Number, minHue:Number, hueTangent:Number, minSaturation:Number, saturationTangent:Number):String
 		{
-			percentage = percentage / 100;
-			
-			var hue:Number = MIN_HUE + hueCoefficient + percentage;
-			if (hue > MAX_VALUE)
-			{
-				hue = MAX_VALUE;
-			}
-			
-			var saturation:Number = MIN_SATURATION + saturationCoefficient + percentage;
-			if (saturation > MAX_VALUE)
-			{
-				saturation = MAX_VALUE;
-			}
-			
+			var hue:Number = minHue + (hueTangent * percentage);
+			var saturation:Number = minSaturation + (saturationTangent * percentage);
 			return ' color="' + hue.toFixed(2) + ' ' + saturation.toFixed(2) + ' ' + MAX_VALUE + '"';
 		}
 	}
