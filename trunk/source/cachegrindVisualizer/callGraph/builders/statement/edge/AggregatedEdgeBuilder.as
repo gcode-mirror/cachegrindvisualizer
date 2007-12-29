@@ -50,7 +50,7 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		
 		override protected function handleSelect(event:SQLEvent):void
 		{
-			var edges:String = '';
+			//var edges:String = '';
 			var sqlResult:SQLResult = sqlBuilder.statement.getResult();
 			for each (var edge:AggregatedEdge in sqlResult.data)
 			{
@@ -59,13 +59,15 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 					parentsIds[edge.level] = previousId;
 				}
 				
-				edges += getParentId(edge) + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
+				//edges += getParentId(edge) + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
+				
+				builder.fileStream.writeUTFBytes(getParentId(edge) + ' -> ' + edge.id + ' [' + build(edge) + ']\n');
 				
 				previousLevel = edge.level;
 				previousId = edge.id;
 			}
 			
-			builder.fileStream.writeUTFBytes(edges);
+			//builder.fileStream.writeUTFBytes(edges);
 			next(sqlResult);
 		}
 		

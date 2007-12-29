@@ -19,7 +19,7 @@ package cachegrindVisualizer.callGraph.builders
 	
 	public class Builder extends EventDispatcher
 	{	
-		public static const PREFETCH:uint = 5000;
+		public static const PREFETCH:uint = 1000;
 		
 		private var selectRootItemStatement:SQLStatement = new SQLStatement();
 		
@@ -122,18 +122,12 @@ package cachegrindVisualizer.callGraph.builders
 			label.type = configuration.labelType;
 			
 			fileStream.openAsync(file, FileMode.WRITE);							
-			var header:String = 'digraph { rankdir=' + configuration.rankDirection + ' ordering=out \nedge [labelfontsize=12]\n';		
+			fileStream.writeUTFBytes('digraph {rankdir=' + configuration.rankDirection + ' ordering=out');
 			if (configuration.title != null)
 			{
-				header += 'label="' + configuration.title + '" fontsize=22 labelloc="' + configuration.titleLocation + '"\n';
+				fileStream.writeUTFBytes(' label="' + configuration.title + '" fontsize=22 labelloc=' + configuration.titleLocation);
 			}
-			header += 'node [shape=box';
-			if (!configuration.blackAndWhite)
-			{
-				header += ' style=filled';
-			}		
-			header += ']\n';
-			fileStream.writeUTFBytes(header);
+			fileStream.writeUTFBytes('\n');
 			
 			selectRootItem();			
 		}

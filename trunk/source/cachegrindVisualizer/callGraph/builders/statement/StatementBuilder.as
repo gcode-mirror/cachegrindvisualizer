@@ -17,6 +17,9 @@ package cachegrindVisualizer.callGraph.builders.statement
 		public function StatementBuilder(builder:Builder):void
 		{
 			this.builder = builder;
+			
+			writeAttributeStatement();			
+			
 			sqlBuilder.statement.sqlConnection = builder.sqlConnection;
 			sqlBuilder.statement.addEventListener(SQLEvent.RESULT, handleSelect);
 			sqlBuilder.statement.parameters[':onePercentage'] = builder.onePercentage;
@@ -37,6 +40,11 @@ package cachegrindVisualizer.callGraph.builders.statement
 		}
 		
 		/* abstract */ public function prepare():void
+		{
+			
+		}
+		
+		/* abstract */ public function writeAttributeStatement():void
 		{
 			
 		}

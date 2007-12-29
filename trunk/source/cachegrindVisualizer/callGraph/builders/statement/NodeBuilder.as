@@ -1,5 +1,6 @@
 package cachegrindVisualizer.callGraph.builders.statement
 {
+	import cachegrindVisualizer.callGraph.builders.Color;
 	import cachegrindVisualizer.callGraph.builders.Grouper;
 	import cachegrindVisualizer.callGraph.builders.Node;
 	import cachegrindVisualizer.callGraph.builders.Builder;
@@ -20,6 +21,16 @@ package cachegrindVisualizer.callGraph.builders.statement
 		override protected function get grouped():Boolean
 		{
 			return builder.configuration.grouping != Grouper.NO;
+		}
+		
+		override public function writeAttributeStatement():void
+		{
+			builder.fileStream.writeUTFBytes('node [shape=box');
+			if (!builder.configuration.blackAndWhite)
+			{
+				builder.fileStream.writeUTFBytes('color="' + Color.MIN_HUE + ' ' + Color.MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
+			}	
+			builder.fileStream.writeUTFBytes(']\n');
 		}
 		
 		override public function prepare():void
