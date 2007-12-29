@@ -9,3 +9,6 @@
 
 == Группировка по вызовам (дерево) ==
 [http://cachegrindvisualizer.googlecode.com/files/symfony_graph-gc1-ru-0.5.2.png http://cachegrindvisualizer.googlecode.com/files/p_symfony_graph-gc1-ru-0.5.2.png]
+
+== Без группировки (дерево) ==
+[http://cachegrindvisualizer.googlecode.com/files/symfony_graph-gn1-ru-0.5.2.png http://cachegrindvisualizer.googlecode.com/files/p_symfony_graph-gn1-ru-0.5.2.png]
