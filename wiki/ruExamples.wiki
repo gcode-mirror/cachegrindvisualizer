@@ -1,2 +1,5 @@
 #labels Phase-Support
 Результат профилирования Symfony с пустым кэшем. Все графы сделаны с минимальной стоимостью узла равной 1 % (шрифт Trebuchet MS). Все картинки ссылаются на свой оригинал. Качество при работе в [http://zvtm.sourceforge.net/zgrviewer.html ZGRViewer] с включенным сглаживанием будет заметно выше (шрифт в ZGRViewer также ставьте Trebuchet MS), а это все лишь картинки в формате PNG.
+
+== Группировка по функциям и вызовам ==
+[http://cachegrindvisualizer.googlecode.com/files/symfony_graph-gfc1-ru-0.5.2.png http://cachegrindvisualizer.googlecode.com/files/p_symfony_graph-gfc1-ru-0.5.2.png]
