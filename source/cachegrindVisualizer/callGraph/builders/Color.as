@@ -6,17 +6,17 @@ package cachegrindVisualizer.callGraph.builders
 	{
 		private static const MAX_PERCENTAGE:Number = 100;
 		
-		private static const MIN_HUE:Number = 0.6;
-		private static const MIN_SATURATION:Number = 0.1;
-		private static const MAX_VALUE:Number = 1;
+		public static const MIN_HUE:Number = 0.6;
+		public static const MIN_SATURATION:Number = 0.1;
+		public static const MAX_VALUE:Number = 1;
 		
 		/**
 		 * Цвет ребра должен быть более заметен, чем цвет фона узла
 		 */
 		private static const EDGE_HUE_COEFFICIENT:Number = 0.05;
 		private static const EDGE_SATURATION_COEFFICIENT:Number = 0.3;
-		private static const EDGE_MIN_HUE:Number = MIN_HUE + EDGE_HUE_COEFFICIENT;
-		private static const EDGE_MIN_SATURATION:Number = MIN_SATURATION + EDGE_SATURATION_COEFFICIENT;
+		public static const EDGE_MIN_HUE:Number = MIN_HUE + EDGE_HUE_COEFFICIENT;
+		public static const EDGE_MIN_SATURATION:Number = MIN_SATURATION + EDGE_SATURATION_COEFFICIENT;
 		
 		private static const HUE_TANGENT:Number = (MAX_VALUE - MIN_HUE) / MAX_PERCENTAGE;
 		private static const SATURATION_TANGENT:Number = (MAX_VALUE - MIN_SATURATION) / MAX_PERCENTAGE;

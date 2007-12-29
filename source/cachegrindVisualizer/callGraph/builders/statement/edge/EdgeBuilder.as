@@ -1,16 +1,14 @@
 package cachegrindVisualizer.callGraph.builders.statement.edge
 {
+	import cachegrindVisualizer.callGraph.builders.Color;
 	import cachegrindVisualizer.callGraph.builders.Builder;
 	import cachegrindVisualizer.callGraph.builders.Grouper;
-	import cachegrindVisualizer.callGraph.builders.Label;
 	import cachegrindVisualizer.callGraph.builders.statement.StatementBuilder;
 	
 	import develar.data.SqlBuilder;
 	
 	import flash.data.SQLResult;
 	import flash.events.SQLEvent;
-	
-	import mx.controls.Alert;
 	
 	public class EdgeBuilder extends StatementBuilder
 	{
@@ -24,6 +22,16 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		{
 			super(builder);
 			sqlBuilder.statement.itemClass = Edge;		
+		}
+		
+		override public function writeAttributeStatement():void
+		{
+			builder.fileStream.writeUTFBytes('edge [labelfontsize=12');
+			if (!builder.configuration.blackAndWhite)
+			{
+				builder.fileStream.writeUTFBytes('color="' + Color.EDGE_MIN_HUE + ' ' + Color.EDGE_MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
+			}	
+			builder.fileStream.writeUTFBytes(']\n');
 		}
 		
 		/**
