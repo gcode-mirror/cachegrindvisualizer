@@ -8,4 +8,4 @@
 [http://cachegrindvisualizer.googlecode.com/files/symfony_graph-gf1-ru-0.5.2.png http://cachegrindvisualizer.googlecode.com/files/p_symfony_graph-gf1-ru-0.5.2.png]
 
 == Группировка по вызовам (дерево) ==
-[http://cachegrindvisualizer.googlecode.com/files/symfony_graph-gс1-ru-0.5.2.png http://cachegrindvisualizer.googlecode.com/files/p_symfony_graph-gс1-ru-0.5.2.png]
+[http://cachegrindvisualizer.googlecode.com/files/symfony_graph-gc1-ru-0.5.2.png http://cachegrindvisualizer.googlecode.com/files/p_symfony_graph-gc1-ru-0.5.2.png]
