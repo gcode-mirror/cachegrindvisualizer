@@ -1,9 +1,7 @@
 package cachegrindVisualizer.callGraph.builders
 {
-	import cachegrindVisualizer.callGraph.builders.statement.NodeBuilder;
-	import cachegrindVisualizer.callGraph.builders.statement.StatementBuilder;
-	import cachegrindVisualizer.callGraph.builders.statement.edge.AggregatedEdgeBuilder;
-	import cachegrindVisualizer.callGraph.builders.statement.edge.EdgeBuilder;
+	import cachegrindVisualizer.callGraph.builders.edge.AggregatedEdgeBuilder;
+	import cachegrindVisualizer.callGraph.builders.edge.EdgeBuilder;
 	import cachegrindVisualizer.controls.tree.TreeItem;
 	
 	import flash.data.SQLConnection;
@@ -19,7 +17,8 @@ package cachegrindVisualizer.callGraph.builders
 	
 	public class Builder extends EventDispatcher
 	{	
-		public static const PREFETCH:uint = 1000;
+		public static const PREFETCH:uint = 5000;
+		public static const FONT:String = 'Trebuchet MS';
 		
 		private var selectRootItemStatement:SQLStatement = new SQLStatement();
 		
@@ -122,10 +121,10 @@ package cachegrindVisualizer.callGraph.builders
 			label.type = configuration.labelType;
 			
 			fileStream.openAsync(file, FileMode.WRITE);							
-			fileStream.writeUTFBytes('digraph {rankdir=' + configuration.rankDirection + ' ordering=out');
+			fileStream.writeUTFBytes('digraph {rankdir=' + configuration.rankDirection + ' ordering=out fontname="' + FONT + '"');
 			if (configuration.title != null)
 			{
-				fileStream.writeUTFBytes(' label="' + configuration.title + '" fontsize=22 labelloc=' + configuration.titleLocation);
+				fileStream.writeUTFBytes(' label="' + configuration.title + '" fontsize=20 labelloc=' + configuration.titleLocation);
 			}
 			fileStream.writeUTFBytes('\n');
 			

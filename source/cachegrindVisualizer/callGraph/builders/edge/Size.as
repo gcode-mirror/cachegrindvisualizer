@@ -1,4 +1,4 @@
-package cachegrindVisualizer.callGraph.builders.statement.edge
+package cachegrindVisualizer.callGraph.builders.edge
 {	
 	public class Size
 	{	
@@ -26,7 +26,7 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 			else
 			{
 				var width:Number = MIN_LINE_WIDTH + TANGENT * (percentage - MIN_PERCENTAGE);
-				return 'style="setlinewidth(' + width.toFixed(2) + ')" arrowsize=' + (width / ARROW_SIZE_COEFFICIENT).toFixed(2);
+				return ' style="setlinewidth(' + width.toFixed(2) + ')" arrowsize=' + (width / ARROW_SIZE_COEFFICIENT).toFixed(2);
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-package cachegrindVisualizer.callGraph.builders.statement.edge
+package cachegrindVisualizer.callGraph.builders.edge
 {
 	import cachegrindVisualizer.callGraph.builders.Builder;
 	import cachegrindVisualizer.callGraph.builders.Grouper;
@@ -50,7 +50,7 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		
 		override protected function handleSelect(event:SQLEvent):void
 		{
-			//var edges:String = '';
+			var edges:String = '';
 			var sqlResult:SQLResult = sqlBuilder.statement.getResult();
 			for each (var edge:AggregatedEdge in sqlResult.data)
 			{
@@ -59,15 +59,13 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 					parentsIds[edge.level] = previousId;
 				}
 				
-				//edges += getParentId(edge) + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
-				
-				builder.fileStream.writeUTFBytes(getParentId(edge) + ' -> ' + edge.id + ' [' + build(edge) + ']\n');
+				edges += getParentId(edge) + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
 				
 				previousLevel = edge.level;
 				previousId = edge.id;
 			}
 			
-			//builder.fileStream.writeUTFBytes(edges);
+			builder.fileStream.writeUTFBytes(edges);
 			next(sqlResult);
 		}
 		
@@ -87,7 +85,7 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		
 		private function build(edge:AggregatedEdge):String
 		{
-			var result:String = size.edge(edge) + builder.label.aggregatedEdge(edge, builder.onePercentage);
+			var result:String = builder.label.aggregatedEdge(edge, builder.onePercentage) + size.edge(edge);
 			if (!builder.configuration.blackAndWhite)
 			{
 				result += builder.color.edge(edge);

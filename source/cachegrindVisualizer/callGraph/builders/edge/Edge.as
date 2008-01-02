@@ -1,4 +1,4 @@
-package cachegrindVisualizer.callGraph.builders.statement.edge
+package cachegrindVisualizer.callGraph.builders.edge
 {
 	public class Edge
 	{

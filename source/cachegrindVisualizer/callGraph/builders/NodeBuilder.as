@@ -1,10 +1,5 @@
-package cachegrindVisualizer.callGraph.builders.statement
+package cachegrindVisualizer.callGraph.builders
 {
-	import cachegrindVisualizer.callGraph.builders.Color;
-	import cachegrindVisualizer.callGraph.builders.Grouper;
-	import cachegrindVisualizer.callGraph.builders.Node;
-	import cachegrindVisualizer.callGraph.builders.Builder;
-	
 	import develar.data.SqlBuilder;
 	
 	import flash.data.SQLResult;
@@ -25,10 +20,10 @@ package cachegrindVisualizer.callGraph.builders.statement
 		
 		override public function writeAttributeStatement():void
 		{
-			builder.fileStream.writeUTFBytes('node [shape=box');
+			builder.fileStream.writeUTFBytes('node [shape=box fontsize=12 fontname="' + Builder.FONT + '"');
 			if (!builder.configuration.blackAndWhite)
 			{
-				builder.fileStream.writeUTFBytes('color="' + Color.MIN_HUE + ' ' + Color.MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
+				builder.fileStream.writeUTFBytes(' color="' + Color.MIN_HUE + ' ' + Color.MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
 			}	
 			builder.fileStream.writeUTFBytes(']\n');
 		}

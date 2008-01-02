@@ -1,7 +1,5 @@
-package cachegrindVisualizer.callGraph.builders.statement
+package cachegrindVisualizer.callGraph.builders
 {
-	import cachegrindVisualizer.callGraph.builders.Builder;
-	
 	import develar.data.SqlBuilder;
 	
 	import flash.data.SQLResult;
