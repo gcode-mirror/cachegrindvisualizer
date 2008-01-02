@@ -29,7 +29,7 @@ package cachegrindVisualizer.callGraph.builders.edge
 			builder.fileStream.writeUTFBytes('edge [fontsize=10 fontname="' + Builder.FONT + '"');
 			if (!builder.configuration.blackAndWhite)
 			{
-				builder.fileStream.writeUTFBytes(' color="' + Color.EDGE_MIN_HUE + ' ' + Color.EDGE_MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
+				builder.fileStream.writeUTFBytes(' color="' + Color.EDGE_MIN_HUE + ' ' + Color.EDGE_MIN_SATURATION + ' ' + Color.MAX_VALUE + '"');
 			}	
 			builder.fileStream.writeUTFBytes(']\n');
 		}
