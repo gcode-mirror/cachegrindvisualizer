@@ -1,7 +1,7 @@
 package cachegrindVisualizer.callGraph.builders
 {
-	import cachegrindVisualizer.callGraph.builders.statement.edge.AggregatedEdge;
-	import cachegrindVisualizer.callGraph.builders.statement.edge.Edge;
+	import cachegrindVisualizer.callGraph.builders.edge.AggregatedEdge;
+	import cachegrindVisualizer.callGraph.builders.edge.Edge;
 	
 	import develar.formatters.NumberFormatter;
 	
@@ -54,7 +54,7 @@ package cachegrindVisualizer.callGraph.builders
 			var result:String = '';
 			if (_type != Label.TYPE_NO)
 			{
-				result += ' label="' + build(edge.inclusivePercentage, edge.inclusiveTime) + '"';
+				result += 'label="' + build(edge.inclusivePercentage, edge.inclusiveTime) + '"';
 				// если узел не имеет детей (то есть собственное время равно включенному), то смысла в метке острия ребра нет - она всегда будет равна метке ребра
 				if (edge.time > 0 && edge.time != edge.inclusiveTime)
 				{
@@ -68,13 +68,13 @@ package cachegrindVisualizer.callGraph.builders
 		{						
 			if (_type == TYPE_NO && edge.number > 1)
 			{
-				return ' label="×' + edge.number + '"';
+				return 'label="×' + edge.number + '"';
 			}
 			else
 			{
 				var result:String = '';
 				var maximumInclusivePercentage:Number;
-				result += ' label="';
+				result += 'label="';
 				if (edge.number > 1)
 				{
 					if (needPercentage)

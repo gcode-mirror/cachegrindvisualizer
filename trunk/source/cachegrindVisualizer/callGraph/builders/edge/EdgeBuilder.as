@@ -1,9 +1,9 @@
-package cachegrindVisualizer.callGraph.builders.statement.edge
+package cachegrindVisualizer.callGraph.builders.edge
 {
-	import cachegrindVisualizer.callGraph.builders.Color;
 	import cachegrindVisualizer.callGraph.builders.Builder;
+	import cachegrindVisualizer.callGraph.builders.Color;
 	import cachegrindVisualizer.callGraph.builders.Grouper;
-	import cachegrindVisualizer.callGraph.builders.statement.StatementBuilder;
+	import cachegrindVisualizer.callGraph.builders.StatementBuilder;
 	
 	import develar.data.SqlBuilder;
 	
@@ -26,10 +26,10 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		
 		override public function writeAttributeStatement():void
 		{
-			builder.fileStream.writeUTFBytes('edge [labelfontsize=12');
+			builder.fileStream.writeUTFBytes('edge [fontsize=10 fontname="' + Builder.FONT + '"');
 			if (!builder.configuration.blackAndWhite)
 			{
-				builder.fileStream.writeUTFBytes('color="' + Color.EDGE_MIN_HUE + ' ' + Color.EDGE_MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
+				builder.fileStream.writeUTFBytes(' color="' + Color.EDGE_MIN_HUE + ' ' + Color.EDGE_MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
 			}	
 			builder.fileStream.writeUTFBytes(']\n');
 		}
@@ -103,7 +103,7 @@ package cachegrindVisualizer.callGraph.builders.statement.edge
 		
 		private function build(edge:Edge):String
 		{
-			var result:String = size.edge(edge) + builder.label.edge(edge);
+			var result:String = builder.label.edge(edge) + size.edge(edge);
 			if (!builder.configuration.blackAndWhite)
 			{
 				result += builder.color.edge(edge);
