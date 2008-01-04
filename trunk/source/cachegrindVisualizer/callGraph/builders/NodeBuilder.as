@@ -52,7 +52,7 @@ package cachegrindVisualizer.callGraph.builders
 			}
 			else
 			{
-				sqlBuilder.add(SqlBuilder.FIELD, 'left as id');
+				sqlBuilder.add(SqlBuilder.FIELD, 'abs(left) as id');
 			}			
 			
 			sqlBuilder.build();

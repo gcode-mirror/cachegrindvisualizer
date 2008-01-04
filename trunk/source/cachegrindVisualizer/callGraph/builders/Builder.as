@@ -158,7 +158,7 @@ package cachegrindVisualizer.callGraph.builders
 			}
 			else
 			{
-				rootNode.id = treeItem.left;
+				rootNode.id = Math.abs(treeItem.left);
 			}
 			
 			statementBuilders = new Array();
