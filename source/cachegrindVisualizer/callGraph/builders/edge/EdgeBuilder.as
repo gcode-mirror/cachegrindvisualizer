@@ -57,7 +57,7 @@ package cachegrindVisualizer.callGraph.builders.edge
 			}
 			else if (builder.configuration.grouping == Grouper.NO)
 			{
-				sqlBuilder.add(SqlBuilder.FIELD, 'left as id');
+				sqlBuilder.add(SqlBuilder.FIELD, 'abs(left) as id');
 				if (!builder.label.needPercentage)
 				{
 					sqlBuilder.add(SqlBuilder.FIELD, 'inclusiveTime / :onePercentage as inclusivePercentage');

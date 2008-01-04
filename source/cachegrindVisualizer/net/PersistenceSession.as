@@ -27,21 +27,5 @@ package cachegrindVisualizer.net
 		{
 			sharedObject.data.profilerOutputDirectory = value;
 		}
-		
-		public function get automaticallyBuildGraph():Boolean
-		{
-			if ('automaticallyBuildGraph' in sharedObject.data)
-			{
-				return sharedObject.data.automaticallyBuildGraph;
-			}
-			else
-			{
-				return true;
-			}
-		}
-		public function set automaticallyBuildGraph(value:Boolean):void
-		{
-			sharedObject.data.automaticallyBuildGraph = value;
-		}
 	}
 }

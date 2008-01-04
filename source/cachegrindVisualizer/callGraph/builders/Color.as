@@ -44,7 +44,12 @@ package cachegrindVisualizer.callGraph.builders
 			else
 			{
 				var hue:Number = minHue + (hueTangent * (percentage - MIN_PERCENTAGE));
-				var saturation:Number = minSaturation + (saturationTangent * percentage);			
+				var saturation:Number = minSaturation + (saturationTangent * percentage);
+				if (hue > 1)
+				{
+					throw new Error();
+				}
+						
 				return ' color="' + hue.toFixed(2) + ' ' + saturation.toFixed(2) + ' ' + MAX_VALUE + '"';
 			}
 		}

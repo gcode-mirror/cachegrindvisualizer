@@ -1,6 +1,7 @@
 package cachegrindVisualizer.callGraph.builders
 {
 	import develar.data.SqlBuilder;
+	import develar.utils.StringUtil;
 	
 	import flash.data.SQLResult;
 	import flash.events.SQLErrorEvent;
@@ -34,6 +35,7 @@ package cachegrindVisualizer.callGraph.builders
 			
 			sqlBuilder.add(SqlBuilder.JOIN, 'tree');
 			prepare();
+			trace(StringUtil.replace(sqlBuilder.statement.text, sqlBuilder.statement.parameters) + '\n');
 			sqlBuilder.statement.execute(Builder.PREFETCH);
 		}
 		
