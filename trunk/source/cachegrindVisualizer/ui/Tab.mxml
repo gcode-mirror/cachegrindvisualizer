@@ -74,7 +74,7 @@
 		names = parserResult.names;
 		fileNames = parserResult.fileNames;
 		
-		callGraph.builder = new Builder(sqlConnection, parserResult.names);
+		callGraph.builder = new Builder(sqlConnection, parserResult.names, parserResult.inclusiveTime);
 		sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
 		sqlConnection.openAsync(parserResult.db, SQLMode.READ);
 

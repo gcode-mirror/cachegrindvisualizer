@@ -5,10 +5,5 @@ package cachegrindVisualizer.callGraph.builders
 		public var namesPath:uint;
 		
 		public var time:Number;
-		
-		public function RootNode():void
-		{
-			inclusivePercentage = 100;
-		}
 	}
 }

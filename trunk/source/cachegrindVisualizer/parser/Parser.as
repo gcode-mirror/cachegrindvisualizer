@@ -19,7 +19,7 @@ package cachegrindVisualizer.parser
 		/**
 		 * Номер ревизии, в которой в последний раз была изменена заготовка БД
 		 */
-		private static const DB_VERSION:uint = 100;
+		private static const DB_VERSION:uint = 127;
 		
 		private static const SQL_CACHE_SIZE:uint = 200000;
 
@@ -35,11 +35,13 @@ package cachegrindVisualizer.parser
 		private var insertStatement:SQLStatement = new SQLStatement();
 		private var inclusiveTime:Object = new Object();
 		private var notInMainInclusiveTime:Number = 0;		
-		private var key:int = -1; // 0 для main
+		private var key:int = -1; // 0 для main		
 		
-		private var functionNamesPathMap:NameMap;
 		private var functionNameMap:NameMap;
-		private var fileNameMap:NameMap;
+		private var fileNameMap:NameMap;		
+		private var functionNamesPathMap:NameMap;
+		
+		private var inclusiveTimeMap:InclusiveTimeMap;
 		
 		private var result:ParserResult = new ParserResult();	
 
@@ -53,6 +55,8 @@ package cachegrindVisualizer.parser
 			functionNameMap = new NameMap(sqlConnection, FUNCTION_NAME_TABLE);
 			fileNameMap = new NameMap(sqlConnection, FILE_NAME_TABLE);
 			functionNamesPathMap = new NameMap();
+			
+			inclusiveTimeMap = new InclusiveTimeMap(sqlConnection);
 			
 			fileReader = new FileReader(file);
 			result.db = File.applicationStorageDirectory.resolvePath(DB_VERSION + '_' + fileReader.checksum + '.db');
@@ -83,11 +87,9 @@ package cachegrindVisualizer.parser
 			result.mainTreeItem.left = sqlResult.left;
 			result.mainTreeItem.fileName = sqlResult.fileName;
 			
-			result.names = functionNameMap.load();
-			functionNameMap = null;
-						
+			result.names = functionNameMap.load();	
 			result.fileNames = fileNameMap.load();
-			fileNameMap = null;
+			result.inclusiveTime = inclusiveTimeMap.load();
 			
 			sqlConnection.close();
 		}
@@ -107,9 +109,9 @@ package cachegrindVisualizer.parser
 			
 			sqlConnection.begin(SQLTransactionLockType.EXCLUSIVE);			
 			
-			functionNameMap.add(MAIN_FUNCTION_NAME);
-			functionNamesPathMap.add('');
+			functionNameMap.add(MAIN_FUNCTION_NAME);			
 			fileNameMap.add('');
+			functionNamesPathMap.add('');
 			
 			// Деструкторы вне main, вызываются внутренним механизмом PHP
 			while (!fileReader.complete)
@@ -120,10 +122,8 @@ package cachegrindVisualizer.parser
 			result.mainTreeItem.left = key + 1;
 
 			result.names = functionNameMap.save();
-			functionNameMap = null;
-
-			result.fileNames = fileNameMap.save();
-			fileNameMap = null;
+			result.fileNames = fileNameMap.save();			
+			result.inclusiveTime = inclusiveTimeMap.save();
 
 			trace('Затрачено на анализ: ' + ((new Date().time - timeBegin) / 1000));			
 			
@@ -253,6 +253,8 @@ package cachegrindVisualizer.parser
 			
 			insertStatement.execute();
 			delete inclusiveTime[id];
+			
+			inclusiveTimeMap.increment(name, insertStatement.parameters[':inclusiveTime'], insertStatement.parameters[':left'], insertStatement.parameters[':right'], fileName == 0);
 		}
 		
 		private function getName(offset:uint):uint

@@ -4,6 +4,7 @@ package cachegrindVisualizer.callGraph.builders
 	import cachegrindVisualizer.callGraph.builders.edge.Edge;
 	
 	import develar.formatters.NumberFormatter;
+	import develar.utils.StringUtil;
 	
 	import mx.formatters.NumberBaseRoundType;
 	
@@ -17,7 +18,6 @@ package cachegrindVisualizer.callGraph.builders
 		public static const TYPE_NO:uint = 4;
 		
 		private static const INCLUDE_FUNCTIONS:Object = {'include': null, 'include_once': null, 'require': null, 'require_once': null};
-		private static const MAX_INCLUDE_FILE_PATH_LENGTH:uint = 20;
 			
 		private static const TIME_PRECISION:int = 0;
 		private static const PERCENTAGE_PRECISION:uint = 2;
@@ -133,40 +133,15 @@ package cachegrindVisualizer.callGraph.builders
 			}
 		}
 		
-		public function node(node:Node):String
+		public function node(node:Node, onePercentage:Number):String
 		{
 			var name:String = names[node.name];
 			
 			var label:String = 'label="';			
-			var parts:Array = name.split('::', 2);;
+			var parts:Array = name.split('::', 2);
 			if (parts.length == 2 && parts[0] in INCLUDE_FUNCTIONS)
 			{
-				if (parts[1].length > MAX_INCLUDE_FILE_PATH_LENGTH)
-				{
-					var path:String = parts[1];					
-					var fileName:String = '';
-					var char:String;
-					for (var i:uint = path.length - 1; i > 1; i--)
-					{
-						char = path.charAt(i);
-						if (char == '/' || char == '\\')
-						{
-							break;
-						}
-						else
-						{
-							fileName = char + fileName;
-						}
-					}
-					path = path.substr(0, i);
-					var length:Number = (path.length / 2) - ((path.length - MAX_INCLUDE_FILE_PATH_LENGTH) / 2);
-					path = path.substr(0, length) + '…' + path.substr(-length);
-					label += parts[0] + '::' + (path + char).replace(/\\/g, '\\\\') + fileName;
-				}
-				else
-				{
-					label += name.replace(/\\/g, '\\\\');
-				}				
+				label += parts[0] + '::' + StringUtil.truncatePathname(parts[1]).replace(/\\/g, '\\\\');
 			}
 			else
 			{
@@ -175,7 +150,12 @@ package cachegrindVisualizer.callGraph.builders
 			
 			if (_type != TYPE_NO)
 			{
-				label += '\\n' + build(node.inclusivePercentage, node.inclusiveTime);
+				var inclusivePercentage:Number;
+				if (needPercentage)
+				{
+					inclusivePercentage = node.inclusiveTime / onePercentage;
+				}
+				label += '\\n' + build(inclusivePercentage, node.inclusiveTime);
 			}
 			return label + '"';
 		}
