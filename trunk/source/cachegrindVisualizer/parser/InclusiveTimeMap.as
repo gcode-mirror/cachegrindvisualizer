@@ -6,14 +6,13 @@ package cachegrindVisualizer.parser
 	{
 		private static const TABLE:String = 'inclusiveTime';
 		
-		public function InclusiveTimeMap(sqlConnection:SQLConnection)
+		public function InclusiveTimeMap(sqlConnection:SQLConnection):void
 		{
 			super(sqlConnection, TABLE);
 		}
 		
 		public function increment(name:uint, time:Number, left:int, right:int, childless:Boolean):void
-		{
-			//trace(name);			
+		{		
 			if (childless)
 			{
 				incrementChildless(name, time);
