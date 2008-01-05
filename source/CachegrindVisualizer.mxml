@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 	@author Vladimir Krivosheev
-	@version $Id$
+	@version $Id$ invoke="handleInvoke(event)"
 -->
-<develar:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()" invoke="handleInvoke(event)" nativeDragEnter="handleNativeDragEnter(event)" nativeDragDrop="handleNativeDragDrop(event)">
+<develar:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()"  nativeDragEnter="handleNativeDragEnter(event)" nativeDragDrop="handleNativeDragDrop(event)">
 	
 	<mx:Metadata>
 		[ResourceBundle('Shared')]
@@ -56,8 +56,7 @@
 		nativeWindow.maximize();
 		nativeWindow.visible = true;
 		
-		//addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, handleNativeDragEnter);
-		//addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
+		//handleInvoke(['--grouping="no"', ]);
 		
 		fileFilters = new Array(new FileFilter(resourceManager.getString('CachegrindVisualizer', 'cachegrindFiles'), '*.cg;cachegrind.out.*'), new FileFilter(resourceManager.getString('CachegrindVisualizer', 'allFiles'), '*'));
 	}
@@ -134,11 +133,11 @@
 		}
 	}
 	
-	protected function handleInvoke(event:InvokeEvent):void
+	protected function handleInvoke(/*event:InvokeEvent*/arguments:Array):void
 	{
 		var configuration:Configuration;
 		var parameterName:String = null;
-		for each (var argument:String in event.arguments)
+		for each (var argument:String in /*event.*/arguments)
 		{
 			if (argument.substr(0, 2) == '--')
 			{

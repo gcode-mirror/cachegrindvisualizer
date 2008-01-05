@@ -5,9 +5,8 @@ package cachegrindVisualizer.callGraph.builders
 		public var id:uint;
 		public var name:uint;		
 		
-		public var inclusiveTime:Number = 0;
+		public var inclusiveTime:Number;
 				
-		public var percentage:Number = 0;
-		public var inclusivePercentage:Number = 0;
+		public var percentage:Number;
 	}
 }

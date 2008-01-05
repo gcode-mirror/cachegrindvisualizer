@@ -24,7 +24,7 @@ package cachegrindVisualizer.callGraph.builders.edge
 		override public function prepare():void
 		{
 			sqlBuilder.add(SqlBuilder.FIELD, 'name', 'level');
-			sqlBuilder.add(SqlBuilder.FIELD, 'parentName', 'count(*) as number', 'sum(inclusiveTime) as summaryInclusiveTime', 'avg(inclusiveTime) as averageInclusiveTime', 'min(inclusiveTime) as minimumInclusiveTime', 'max(inclusiveTime) as maximumInclusiveTime');
+			sqlBuilder.add(SqlBuilder.FIELD, 'sum(inclusiveTime) as summaryInclusiveTime', 'parentName', 'count(*) as number', 'avg(inclusiveTime) as averageInclusiveTime', 'min(inclusiveTime) as minimumInclusiveTime', 'max(inclusiveTime) as maximumInclusiveTime');
 				
 			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS)
 			{

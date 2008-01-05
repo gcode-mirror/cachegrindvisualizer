@@ -5,10 +5,10 @@ package cachegrindVisualizer.parser
 	
 	public class NameMap
 	{	
-		protected var namesMap:Object = new Object();
-		protected var names:Object = new Object();
+		protected var map:Object = new Object();
+		protected var values:Object = new Object();
 		
-		protected var length:uint = 0;		
+		protected var id:uint = 0;		
 		
 		protected var sqlStatement:SQLStatement = new SQLStatement();
 		protected var table:String;
@@ -21,28 +21,28 @@ package cachegrindVisualizer.parser
 		
 		public function add(name:String):uint
 		{
-			if (!(name in namesMap)) 
+			if (!(name in map)) 
 			{
-				namesMap[name] = length;
-				names[length] = name;
-				length++;
+				map[name] = id;
+				values[id] = name;
+				id++;
 			}
-			return namesMap[name];
+			return map[name];
 		}
 		
 		public function save():Object
 		{
-			namesMap = null;
+			map = null;
 			
-			sqlStatement.text = 'insert into ' + table + ' values (:id, :name)';
-			for (var id:String in names)
+			sqlStatement.text = 'insert into ' + table + ' values (:id, :value)';
+			for (var id:String in values)
 			{
 				sqlStatement.parameters[':id'] = id;
-				sqlStatement.parameters[':name'] = names[id];
+				sqlStatement.parameters[':value'] = values[id];
 				sqlStatement.execute();
 			}
 			
-			return names;
+			return values;
 		}
 		
 		public function load():Object
@@ -51,10 +51,10 @@ package cachegrindVisualizer.parser
 			sqlStatement.execute();
 			for each (var item:Object in sqlStatement.getResult().data)
 			{
-				names[item.id] = item.name;
+				values[item.id] = item.value;
 			}
 			
-			return names;
+			return values;
 		}
 	}
 }

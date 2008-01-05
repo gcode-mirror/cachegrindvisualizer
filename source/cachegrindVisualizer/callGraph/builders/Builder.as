@@ -25,10 +25,11 @@ package cachegrindVisualizer.callGraph.builders
 		private var progress:Number;
 		private var statementBuilders:Array;
 		
-		public function Builder(sqlConnection:SQLConnection, names:Object):void
+		public function Builder(sqlConnection:SQLConnection, names:Object, inclusiveTime:Object):void
 		{
 			_sqlConnection = sqlConnection;
-			selectRootItemStatement.sqlConnection = sqlConnection;			
+			selectRootItemStatement.sqlConnection = sqlConnection;
+			_inclusiveTime = inclusiveTime;		
 			
 			_label = new Label(names);
 			
@@ -37,6 +38,12 @@ package cachegrindVisualizer.callGraph.builders
 			selectRootItemStatement.addEventListener(SQLEvent.RESULT, handleSelectRootItem);
 			
 			fileStream.addEventListener(Event.CLOSE, handleCloseFileStream);
+		}
+		
+		private var _inclusiveTime:Object;
+		public function get inclusiveTime():Object
+		{
+			return _inclusiveTime;
 		}
 		
 		private var _fileStream:FileStream = new FileStream();
