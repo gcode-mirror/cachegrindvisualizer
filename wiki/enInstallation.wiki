@@ -1,5 +1,5 @@
 #labels Featured,Phase-Support
- # Install[http://labs.adobe.com/downloads/air.html AIR].
+ # Install [http://labs.adobe.com/downloads/air.html AIR].
  # Install CachegrindVisualizer.
  # Install [http://graphviz.org/ Graphviz].
  # Install [http://zvtm.sourceforge.net/zgrviewer.html ZGRViewer].
