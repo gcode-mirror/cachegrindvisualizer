@@ -7,3 +7,4 @@
   # Open ZGRViewer (windows: run.bat, linux: run.sh).
   # File -> Preferences -> Directories write paths to programs, usually C:\Program Files\Graphviz\bin\dot.exe (instead of dot for the others accordingly neato, circo, etc.), press "Save" and close window.
   # By the right key of the mouse it is clicked on a file: context menu — Open with -> Select program -> select ZGRViewer -> ОК. If has opened normally, pass to a following step, if not — fix paths. Who uses windows — edit run.bat and set variable ZGRV = ZGRViewer directory absolute path.
+ # Configurate  xdebug. Set xdebug.profiler_output_name = %t.cg, specifier %t can replace with [http://xdebug.org/docs/all_settings#trace_output_name any another]. It is possible to suggest that opening the file by clicking on it (extension "cg" registers CachegrindVisualizer).
