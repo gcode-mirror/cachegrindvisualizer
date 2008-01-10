@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-	@author Vladimir Krivosheev
-	@version $Id$ invoke="handleInvoke(event)"
--->
 <develar:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()"  nativeDragEnter="handleNativeDragEnter(event)" nativeDragDrop="handleNativeDragDrop(event)">
 	
 	<mx:Metadata>
@@ -10,8 +6,7 @@
 		[ResourceBundle('CachegrindVisualizer')]
 	</mx:Metadata>
 	
-	<mx:Style source="../../../framework/style.css"/>
-	<mx:Style source="../../../framework/style.css"/>
+	<mx:Style source="style.css"/>
 	
 	<mx:ApplicationControlBar width="100%">
 		<mx:Button label="{resourceManager.getString('Shared', 'open')}" click="browse()"/>
