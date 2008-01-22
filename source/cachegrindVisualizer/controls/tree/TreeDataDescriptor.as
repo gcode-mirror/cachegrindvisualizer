@@ -3,7 +3,6 @@ package cachegrindVisualizer.controls.tree
 	import flash.data.SQLConnection;
 	import flash.data.SQLMode;
 	import flash.data.SQLStatement;
-	import flash.filesystem.File;
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.ICollectionView;
@@ -13,11 +12,8 @@ package cachegrindVisualizer.controls.tree
 	{
 		protected var selectStatement:SQLStatement = new SQLStatement();
 		
-		public function TreeDataDescriptor(db:File):void
-		{	
-			var sqlConnection:SQLConnection = new SQLConnection();
-			sqlConnection.open(db, SQLMode.READ);
-								
+		public function TreeDataDescriptor(sqlConnection:SQLConnection):void
+		{							
 			selectStatement.itemClass = TreeItem;
 			selectStatement.sqlConnection = sqlConnection;
 			selectStatement.text = 'select left, right, level, name, fileName, (time != inclusiveTime) as isBranch from tree where left > :left and right < :right and level = :level order by left';

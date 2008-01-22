@@ -1,7 +1,3 @@
-/**
- * @author Vladimir Krivosheev
- * @version $Id: PersistenceSession.as 151 2007-11-19 15:41:34Z develar $
- */
 package cachegrindVisualizer.callGraph.managers
 {
 	import cachegrindVisualizer.callGraph.builders.Configuration;
@@ -103,6 +99,7 @@ package cachegrindVisualizer.callGraph.managers
 			
 			callGraph.blackAndWhite.selected = configuration.blackAndWhite;
 			callGraph.hideLibraryFunctions.selected = configuration.hideLibraryFunctions;
+			callGraph.hideFunctions.text = configuration.hideFunctions;
 		}
 		
 		private function setPanelTitle(event:Event = null):void

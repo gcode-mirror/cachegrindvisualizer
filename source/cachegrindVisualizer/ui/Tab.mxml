@@ -74,11 +74,14 @@
 		names = parserResult.names;
 		fileNames = parserResult.fileNames;
 		
-		callGraph.builder = new Builder(sqlConnection, parserResult.names, parserResult.inclusiveTime);
+		var syncSqlConnection:SQLConnection = new SQLConnection();
+		syncSqlConnection.open(parserResult.db, SQLMode.READ);
+		
+		callGraph.builder = new Builder(sqlConnection, syncSqlConnection, parserResult.names, parserResult.inclusiveTime);
 		sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
 		sqlConnection.openAsync(parserResult.db, SQLMode.READ);
 
-		tree.dataDescriptor = new TreeDataDescriptor(parserResult.db);					
+		tree.dataDescriptor = new TreeDataDescriptor(syncSqlConnection);					
 		tree.dataProvider = parserResult.mainTreeItem;
 		tree.validateNow();
 		tree.selectedItem = tree.firstVisibleItem;

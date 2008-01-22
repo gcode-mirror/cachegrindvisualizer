@@ -25,12 +25,8 @@ package cachegrindVisualizer.callGraph.builders
 		private static var percentageFormatter:NumberFormatter = new NumberFormatter();
 		private static var timeFormatter:NumberFormatter = new NumberFormatter();
 		
-		private var names:Object;
-		
-		public function Label(names:Object):void
-		{
-			this.names = names;
-			
+		public function Label():void
+		{			
 			timeFormatter.precision = TIME_PRECISION;
 			timeFormatter.rounding = NumberBaseRoundType.NEAREST;
 			
@@ -133,9 +129,9 @@ package cachegrindVisualizer.callGraph.builders
 			}
 		}
 		
-		public function node(node:Node, onePercentage:Number):String
+		public function node(node:Node, onePercentage:Number, builder:Builder):String
 		{
-			var name:String = names[node.name];
+			var name:String = builder.names[node.name];
 			
 			var label:String = 'label="';			
 			var parts:Array = name.split('::', 2);
