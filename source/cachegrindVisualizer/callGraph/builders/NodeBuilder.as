@@ -20,12 +20,12 @@ package cachegrindVisualizer.callGraph.builders
 		
 		override public function writeAttributeStatement():void
 		{
-			builder.fileStream.writeUTFBytes('node [shape=box fontsize=12 fontname="' + Builder.FONT + '"');
+			/*builder.fileStream.writeUTFBytes('node [shape=box fontsize=12 fontname="' + Builder.FONT + '"');
 			if (!builder.configuration.blackAndWhite)
 			{
 				builder.fileStream.writeUTFBytes(' color="' + Color.MIN_HUE + ' ' + Color.MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
 			}	
-			builder.fileStream.writeUTFBytes(']\n');
+			builder.fileStream.writeUTFBytes(']\n');*/
 		}
 		
 		override public function prepare():void
@@ -37,7 +37,8 @@ package cachegrindVisualizer.callGraph.builders
 				
 				if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || builder.configuration.grouping == Grouper.FUNCTIONS)
 				{
-					sqlBuilder.add(SqlBuilder.FIELD, '0 as inclusiveTime');
+					sqlBuilder.add(SqlBuilder.JOIN, 'inclusiveTime on tree.name = inclusiveTime.id');
+					sqlBuilder.add(SqlBuilder.FIELD, 'inclusiveTime.value as inclusiveTime');
 					
 					sqlBuilder.add(SqlBuilder.FIELD, 'name as id');
 					sqlBuilder.add(SqlBuilder.GROUP_BY, 'name');
@@ -60,11 +61,24 @@ package cachegrindVisualizer.callGraph.builders
 			}			
 			
 			sqlBuilder.build();
+			sqlBuilder.statement.text += 'union select ';
 			if (grouped && builder.configuration.hideFunctions != null)
 			{
-				sqlBuilder.statement.text = 'select count(*) as amount, ' + sqlBuilder.get(SqlBuilder.FIELD, null, 'function_filter_passed') + ' from (' + sqlBuilder.statement.text + ')' + sqlBuilder.get(GROUP_BY) + ' having (min(function_filter_passed) = 1 or (amount > 1 and max(function_filter_passed) = 1))';
+				sqlBuilder.statement.text += '1, ';
 			}
-			sqlBuilder.statement.text += 'union select ' + builder.rootNode.name + ', ' + builder.rootNode.percentage + ', ' + builder.rootNode.inclusiveTime + ', ' + builder.rootNode.id;
+			sqlBuilder.statement.text += builder.rootNode.name + ', ' + builder.rootNode.percentage + ', ' + builder.rootNode.inclusiveTime + ', ' + builder.rootNode.id;
+		}
+		
+		override protected function filterByCostGrouped():void
+		{
+			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || builder.configuration.grouping == Grouper.FUNCTIONS)
+			{
+				sqlBuilder.add(SqlBuilder.HAVING, 'inclusiveTime.value >= :cost');
+			}
+			else
+			{
+				super.filterByCostGrouped();
+			}
 		}
 		
 		override protected function handleSelect(event:SQLEvent):void
@@ -73,16 +87,15 @@ package cachegrindVisualizer.callGraph.builders
 			var sqlResult:SQLResult = sqlBuilder.statement.getResult();
 			for each (var node:Node in sqlResult.data)
 			{
-				if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || builder.configuration.grouping == Grouper.FUNCTIONS)
+				if ((builder.configuration.grouping != Grouper.FUNCTIONS_AND_CALLS && builder.configuration.grouping != Grouper.FUNCTIONS) || node.name in builder.nodesNames)
 				{
-					node.inclusiveTime = builder.inclusiveTime[node.name];
+					nodes += node.id + ' [' + builder.label.node(node, builder.onePercentage, builder);
+					if (!builder.configuration.blackAndWhite)
+					{
+						nodes += builder.color.node(node);
+					}
+					nodes += ']\n';
 				}
-				nodes += node.id + ' [' + builder.label.node(node, builder.onePercentage, builder);
-				if (!builder.configuration.blackAndWhite)
-				{
-					nodes += builder.color.node(node);
-				}
-				nodes += ']\n';
 			}		
 
 			builder.fileStream.writeUTFBytes(nodes);

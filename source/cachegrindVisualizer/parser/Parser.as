@@ -19,7 +19,7 @@ package cachegrindVisualizer.parser
 		/**
 		 * Номер ревизии, в которой в последний раз была изменена заготовка БД
 		 */
-		private static const DB_VERSION:uint = 127;
+		private static const DB_VERSION:uint = 145;
 		
 		private static const SQL_CACHE_SIZE:uint = 200000;
 
@@ -89,7 +89,6 @@ package cachegrindVisualizer.parser
 			
 			result.names = functionNameMap.load();	
 			result.fileNames = fileNameMap.load();
-			result.inclusiveTime = inclusiveTimeMap.load();
 			
 			sqlConnection.close();
 		}
@@ -123,13 +122,14 @@ package cachegrindVisualizer.parser
 
 			result.names = functionNameMap.save();
 			result.fileNames = fileNameMap.save();			
-			result.inclusiveTime = inclusiveTimeMap.save();
+			inclusiveTimeMap.save();
 
 			trace('Затрачено на анализ: ' + ((new Date().time - timeBegin) / 1000));			
 			
 			// если сначала создать индекс left, right, level, а потом inclusiveTime, то индексы будут битыми и в графе, в итоге, будет нарушена иерархия и имена
 			SqlUtil.execute('create index tree_inclusiveTime on tree (inclusiveTime)', sqlConnection);
 			SqlUtil.execute('create index tree_key on tree (left, right, level)', sqlConnection);
+			SqlUtil.execute('create index inclusiveTime_id on inclusiveTime (id)', sqlConnection);
 			
 			trace('Затрачено на анализ и построение индекса: ' + ((new Date().time - timeBegin) / 1000));
 			
