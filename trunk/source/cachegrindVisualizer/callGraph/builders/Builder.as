@@ -25,12 +25,11 @@ package cachegrindVisualizer.callGraph.builders
 		private var progress:Number;
 		private var statementBuilders:Array;
 		
-		public function Builder(sqlConnection:SQLConnection, syncSqlConnection:SQLConnection, names:Object, inclusiveTime:Object):void
+		public function Builder(sqlConnection:SQLConnection, syncSqlConnection:SQLConnection, names:Object):void
 		{
 			_sqlConnection = sqlConnection;
 			_syncSqlConnection = syncSqlConnection;
 			selectRootItemStatement.sqlConnection = sqlConnection;
-			_inclusiveTime = inclusiveTime;		
 			
 			_names = names;
 			_label = new Label();
@@ -48,10 +47,10 @@ package cachegrindVisualizer.callGraph.builders
 			return _names;
 		}
 		
-		private var _inclusiveTime:Object;
-		public function get inclusiveTime():Object
+		private var _nodesNames:Object;
+		public function get nodesNames():Object
 		{
-			return _inclusiveTime;
+			return _nodesNames;
 		}
 		
 		private var _fileStream:FileStream = new FileStream();
@@ -161,6 +160,7 @@ package cachegrindVisualizer.callGraph.builders
 		
 		private function handleSelectRootItem(event:SQLEvent):void
 		{
+			_nodesNames = new Object();
 			progress = 10;
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, progress, 100));
 			
@@ -168,6 +168,7 @@ package cachegrindVisualizer.callGraph.builders
 			rootNode.name = treeItem.name;			
 			_onePercentage = rootNode.inclusiveTime / 100;			
 			rootNode.percentage = rootNode.time / onePercentage;
+			nodesNames[rootNode.name] = null;
 			
 			if (configuration.grouping == Grouper.FUNCTIONS_AND_CALLS || configuration.grouping == Grouper.FUNCTIONS)
 			{
@@ -192,9 +193,9 @@ package cachegrindVisualizer.callGraph.builders
 				statementBuilders.push(new EdgeBuilder(this));
 			}
 			
-			statementBuilders.push(new NodeBuilder(this));
+			/*statementBuilders.push(new NodeBuilder(this));
 			
-			_treeItem = null;
+			_treeItem = null;*/
 		}
 		
 		public function checkComplete():void
@@ -206,6 +207,10 @@ package cachegrindVisualizer.callGraph.builders
 				statementBuilders = null;
 				fileStream.writeUTFBytes('}');
 				fileStream.close();
+			}
+			else
+			{
+				statementBuilders = new Array(new NodeBuilder(this));
 			}
 		}		
 		

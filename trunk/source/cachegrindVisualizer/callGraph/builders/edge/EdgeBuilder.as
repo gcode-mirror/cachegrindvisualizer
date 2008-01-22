@@ -11,7 +11,7 @@ package cachegrindVisualizer.callGraph.builders.edge
 	import flash.events.SQLEvent;
 	
 	public class EdgeBuilder extends StatementBuilder
-	{
+	{		
 		protected var previousId:uint;
 		protected var previousLevel:uint;
 		protected var parentsIds:Object = new Object();
@@ -32,6 +32,15 @@ package cachegrindVisualizer.callGraph.builders.edge
 				builder.fileStream.writeUTFBytes(' color="' + Color.EDGE_MIN_HUE + ' ' + Color.EDGE_MIN_SATURATION + ' ' + Color.MAX_VALUE + '"');
 			}	
 			builder.fileStream.writeUTFBytes(']\n');
+			
+			/**/
+			builder.fileStream.writeUTFBytes('node [shape=box fontsize=12 fontname="' + Builder.FONT + '"');
+			if (!builder.configuration.blackAndWhite)
+			{
+				builder.fileStream.writeUTFBytes(' color="' + Color.MIN_HUE + ' ' + Color.MIN_SATURATION + ' ' + Color.MAX_VALUE + '" style=filled');
+			}	
+			builder.fileStream.writeUTFBytes(']\n');
+			/**/
 		}
 		
 		/**
@@ -77,6 +86,11 @@ package cachegrindVisualizer.callGraph.builders.edge
 			var sqlResult:SQLResult = sqlBuilder.statement.getResult();
 			for each (var edge:Edge in sqlResult.data)
 			{
+				if (builder.configuration.grouping == Grouper.FUNCTIONS)
+				{
+					builder.nodesNames[edge.name] = null;
+				}
+				
 				if (edge.level > previousLevel)
 				{
 					parentsIds[edge.level] = previousId;

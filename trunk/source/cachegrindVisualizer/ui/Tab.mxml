@@ -77,7 +77,7 @@
 		var syncSqlConnection:SQLConnection = new SQLConnection();
 		syncSqlConnection.open(parserResult.db, SQLMode.READ);
 		
-		callGraph.builder = new Builder(sqlConnection, syncSqlConnection, parserResult.names, parserResult.inclusiveTime);
+		callGraph.builder = new Builder(sqlConnection, syncSqlConnection, parserResult.names);
 		sqlConnection.addEventListener(SQLEvent.OPEN, handleOpenSqlConnection);
 		sqlConnection.openAsync(parserResult.db, SQLMode.READ);
 

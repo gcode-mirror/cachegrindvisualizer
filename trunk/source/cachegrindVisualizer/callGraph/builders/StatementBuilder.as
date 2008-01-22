@@ -66,17 +66,22 @@ package cachegrindVisualizer.callGraph.builders
 			sqlBuilder.statement.parameters[':right'] = builder.treeItem.right;
 		}
 		
-		private function filterByCost():void
+		protected function filterByCost():void
 		{
 			if (grouped)
 			{
-				sqlBuilder.add(SqlBuilder.HAVING, 'max(inclusiveTime) >= :cost');
+				filterByCostGrouped();
 			}
 			else
 			{
 				sqlBuilder.add(SqlBuilder.WHERE, 'inclusiveTime >= :cost');
 			}
 			sqlBuilder.statement.parameters[':cost'] = builder.configuration.minNodeCost * builder.onePercentage;
+		}
+		
+		protected function filterByCostGrouped():void
+		{
+			sqlBuilder.add(SqlBuilder.HAVING, 'max(inclusiveTime) >= :cost');
 		}
 		
 		private function filterByLibraryFunctions():void
@@ -123,14 +128,7 @@ package cachegrindVisualizer.callGraph.builders
 			if (grouped)
 			{
 				sqlBuilder.add(SqlBuilder.FIELD, 'not (' + nameFilters.join(' or ') + ') as function_filter_passed');
-				if (this is NodeBuilder)
-				{
-					//sqlBuilder.add(SqlBuilder.HAVING, '(min(function_filter_passed) != 0 or (count(*) > 1 and max(function_filter_passed) = 1))');
-				}
-				else
-				{					
-					sqlBuilder.add(SqlBuilder.HAVING, 'max(function_filter_passed) = 1');
-				}
+				sqlBuilder.add(SqlBuilder.HAVING, 'max(function_filter_passed) = 1');
 			}
 		}
 		

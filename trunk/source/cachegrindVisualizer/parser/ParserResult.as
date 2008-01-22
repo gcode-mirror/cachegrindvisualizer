@@ -14,7 +14,6 @@ package cachegrindVisualizer.parser
 		
 		public var names:Object;
 		public var fileNames:Object;
-		public var inclusiveTime:Object;
 		
 		public function ParserResult():void
 		{

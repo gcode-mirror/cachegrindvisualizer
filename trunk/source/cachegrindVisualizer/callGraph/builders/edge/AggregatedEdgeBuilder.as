@@ -53,7 +53,7 @@ package cachegrindVisualizer.callGraph.builders.edge
 			var edges:String = '';
 			var sqlResult:SQLResult = sqlBuilder.statement.getResult();
 			for each (var edge:AggregatedEdge in sqlResult.data)
-			{
+			{				
 				if (edge.level > previousLevel)
 				{
 					parentsIds[edge.level] = previousId;
@@ -73,6 +73,7 @@ package cachegrindVisualizer.callGraph.builders.edge
 		{
 			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS)
 			{
+				builder.nodesNames[edge.name] = null;
 				return AggregatedEdge(edge).parentName;
 			}
 			else if (builder.configuration.grouping == Grouper.CALLS)
