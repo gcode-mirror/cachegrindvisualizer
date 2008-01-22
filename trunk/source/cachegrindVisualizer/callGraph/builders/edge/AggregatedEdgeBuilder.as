@@ -69,15 +69,15 @@ package cachegrindVisualizer.callGraph.builders.edge
 			next(sqlResult);
 		}
 		
-		private function getParentId(edge:AggregatedEdge):uint
+		override protected function getParentId(edge:Edge):uint
 		{
 			if (builder.configuration.grouping == Grouper.FUNCTIONS_AND_CALLS)
 			{
-				return edge.parentName;
+				return AggregatedEdge(edge).parentName;
 			}
 			else if (builder.configuration.grouping == Grouper.CALLS)
 			{
-				return parentsIds[edge.level];
+				return super.getParentId(edge);
 			}
 			
 			throw new Error();

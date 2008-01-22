@@ -22,5 +22,6 @@ package cachegrindVisualizer.callGraph.builders
 		public var labelType:uint = Label.TYPE_PERCENTAGE_AND_TIME;
 		
 		public var hideLibraryFunctions:Boolean = false;
+		public var hideFunctions:String;
 	}
 }

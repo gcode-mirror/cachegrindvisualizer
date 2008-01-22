@@ -60,6 +60,10 @@ package cachegrindVisualizer.callGraph.builders
 			}			
 			
 			sqlBuilder.build();
+			if (grouped && builder.configuration.hideFunctions != null)
+			{
+				sqlBuilder.statement.text = 'select count(*) as amount, ' + sqlBuilder.get(SqlBuilder.FIELD, null, 'function_filter_passed') + ' from (' + sqlBuilder.statement.text + ')' + sqlBuilder.get(GROUP_BY) + ' having (min(function_filter_passed) = 1 or (amount > 1 and max(function_filter_passed) = 1))';
+			}
 			sqlBuilder.statement.text += 'union select ' + builder.rootNode.name + ', ' + builder.rootNode.percentage + ', ' + builder.rootNode.inclusiveTime + ', ' + builder.rootNode.id;
 		}
 		
@@ -73,7 +77,7 @@ package cachegrindVisualizer.callGraph.builders
 				{
 					node.inclusiveTime = builder.inclusiveTime[node.name];
 				}
-				nodes += node.id + ' [' + builder.label.node(node, builder.onePercentage);
+				nodes += node.id + ' [' + builder.label.node(node, builder.onePercentage, builder);
 				if (!builder.configuration.blackAndWhite)
 				{
 					nodes += builder.color.node(node);

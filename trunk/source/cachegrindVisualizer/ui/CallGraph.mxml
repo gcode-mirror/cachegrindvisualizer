@@ -57,7 +57,10 @@
 			</mx:FormItem>
 			<mx:FormItem>
 				<mx:CheckBox id="hideLibraryFunctions" label="{resourceManager.getString('CallGraph', 'hideLibraryFunctions')}" change="handleChange(event)"/>
-			</mx:FormItem>			
+			</mx:FormItem>
+			<mx:FormItem label="{resourceManager.getString('CallGraph', 'hideFunctions')}" width="100%">
+				<develar:TextInput id="hideFunctions" change="handleChangeWithDelay(event)" width="100%"/>
+			</mx:FormItem>		
 		</mx:Form>
 		
 		<mx:ControlBar width="100%">
@@ -146,7 +149,7 @@
 		}
 		else
 		{
-			configurationManager.configuration[event.target.id] = event.target.text;
+			configurationManager.configuration[event.target.id] = event.target.text == '' ? null : event.target.text;
 		}
 		
 		build();

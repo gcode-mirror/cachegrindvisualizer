@@ -91,7 +91,7 @@ package cachegrindVisualizer.callGraph.builders.edge
 					edge.sizeBase = edge.inclusivePercentage;
 				}					
 				
-				edges += parentsIds[edge.level] + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
+				edges += getParentId(edge) + ' -> ' + edge.id + ' [' + build(edge) + ']\n';
 				
 				previousLevel = edge.level;
 				previousId = edge.id;
@@ -99,7 +99,12 @@ package cachegrindVisualizer.callGraph.builders.edge
 			
 			builder.fileStream.writeUTFBytes(edges);
 			next(sqlResult);
-		}		
+		}	
+		
+		protected function getParentId(edge:Edge):uint
+		{
+			return parentsIds[edge.level];
+		}	
 		
 		private function build(edge:Edge):String
 		{

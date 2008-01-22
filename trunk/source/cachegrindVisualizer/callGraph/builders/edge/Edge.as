@@ -2,6 +2,8 @@ package cachegrindVisualizer.callGraph.builders.edge
 {
 	public class Edge
 	{
+		public var function_filter_passed:Boolean;
+		
 		public var id:uint;
 		public var level:uint;
 		
