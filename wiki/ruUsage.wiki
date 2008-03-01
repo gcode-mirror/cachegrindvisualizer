@@ -1,6 +1,3 @@
 #labels Featured,Phase-Support
  # Откройте в CachegrindVisualizer файл cachegrind (его создает xdebug).
  # В той же папке, что и исходный файл cachegrind, найдите файл с тем же именем, что и у исходного файла, но с расширением dot и откройте его в ZGRViewer.
-
-**gggg**
-*ggg*
