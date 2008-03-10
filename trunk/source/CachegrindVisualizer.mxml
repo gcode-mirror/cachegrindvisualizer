@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<develar:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:develar="http://neo-net.ru/2007/develar" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()"  nativeDragEnter="handleNativeDragEnter(event)" nativeDragDrop="handleNativeDragDrop(event)">
+<df:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:df="http://flyti.org/2007/df" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()"  nativeDragEnter="handleNativeDragEnter(event)" nativeDragDrop="handleNativeDragDrop(event)">
 	
 	<mx:Metadata>
 		[ResourceBundle('Shared')]
@@ -12,9 +12,9 @@
 		<mx:Button label="{resourceManager.getString('Shared', 'open')}" click="browse()"/>
 		<mx:Button id="b_refresh" label="{resourceManager.getString('Shared', 'refresh')}" enabled="false" click="Tab(tabNavigator.selectedChild).refresh()"/>
 		<mx:Spacer width="100%"/>
-		<develar:LocaleComboBox dataProvider="{locales}"/>
+		<df:LocaleComboBox dataProvider="{locales}"/>
 	</mx:ApplicationControlBar>
-	<develar:TabNavigator id="tabNavigator" width="100%" height="100%" change="handleTabChange()" childRemove="handleTabRemove()"/>
+	<df:TabNavigator id="tabNavigator" width="100%" height="100%" change="handleTabChange()" childRemove="handleTabRemove()"/>
 	
 	<mx:Script><![CDATA[
 		
@@ -157,4 +157,4 @@
 	
 	]]></mx:Script>	
 	
-</develar:WindowedApplication>
+</df:WindowedApplication>

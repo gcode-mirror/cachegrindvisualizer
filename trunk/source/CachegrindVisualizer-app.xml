@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<application xmlns="http://ns.adobe.com/air/application/1.0.M6">
+<application xmlns="http://ns.adobe.com/air/application/1.0">
 	<id>develar.cachegrindVisualizer</id>
-	<version>0.6b</version>
+	<version>0.6.1</version>
     <filename>CachegrindVisualizer</filename>
 
 	<initialWindow>
 		<title>CachegrindVisualizer</title>
-		<content>!ApolloApplicationWizardPage.rootContentValue!</content>
-		<systemChrome>standard</systemChrome>
+		<content>[This value will be overwritten by Flex Builder in the output app.xml]</content>
 	</initialWindow>
 
 	<allowBrowserInvocation>true</allowBrowserInvocation>

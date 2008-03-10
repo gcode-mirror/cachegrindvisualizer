@@ -30,6 +30,7 @@ package cachegrindVisualizer.parser
 		protected var fileStream:FileStream = new FileStream();
 		
 		protected var data:Array;
+		protected var partialString:String = '';
 		protected var cursor:uint;
 		
 		public function FileReader(file:File):void
@@ -49,7 +50,7 @@ package cachegrindVisualizer.parser
 			}
 			lineEnding = checksum.search('\r\n') == -1 ? '\n' : '\r\n';
 			_checksum = Sha256.hmac(checksum, String(file.size));
-			// закрываем, так как файл может быть в кеше и чтения не будет, а также в связи с проблемой описанной в методе read
+			// закрываем, так как файл может быть в кеше и чтения не будет
 			fileStream.close();
 			fileStream = null;
 		}
@@ -77,7 +78,6 @@ package cachegrindVisualizer.parser
 		
 		public function read():void
 		{
-			// странный глюк FileStream - даже при указании position = 0, чтение происходит не с начала файла, если закрыть FileStream после расчета checksum и открыть здесь, то все работает (AIR beta 2)
 			if (fileStream == null)
 			{
 				fileStream = new FileStream();
@@ -88,7 +88,7 @@ package cachegrindVisualizer.parser
 			var length:Number = PORTION_LENGTH;
 			var offset:uint;
 			// если после чтения останется меньше, чем порция, то нам проще взять все оставшееся сразу в один заход
-			if (fileStream.position < (PORTION_LENGTH * 2))
+			if (fileStream.position < (length * 2))
 			{
 				length = fileStream.position;
 				fileStream.position = 0;
@@ -96,32 +96,13 @@ package cachegrindVisualizer.parser
 			}		
 			else
 			{
-				fileStream.position -= PORTION_LENGTH;
-				// корректируем позицию, чтобы в нулевом элементе данных не было оборванной строки
-				if (fileStream.position != 0)
-				{	
-					fileStream.position -= ZERO_ELEMENT_STRING_LENGTH;
-					var checkString:String = fileStream.readMultiByte(ZERO_ELEMENT_STRING_LENGTH, CHAR_SET);
-					var lastIndexOfLineEnding:int = checkString.lastIndexOf(lineEnding);
-					if (lastIndexOfLineEnding == -1)
-					{
-						throw new Error('Хм. Однако ZERO_ELEMENT_STRING_LENGTH не хватило. Или еще что-нибудь. Киньте файлом и еще чем-нибудь тяжелым в того, кто написал это.');
-					}
-					offset = ZERO_ELEMENT_STRING_LENGTH - (lastIndexOfLineEnding + lineEnding.length);
-					fileStream.position -= offset;
-					length += offset;
-				}
+				fileStream.position -= length;
 			}
 			
-			/*var tmp:String = fileStream.readMultiByte(length, CHAR_SET);
-			data = tmp.split(lineEnding);*/
-			data = fileStream.readMultiByte(length, CHAR_SET).split(lineEnding);
+			data = (fileStream.readMultiByte(length, CHAR_SET) + partialString).split(lineEnding);
+			partialString = data.shift();
+			
 			fileStream.position -= length;
-			// мы должны игнорировать lineEnding на стыках порций, иначе это будет пустой элемент в data и позиционирование курсора будет нарушено
-			if (offset != 0)
-			{
-				fileStream.position -= lineEnding.length;
-			}
 			cursor = data.length - 1;
 		}
 		
