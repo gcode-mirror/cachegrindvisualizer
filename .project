@@ -23,9 +23,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>[source path] df</name>
+			<name>[source path] df_as</name>
 			<type>2</type>
-			<locationURI>DOCUMENTS/df</locationURI>
+			<location>C:/usr/local/df_as</location>
 		</link>
 	</linkedResources>
 </projectDescription>

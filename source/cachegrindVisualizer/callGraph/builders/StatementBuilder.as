@@ -96,6 +96,9 @@ package cachegrindVisualizer.callGraph.builders
 			}
 		}
 		
+		/**
+		 * refactor me
+		 */
 		private function filterByFunctions():void
 		{
 			var names:Array = builder.configuration.hideFunctions.split(/[,\s]+/);
@@ -107,28 +110,35 @@ package cachegrindVisualizer.callGraph.builders
 					namesIds.push(uint(id));
 				}
 			}
-				
-			var statement:SQLStatement = new SQLStatement();
-			statement.sqlConnection = builder.syncSqlConnection;
-			statement.text = 'select left, right from tree where name in (' + namesIds.join(', ') + ')';
-			statement.execute();
-			var data:Array = statement.getResult().data;				
-			var nameFilters:Array = new Array();
-			for each (var item:Object in data)
-			{					
-				if (grouped)
-				{										
-					nameFilters.push('(left >= ' + item.left + ' and right <= ' + item.right + ')');						
-				}
-				else
-				{
-					sqlBuilder.add(SqlBuilder.WHERE, 'not (left >= ' + item.left + ' and right <= ' + item.right + ')');
-				}
-			}							
-			if (grouped)
+			
+			if (namesIds.length > 0)
 			{
-				sqlBuilder.add(SqlBuilder.FIELD, 'not (' + nameFilters.join(' or ') + ') as function_filter_passed');
-				sqlBuilder.add(SqlBuilder.HAVING, 'max(function_filter_passed) = 1');
+				var statement:SQLStatement = new SQLStatement();
+				statement.sqlConnection = builder.syncSqlConnection;
+				statement.text = 'select left, right from tree where name in (' + namesIds.join(', ') + ')';
+				statement.execute();
+				var data:Array = statement.getResult().data;				
+				var nameFilters:Array = new Array();
+				for each (var item:Object in data)
+				{					
+					if (grouped)
+					{										
+						nameFilters.push('(left >= ' + item.left + ' and right <= ' + item.right + ')');						
+					}
+					else
+					{
+						sqlBuilder.add(SqlBuilder.WHERE, 'not (left >= ' + item.left + ' and right <= ' + item.right + ')');
+					}
+				}							
+				if (grouped)
+				{
+					sqlBuilder.add(SqlBuilder.FIELD, 'not (' + nameFilters.join(' or ') + ') as function_filter_passed');
+					sqlBuilder.add(SqlBuilder.HAVING, 'max(function_filter_passed) = 1');
+				}
+			}
+			else
+			{
+				builder.configuration.hideFunctions = null;
 			}
 		}
 		
