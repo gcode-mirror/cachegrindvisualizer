@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <application xmlns="http://ns.adobe.com/air/application/1.0">
 	<id>develar.cachegrindVisualizer</id>
-	<version>0.6.1</version>
+	<version>0.6.2</version>
     <filename>CachegrindVisualizer</filename>
 
 	<initialWindow>
