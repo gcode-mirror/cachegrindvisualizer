@@ -1,4 +1,13 @@
 #labels Featured
+== 11 March 2008 0.6.2
+ * fixed invokeEvent (open registered file type).
+
+== 10 March 2008 0.6.1
+ * refactor fileReader code
+ * use new develar framework revision (svn.flyti.org)
+ * use new AIR version (adobe.com/go/air)
+ * fixed en_US locale: missing TabCloseManager
+
 == 1 February 2008 0.6 ==
  * fixed: ошибка парсера из-за ошибки в алгоритме чтения файла блоками с конца в силу которой на границах блоков оказывались лишние символы перевода строки. исправление пока что грязное, но работает. (спасибо Nike Gurin за сообщение). Ошибка проявлялась только на специфичных файлах, в частности, отчет об ошибке прислали для 80 МБ файла с кучей дешевых детей.
  * fixed: применение сохраненного профиля с настроенным "скрытие указанных функций" к иному файлу приводило к ошибке построителя. 
