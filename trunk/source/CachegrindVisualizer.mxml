@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<df:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:df="http://flyti.org/2007/df" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" creationComplete="handleCreationComplete()"  nativeDragEnter="handleNativeDragEnter(event)" nativeDragDrop="handleNativeDragDrop(event)">
+<df:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:df="http://flyti.org/2007/df" paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" preinitialize="handlePreInitialize()" invoke="handleInvoke(event)" creationComplete="handleCreationComplete()"  nativeDragEnter="handleNativeDragEnter(event)" nativeDragDrop="handleNativeDragDrop(event)">
 	
 	<mx:Metadata>
 		[ResourceBundle('Shared')]
@@ -128,13 +128,13 @@
 		}
 	}
 	
-	protected function handleInvoke(/*event:InvokeEvent*/arguments:Array):void
+	protected function handleInvoke(event:InvokeEvent/*arguments:Array*/):void
 	{
 		var configuration:Configuration;
 		var parameterName:String = null;
-		for each (var argument:String in /*event.*/arguments)
+		for each (var argument:String in event.arguments)
 		{
-			if (argument.substr(0, 2) == '--')
+			/*if (argument.substr(0, 2) == '--')
 			{
 				parameterName = argument.substr(2);
 			}
@@ -143,9 +143,9 @@
 				configuration[parameterName] = argument;
 			}
 			else
-			{
-				file = new File(parameterName);
-			}
+			{*/
+				file = new File(argument);
+			//}
 			openFile();
 		}
 	}
