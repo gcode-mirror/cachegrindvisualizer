@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.flyti</groupId>
+    <artifactId>flash-forge</artifactId>
+    <version>1.0.14</version>
+  </parent>
+
+  <groupId>org.flyti</groupId>
+  <artifactId>cachegrindVisualizer</artifactId>
+  <version>0.7</version>
+  <packaging>swf</packaging>
+
+  <properties>
+    <!--<fdk.version>4.5.0.17440</fdk.version>-->
+    <!--<flex.sdk.version>4.5.0.17440</flex.sdk.version>-->
+    <flexMojos.version>3.8-de3.1</flexMojos.version>
+  </properties>
+
+  <scm>
+    <!--<connection>scm:git:git@github.com:develar/flash-plexus.git</connection>-->
+    <!--<url>http://github.com/develar/flash-plexus</url>-->
+  </scm>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.adobe.flex.framework</groupId>
+      <artifactId>air-framework</artifactId>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.flyti.cocoa</groupId>
+      <artifactId>acocoa</artifactId>
+      <version>1.2-SNAPSHOT</version>
+      <type>swc</type>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.flexmojos</groupId>
+        <artifactId>flexmojos-maven-plugin</artifactId>
+        <configuration>
+          <debug>true</debug>
+          <sourceFile>cocoa/plaf/aqua/demo/Main.mxml</sourceFile>
+          <compiledLocales>
+            <locale>en_US</locale>
+            <!--<locale>ru</locale>-->
+          </compiledLocales>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
